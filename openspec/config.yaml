@@ -6,7 +6,8 @@ context: |
   Server: Python 3.12, uv, FastAPI, SQLAlchemy 2 async, Alembic, PostgreSQL (SQLite in dev),
   FFmpeg (LGPL, separate process), tinytag, Chromaprint, MusicBrainz, Verovio, pypdfium2.
   Copyleft components run in own containers under services/ (tagger with mutagen – GPL-2.0+,
-  source-tidal with streamrip – GPL-3.0, audiveris – AGPL-3.0) and are never imported by the core.
+  audiveris – AGPL-3.0) and are never imported by the core. Streaming sources (Tidal, Spotify,
+  YouTube) are optional source services in separate repositories (ADR 0017).
   Deployment: OCI images, Podman first (Quadlet), Docker via Compose.
   Client: Vue 3 + TypeScript, Quasar, Pinia, vue-i18n; Tauri 2 (desktop), Capacitor (mobile).
   Sync: one WebSocket per client with subscriptions (snapshot chunks + deltas, change_seq);
@@ -15,7 +16,7 @@ context: |
   Agent rules: AGENTS.md (root, server/, client/). Background: docs/concept/anthology-six-pager.md.
   Decisions: docs/adr/. Data model: docs/architecture/data-model.puml. UI reference: docs/design/.
   Domains: library, sources, jobs, sync-protocol, transcoding, playback, users, works,
-  publishers, sheet-music, video, library-import, quality-analysis, cd-import.
+  publishers, sheet-music, video, library-import, quality-analysis, cd-import, review.
 
 rules:
   proposal:

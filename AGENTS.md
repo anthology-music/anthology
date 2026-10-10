@@ -7,13 +7,13 @@ Instructions for AI coding agents (Claude Code, opencode and others) working in 
 
 Anthology is an open-source, self-hosted music application built as one integrated product:
 
-- **Streaming** view: acquire music (Tidal, Spotify, YouTube, CD, library import) – audio only or video.
+- **Streaming** view: acquire music (CD, library import, upload; Tidal, Spotify, YouTube through optional source services in separate repositories) – audio only or video.
 - **Local** view: listen to and edit the shared library (tags, works, sheet music).
 - Server–client architecture: clients only send orders; the server does the work in the background.
 - Multi-room playback (Teufel Raumfeld first) through exchangeable output adapters.
 - Works, arrangements and medleys for wind bands, with publishers and sheet music.
 
-Background and rationale: `docs/concept/anthology-six-pager.md`. Decisions: `docs/adr/`. Data model: `docs/architecture/data-model.puml`. UI reference: `docs/design/`.
+Background and rationale: `docs/concept/anthology-six-pager.md`. Decisions: `docs/adr/`. Data model: `docs/architecture/data-model.puml`. UI reference: `docs/design/`. Order of work and deferred topics: `docs/roadmap.md`.
 
 ## Language
 
@@ -54,18 +54,19 @@ Requirements use **SHALL/MUST**; every requirement has at least one `#### Scenar
 | `library-import` | `library_import` |
 | `quality-analysis` | `quality_analysis` |
 | `cd-import` | `cd_import` |
+| `review` | `review` |
 
 Client feature folders use the same names (kebab-case) under `client/src/features/`.
 
 ## Architecture principles (do not break)
 
 - **One original per recording.** Album folders reference it (symlink/hardlink/reflink). Never store a second copy of the same recording.
-- **Metadata comes from the database, by context.** Tags shown or delivered depend on the album/context; files only carry neutral base tags.
+- **Metadata comes from the database, by context.** Tags shown or delivered depend on the album/context; managed originals only carry neutral base tags, referenced (imported, unmanaged) files are written only if the user enabled it.
 - **Effective quality, not declared quality,** drives ranking, replacement and transcoding. Never upscale.
 - **Everything is an adapter:** sources, outputs (playback), publishers. New integrations implement the adapter interface; no special cases in core code.
 - **Progressive loading through all layers:** keyset pagination in the DB (never `OFFSET`), async generators on the server, chunked WebSocket subscriptions with deltas, virtual scrolling in the client. The UI must never wait for a full list.
 - **Long work runs as a job** (download, import, tagging, OMR, analysis) and reports progress live. Clients may disconnect at any time.
-- **Audio and video are served over HTTP with range requests,** never over the WebSocket.
+- **Media is served over HTTP, never over the WebSocket:** audio with range requests, video adaptively over HLS.
 - **Library is shared, settings are personal** (per user and per device).
 
 ## Non-functional requirements
@@ -82,7 +83,8 @@ server/          Python, FastAPI – see server/AGENTS.md
 client/          Vue 3 + Quasar (web/PWA, Tauri desktop, Capacitor mobile) – see client/AGENTS.md
 packages/        shared packages, e.g. api-types generated from the server's OpenAPI
 services/        separate containers with their own licenses:
-                 tagger (GPL-2.0+, mutagen), source-tidal (GPL-3.0, streamrip), audiveris (AGPL-3.0)
+                 tagger (GPL-2.0+, mutagen), audiveris (AGPL-3.0)
+                 (source services for streaming services live in separate repositories, ADR 0017)
 deploy/          Podman Quadlet files (primary) and compose.yaml (Podman/Docker)
 docs/            concept, architecture, ADRs, design
 tools/           test data generator, scripts
@@ -122,7 +124,8 @@ Copyleft components run in their own container under `services/`, each with its 
 and are called only through their narrow, versioned interface:
 
 - **mutagen** → `services/tagger` (GPL-2.0-or-later). The core reads tags quickly with **tinytag** (MIT) and writes/reads full tags via the tagger.
-- **streamrip** → `services/source-tidal` (GPL-3.0-only), optional.
+- **streamrip** → `anthology-source-tidal` (GPL-3.0-only), optional, separate repository (ADR 0017).
+- Download tools for commercial streaming services (streamrip, spotDL, yt-dlp) are never part of this repository; they run in source services behind `docs/architecture/source-service-api.md`.
 - **Audiveris** → `services/audiveris` (AGPL-3.0), optional.
 - **PyMuPDF is not used** – use **pypdfium2** (BSD-3/Apache-2.0) for PDFs.
 - **FFmpeg**: LGPL build, called as a separate process; no non-free encoders.

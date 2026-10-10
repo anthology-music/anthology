@@ -7,7 +7,7 @@ Open-source, self-hosted music application: acquire music, listen to it on any d
 ## Highlights
 
 - One original per recording – albums and compilations only reference it.
-- Sources: Tidal, Spotify, YouTube, CD, existing collections; audio only or video.
+- Sources: CD, existing collections, upload; Tidal, Spotify and YouTube through optional source services (separate repositories); audio only or video.
 - Multi-room playback (Teufel Raumfeld first) through output adapters.
 - Works, arrangements and medleys with publishers and sheet music (score and parts).
 - Effective-quality detection of upscaled files.
@@ -46,7 +46,7 @@ Anthology runs as one pod of OCI containers. **Podman is the primary platform** 
 | `anthology-server` | MIT | yes |
 | `anthology-tagger` | GPL-2.0-or-later | yes |
 | `postgres` | PostgreSQL | yes |
-| `anthology-source-tidal` | GPL-3.0-only | optional |
+| `anthology-source-tidal` / `-spotify` / `-youtube` | GPL-3.0-only / MIT / MIT | optional, separate repositories |
 | `audiveris` | AGPL-3.0 | optional |
 
 ```
@@ -57,6 +57,10 @@ systemctl --user daemon-reload && systemctl --user start anthology-pod
 # Podman or Docker with Compose
 podman compose -f deploy/compose.yaml up -d
 ```
+
+## Sheet music and your responsibility
+
+All signed-in users of an installation can see and play all stored sheet music (scores and parts); there is no public sharing. As an operator you are responsible for the legal conditions of the sheet music you store (e.g. licences from publishers) and must restrict who gets an account accordingly.
 
 ## License
 

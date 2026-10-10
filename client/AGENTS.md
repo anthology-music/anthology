@@ -6,7 +6,8 @@ Rules for the Vue client. The root `AGENTS.md` applies as well.
 
 - **Vue 3** with `<script setup lang="ts">` and the Composition API, **TypeScript** strict.
 - **Quasar** (UI, PWA, build modes), **Pinia** (state), **Vue Router**, **vue-i18n** (German default, English).
-- Desktop: **Tauri 2** (`src-tauri/`). Mobile: **Capacitor** (`src-capacitor/`).
+- Desktop: **Tauri 2** (`src-tauri/`). Mobile: **Capacitor** (`src-capacitor/`). Native code in `src-tauri/` uses only permissively licensed crates (CD ripping: ADR 0018).
+- Sheet music: **Verovio** (LGPL-3.0) is loaded as a separate, unmodified, lazily loaded asset – never import it into application chunks (ADR 0014).
 - Lists: **@tanstack/vue-virtual** (or Quasar `QVirtualScroll`). WebSocket helpers: **@vueuse/core**.
 - Local cache: **Dexie** (IndexedDB) on web, SQLite on Tauri/Capacitor.
 - Tests: **Vitest** + **Vue Test Utils**, E2E with **Playwright**. Lint: **ESLint** + **Prettier**. Package manager: **pnpm**.

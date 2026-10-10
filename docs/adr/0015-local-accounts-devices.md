@@ -13,6 +13,8 @@ Several people use one installation, on personal and shared devices. The music i
 - **Roles:** Admin, Editor, Listener.
 - **Device registration** on first sign-in; settings are stored per user **and** device.
 - **Tokens:** short-lived access token plus a device-bound refresh token; the WebSocket authenticates with the token in `hello`.
+- **Media access:** every media request (originals, transcodes, tagged copies, HLS playlists and segments) uses a **signed URL** (HMAC-SHA256 with a server key) bound to the media variant, user, device or output, and an expiry – 1 hour for clients, up to 24 hours for network outputs such as Raumfeld, which cannot send auth headers. Signing out a device or deactivating a user invalidates its URLs immediately.
+- **Token renewal:** clients renew the access token on an open WebSocket with an `auth` message; on expiry the server closes with code `4401` and the client reconnects and resumes via change sequence.
 - **Shared devices:** profile picker with optional PIN.
 - **Audit log** for all changes to shared data.
 - **OIDC** (e.g. Authentik, Keycloak) is an optional later addition.

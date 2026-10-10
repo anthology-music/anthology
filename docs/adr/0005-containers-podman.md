@@ -16,7 +16,7 @@ Copyleft components must stay separate from the MIT core (ADR 0004). The maintai
   | `anthology-server` | MIT | yes |
   | `anthology-tagger` | GPL-2.0-or-later | yes |
   | `postgres` | PostgreSQL | yes (SQLite for small setups) |
-  | `anthology-source-tidal` | GPL-3.0-only | optional |
+  | `anthology-source-tidal`, `anthology-source-spotify`, `anthology-source-youtube` | GPL-3.0-only / MIT / MIT | optional, from separate repositories (ADR 0017) |
   | `audiveris` | AGPL-3.0 | optional |
 
 - Images are plain **OCI images** built from `Containerfile`s and published with fully qualified names (e.g. `ghcr.io/<organisation>/anthology-server`).
@@ -26,7 +26,7 @@ Copyleft components must stay separate from the MIT core (ADR 0004). The maintai
 
 ## Consequences
 
-- Optional features are enabled by adding a container, not by building a different image.
+- Optional features are enabled by adding a container, not by building a different image. Source services are registered with `ANTHOLOGY_SOURCE_SERVICES` (ADR 0017).
 - The server detects available services at startup and shows only the features they provide.
 - Rootless details must be documented and tested: volume permissions (`:Z`/`:U` with SELinux), ports below 1024, and LAN multicast for UPnP/Raumfeld discovery (may require host networking for the pod).
 - CI builds and smoke-tests the pod with Podman; a Compose smoke test covers Docker.

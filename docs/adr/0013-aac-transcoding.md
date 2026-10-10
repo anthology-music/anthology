@@ -10,7 +10,10 @@ Devices receive music in a configured bitrate (Original, 320, 256, 192, 128 kbit
 ## Decision
 
 - Transcodes use **AAC in M4A**, encoded with FFmpeg's native AAC encoder (LGPL build, ADR 0004).
-- **Never upscale:** if the effective quality of the original is below the target bitrate, the original is delivered.
+- **Never upscale:** if the effective quality of the original is below the target bitrate, the original is delivered – provided the target can play its format.
+- **Format-aware delivery:** client devices and output adapters declare the audio formats they can play. If the target cannot play the original's format, a **compatibility transcode** is delivered:
+  - lossless original with setting "Original" → **ALAC in M4A** (FFmpeg's native, LGPL encoder) if the target supports ALAC, otherwise AAC 320;
+  - lossy original → AAC at the lowest bitrate step at or above its effective quality, capped by the configured bitrate (e.g. Opus 160 → AAC 192), to limit generation loss. The original's effective quality is still shown, never the transcode bitrate.
 - Transcodes are cached and shared between users and devices; context tags are written automatically after transcoding.
 
 ## Alternatives considered

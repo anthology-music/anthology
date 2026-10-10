@@ -22,4 +22,5 @@ Audio and video use HTTP range requests, not the WebSocket.
 
 - Every list feature needs a stream implementation and protocol tests.
 - The protocol is the foundation and is built in phase 1.
-- See `openspec/specs/sync-protocol/spec.md`.
+- The protocol is versioned (`hello`/`welcome`, close code 4426 for unsupported versions) and uses one global change sequence for shared, personal, job and device data; the change log is kept for a configurable retention (default 7 days), older clients are resynchronised per visible window.
+- See `openspec/specs/sync-protocol/spec.md` and `docs/architecture/sync-protocol.md`.

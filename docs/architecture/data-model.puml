@@ -47,14 +47,20 @@ package "Library" {
     +sizeBytes : Long
     +audioHash : String
     +storageMode : StorageMode
+    +originalStatus : OriginalStatus
+    +tagWritesAllowed : Boolean
     +declaredQuality : QualityTier
     +effectiveQuality : QualityTier
     +addedAt : DateTime
   }
   note right of AudioFile
-    Exactly one original per recording.
+    Exactly one ACTIVE original per recording.
     Album folders only reference it
     (symlink / hardlink / reflink).
+    REFERENCED files are written only
+    if tagWritesAllowed (opt-in);
+    a replaced REFERENCED original
+    becomes SUPERSEDED and is kept.
   end note
 
   class FileLocation {
@@ -118,8 +124,9 @@ package "Library" {
 
   class TranscodeCacheEntry {
     +id : UUID
+    +kind : CacheKind
     +format : String
-    +bitrateKbps : Integer
+    +bitrateKbps : Integer [0..1]
     +contextTrackId : UUID [0..1]
     +path : String
     +sizeBytes : Long
@@ -132,7 +139,21 @@ package "Library" {
     +entityType : String
     +entityId : UUID
     +operation : ChangeOperation
+    +scope : ChangeScope
+    +ownerUserId : UUID [0..1]
+    +deviceId : UUID [0..1]
     +changedAt : DateTime
+  }
+  note right of ChangeLog
+    One global changeSeq for all data;
+    kept for the retention period
+    (default 7 days).
+  end note
+
+  enum ChangeScope {
+    SHARED
+    USER
+    DEVICE
   }
 
   enum AudioFormat {
@@ -156,7 +177,21 @@ package "Library" {
   enum StorageMode {
     MANAGED
     REFERENCED
-    LINKED
+  }
+  note bottom of StorageMode
+    MANAGED: Anthology owns the bytes
+    (written, moved, copied or reflinked).
+    REFERENCED: foreign location or hardlink.
+  end note
+
+  enum CacheKind {
+    TRANSCODE
+    TAGGED_COPY
+  }
+
+  enum OriginalStatus {
+    ACTIVE
+    SUPERSEDED
   }
 
   enum LocationKind {
@@ -220,6 +255,7 @@ package "Sources & Jobs" {
     +title : String
     +status : JobStatus
     +progress : Float
+    +outcome : ItemOutcome [0..1]
     +message : String [0..1]
   }
 
@@ -238,6 +274,7 @@ package "Sources & Jobs" {
     +sourceType : ImportSourceType
     +sourcePath : String
     +mode : ImportMode
+    +allowTagWrites : Boolean
     +throttle : ThrottleLevel
     +dryRun : Boolean
     +reportJson : String [0..1]
@@ -270,6 +307,7 @@ package "Sources & Jobs" {
     DUPLICATE_SCAN
     QUALITY_ANALYSIS
     PUBLISHER_SEARCH
+    REVIEW_BULK
     OMR
     TRANSCODE
   }
@@ -310,6 +348,15 @@ package "Sources & Jobs" {
     FAST
   }
 
+  enum ItemOutcome {
+    NEW
+    REPLACED
+    ALREADY_PRESENT
+    NOT_BETTER_THAN_EXISTING
+    NEEDS_REVIEW
+    FAILED
+  }
+
   enum ImportResult {
     NEW
     ALREADY_PRESENT
@@ -343,6 +390,7 @@ package "Users & Devices" {
     +name : String
     +type : DeviceType
     +platform : String
+    +supportedFormats : Set<AudioFormat>
     +lastSeenAt : DateTime
   }
 
@@ -351,6 +399,7 @@ package "Users & Devices" {
     +refreshTokenHash : String
     +pinHash : String [0..1]
     +signedInAt : DateTime
+    +revokedAt : DateTime [0..1]
   }
 
   class UserDeviceSettings {
@@ -432,6 +481,7 @@ package "Playback" {
     +adapter : OutputAdapter
     +name : String
     +address : String
+    +supportedFormats : Set<AudioFormat>
     +online : Boolean
   }
 
@@ -485,6 +535,7 @@ package "Works & Publishers" {
     +website : String [0..1]
     +adapterType : PublisherAdapterType
     +adapterConfigJson : String
+    +profileRef : String [0..1]
     +active : Boolean
     +rateLimitPerMin : Integer
     +lastQueriedAt : DateTime [0..1]
@@ -500,16 +551,6 @@ package "Works & Publishers" {
     +durationSec : Integer [0..1]
     +productUrl : String [0..1]
     +fetchedAt : DateTime
-  }
-
-  class WorkCandidate {
-    +id : UUID
-    +field : String
-    +proposedValue : String
-    +origin : CandidateOrigin
-    +confidence : Confidence
-    +evidence : String [0..1]
-    +status : ReviewStatus
   }
 
   enum WorkType {
@@ -533,13 +574,6 @@ package "Works & Publishers" {
     CSV_IMPORT
   }
 
-  enum CandidateOrigin {
-    PUBLISHER
-    MUSICBRAINZ
-    LLM
-    FUZZY_MATCH
-  }
-
   enum Confidence {
     HIGH
     MEDIUM
@@ -550,7 +584,58 @@ package "Works & Publishers" {
     OPEN
     ACCEPTED
     REJECTED
+    DEFERRED
+    OBSOLETE
     AUTO_ACCEPTED
+  }
+  note bottom of ReviewStatus
+    AUTO_ACCEPTED only for Sheet.reviewStatus;
+    automatic decisions create no ReviewItem.
+  end note
+}
+
+' =====================================================================
+package "Review" {
+
+  class ReviewItem {
+    +id : UUID
+    +type : ReviewType
+    +subjectType : String
+    +subjectId : UUID
+    +origin : ReviewOrigin
+    +confidence : Confidence
+    +evidenceJson : String
+    +proposalJson : String
+    +suppressionKey : String
+    +status : ReviewStatus
+    +createdAt : DateTime
+    +decidedAt : DateTime [0..1]
+    +changeSeq : Long
+  }
+  note right of ReviewItem
+    Also holds work candidates.
+    Unique suppressionKey while
+    OPEN, DEFERRED or REJECTED.
+  end note
+
+  enum ReviewType {
+    RECORDING_MATCH
+    QUALITY_FINDING
+    WORK_ASSIGNMENT
+    TAG_DIFFERENCE
+    DOWNLOAD_REPLACEMENT
+    SHEET_OMR
+  }
+
+  enum ReviewOrigin {
+    PUBLISHER
+    MUSICBRAINZ
+    LLM
+    FUZZY_MATCH
+    QUALITY_ANALYSIS
+    IMPORT
+    SOURCE
+    OMR
   }
 }
 
@@ -603,11 +688,6 @@ package "Sheet Music" {
     +startMs : Integer
     +endMs : Integer
     +recognitionConfidence : Float [0..1]
-  }
-
-  class SheetPermission {
-    +canView : Boolean
-    +canDownload : Boolean
   }
 
   class SheetAnnotation {
@@ -665,8 +745,14 @@ package "Video" {
     +height : Integer
     +durationMs : Integer
     +sizeBytes : Long
+    +contentHash : String
+    +sourceItemId : String [0..1]
     +thumbnailPath : String
   }
+  note right of VideoFile
+    Separate media type: its audio is
+    never an audio original.
+  end note
 
   class VideoRendition {
     +id : UUID
@@ -686,8 +772,9 @@ package "Video" {
 
 ' =====================================================================
 ' Relationships – Library
-Recording "1" -- "0..1" AudioFile : original >
+Recording "1" -- "0..*" AudioFile : originals (at most one ACTIVE) >
 AudioFile "1" -- "0..*" FileLocation : located at >
+AudioFile "0..*" -- "0..1" Track : home context (imported with) >
 AudioFile "1" -- "0..1" QualityAnalysis : analysed by >
 AudioFile "1" -- "0..*" TranscodeCacheEntry : variants >
 AudioFile "0..*" -- "1" Source : retrieved from >
@@ -734,9 +821,8 @@ Recording "1" -- "0..*" RecordingWork
 RecordingWork "0..*" -- "1" Work
 Publisher "1" *-- "0..*" Publication
 Publication "0..*" -- "1" Work : edition of >
-WorkCandidate "0..*" -- "1" Work : proposes for >
-WorkCandidate "0..*" -- "0..1" Publication : found in >
-WorkCandidate "0..*" -- "0..1" User : reviewed by >
+ReviewItem "0..*" -- "0..1" User : decided by >
+ReviewItem "0..*" -- "0..1" Job : bulk decision >
 
 ' Relationships – Sheet Music
 Work "1" *-- "0..*" Sheet
@@ -745,8 +831,6 @@ Sheet "1" *-- "1..*" SheetFile
 Sheet "1" *-- "0..*" SheetPage
 SheetPage "1" *-- "0..*" SheetSystem
 SheetSystem "1" *-- "1..*" MeasureMapEntry
-Sheet "1" *-- "0..*" SheetPermission
-SheetPermission "0..*" -- "0..1" User
 SheetAnnotation "0..*" -- "1" Sheet
 SheetAnnotation "0..*" -- "1" User : by >
 Sheet "0..*" -- "0..1" User : uploaded by >
@@ -757,6 +841,5 @@ VideoFile "0..*" -- "1" Source : retrieved from >
 VideoFile "1" *-- "0..*" VideoRendition
 VideoFile "1" *-- "0..*" VideoChapter
 VideoChapter "0..*" -- "0..1" Work : performs >
-VideoFile "0..*" -- "0..1" QualityAnalysis
 
 @enduml

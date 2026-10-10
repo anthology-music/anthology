@@ -23,3 +23,4 @@ Sheet music must be rendered page by page (scores) and system by system (parts, 
 
 - One engine for layout and timing on both sides.
 - LGPL obligations apply to Verovio itself (use unmodified, publish modifications).
+- In the client, Verovio (JS + WASM) is loaded as a **separate, unmodified, lazily loaded module**, never bundled or minified into application chunks, so users can replace it; the app's license overview shows the LGPL text and a link to the source of the exact version.
