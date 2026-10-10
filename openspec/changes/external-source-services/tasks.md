@@ -9,7 +9,7 @@
 
 ## 2. Repository move (maintainer)
 
-- [ ] 2.1 Create the repositories `anthology-source-streamrip`, `anthology-source-spotdl` and `anthology-source-ytdlp`; verify they exist with their LICENSE files
+- [x] 2.1 Create the repositories `anthology-source-streamrip`, `anthology-source-spotdl` and `anthology-source-ytdlp`; verify they exist with their LICENSE files
 - [x] 2.2 Move `services/source-tidal/` and `deploy/quadlet/anthology-source-streamrip.container` into `anthology-source-streamrip`, then remove them and the Tidal service and `ANTHOLOGY_TIDAL_URL` from the core repository's deploy files; verify `podman compose -f deploy/compose.yaml config` succeeds without them
 
 ## 3. Generic source service adapter
