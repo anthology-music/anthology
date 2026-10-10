@@ -1,6 +1,6 @@
 # Anthology – Compose file for `podman compose` or `docker compose`.
 # Podman users: the recommended setup is Quadlet (see deploy/quadlet/).
-# Status: placeholder – images do not exist yet. Replace <organisation>.
+# Status: placeholder – images do not exist yet.
 
 name: anthology
 

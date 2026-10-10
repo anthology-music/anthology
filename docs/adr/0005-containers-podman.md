@@ -19,7 +19,7 @@ Copyleft components must stay separate from the MIT core (ADR 0004). The maintai
   | `anthology-source-streamrip`, `anthology-source-spotdl`, `anthology-source-ytdlp` | GPL-3.0-only / MIT / MIT | optional, from separate repositories (ADR 0017) |
   | `audiveris` | AGPL-3.0 | optional |
 
-- Images are plain **OCI images** built from `Containerfile`s and published with fully qualified names (e.g. `ghcr.io/<organisation>/anthology-server`).
+- Images are plain **OCI images** built from `Containerfile`s and published with fully qualified names (e.g. `ghcr.io/anthology-music/anthology-server`).
 - **Podman is the primary, documented platform:** rootless, managed by **Quadlet** files in `deploy/quadlet/` so the pod runs as a systemd service without a daemon.
 - **Docker is supported** through `deploy/compose.yaml` (also usable with `podman compose`).
 - Containers share the pod network (`localhost`); only `anthology-server` publishes a port. Data is exchanged through named volumes (library, cache, imports, video, db).
