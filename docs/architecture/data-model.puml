@@ -1,0 +1,762 @@
+@startuml anthology-data-model
+' Anthology – data model (class diagram)
+' Concept version: 2026-10-09
+
+title Anthology – Data Model
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam linetype ortho
+skinparam nodesep 40
+skinparam ranksep 60
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #444444
+  ArrowColor #555555
+}
+skinparam package {
+  BackgroundColor #F7F7F5
+  BorderColor #999999
+}
+hide empty methods
+
+' =====================================================================
+package "Library" {
+
+  class Recording {
+    +id : UUID
+    +mbRecordingId : UUID [0..1]
+    +isrc : String [0..1]
+    +acoustId : UUID [0..1]
+    +title : String
+    +artist : String
+    +durationMs : Integer
+    +changeSeq : Long
+  }
+
+  class AudioFile {
+    +id : UUID
+    +path : String
+    +format : AudioFormat
+    +codec : String
+    +bitrateKbps : Integer [0..1]
+    +sampleRateHz : Integer
+    +bitDepth : Integer [0..1]
+    +channels : Integer
+    +sizeBytes : Long
+    +audioHash : String
+    +storageMode : StorageMode
+    +declaredQuality : QualityTier
+    +effectiveQuality : QualityTier
+    +addedAt : DateTime
+  }
+  note right of AudioFile
+    Exactly one original per recording.
+    Album folders only reference it
+    (symlink / hardlink / reflink).
+  end note
+
+  class FileLocation {
+    +id : UUID
+    +path : String
+    +kind : LocationKind
+    +watched : Boolean
+  }
+
+  class QualityAnalysis {
+    +id : UUID
+    +cutoffHz : Integer [0..1]
+    +contentAbove22kHz : Boolean
+    +effectiveBitDepth : Integer [0..1]
+    +estimatedOrigin : String [0..1]
+    +finding : String
+    +confidence : Confidence
+    +status : AuthenticityStatus
+    +spectrogramPath : String [0..1]
+    +analyzedAt : DateTime
+  }
+
+  class ReleaseGroup {
+    +id : UUID
+    +mbReleaseGroupId : UUID [0..1]
+    +title : String
+    +type : ReleaseGroupType
+    +albumArtist : String
+  }
+
+  class Release {
+    +id : UUID
+    +mbReleaseId : UUID [0..1]
+    +title : String
+    +edition : String [0..1]
+    +country : String [0..1]
+    +releaseDate : Date [0..1]
+    +discCount : Integer
+  }
+
+  class Track {
+    +id : UUID
+    +discNumber : Integer
+    +trackNumber : Integer
+    +contextTitle : String [0..1]
+    +contextArtist : String [0..1]
+    +changeSeq : Long
+  }
+  note bottom of Track
+    Context: links a recording to a release.
+    Context-specific tags are delivered
+    from here, not from the file.
+  end note
+
+  class Cover {
+    +id : UUID
+    +imageHash : String
+    +path : String
+    +thumbnailPath : String
+  }
+
+  class TranscodeCacheEntry {
+    +id : UUID
+    +format : String
+    +bitrateKbps : Integer
+    +contextTrackId : UUID [0..1]
+    +path : String
+    +sizeBytes : Long
+    +changeSeq : Long
+    +lastAccessedAt : DateTime
+  }
+
+  class ChangeLog {
+    +changeSeq : Long
+    +entityType : String
+    +entityId : UUID
+    +operation : ChangeOperation
+    +changedAt : DateTime
+  }
+
+  enum AudioFormat {
+    FLAC
+    WAV
+    AIFF
+    ALAC
+    MP3
+    AAC
+    OPUS
+    VORBIS
+  }
+
+  enum QualityTier {
+    HIRES_LOSSLESS
+    CD_LOSSLESS
+    LOSSY_HIGH
+    LOSSY_LOW
+  }
+
+  enum StorageMode {
+    MANAGED
+    REFERENCED
+    LINKED
+  }
+
+  enum LocationKind {
+    SYMLINK
+    HARDLINK
+    REFLINK
+    REFERENCED_PATH
+  }
+
+  enum ReleaseGroupType {
+    ALBUM
+    EP
+    SINGLE
+    COMPILATION
+    LIVE
+    SOUNDTRACK
+    OTHER
+  }
+
+  enum AuthenticityStatus {
+    GENUINE
+    SUSPICIOUS
+    UPSCALED
+    CONFIRMED_GENUINE
+  }
+
+  enum ChangeOperation {
+    INSERT
+    UPDATE
+    DELETE
+  }
+}
+
+' =====================================================================
+package "Sources & Jobs" {
+
+  class Source {
+    +id : UUID
+    +kind : SourceKind
+    +externalId : String [0..1]
+    +url : String [0..1]
+    +retrievedAt : DateTime
+  }
+
+  class Job {
+    +id : UUID
+    +type : JobType
+    +status : JobStatus
+    +progress : Float
+    +totalItems : Integer
+    +doneItems : Integer
+    +mediaMode : MediaMode
+    +maxVideoResolution : Integer [0..1]
+    +priority : Integer
+    +createdAt : DateTime
+    +finishedAt : DateTime [0..1]
+  }
+
+  class JobItem {
+    +id : UUID
+    +title : String
+    +status : JobStatus
+    +progress : Float
+    +message : String [0..1]
+  }
+
+  class CdImportSession {
+    +id : UUID
+    +discId : String
+    +driveName : String
+    +driveOffset : Integer
+    +targetFormat : AudioFormat
+    +accurateRipVerified : Integer
+    +ejectWhenDone : Boolean
+  }
+
+  class LibraryImport {
+    +id : UUID
+    +sourceType : ImportSourceType
+    +sourcePath : String
+    +mode : ImportMode
+    +throttle : ThrottleLevel
+    +dryRun : Boolean
+    +reportJson : String [0..1]
+  }
+
+  class ImportItem {
+    +id : UUID
+    +path : String
+    +sizeBytes : Long
+    +modifiedAt : DateTime
+    +audioHash : String [0..1]
+    +result : ImportResult
+  }
+
+  enum SourceKind {
+    TIDAL
+    SPOTIFY
+    YOUTUBE
+    CD
+    LIBRARY_IMPORT
+    UPLOAD
+  }
+
+  enum JobType {
+    DOWNLOAD
+    CD_IMPORT
+    LIBRARY_IMPORT
+    TAGGING
+    LIBRARY_SCAN
+    DUPLICATE_SCAN
+    QUALITY_ANALYSIS
+    PUBLISHER_SEARCH
+    OMR
+    TRANSCODE
+  }
+
+  enum JobStatus {
+    QUEUED
+    RUNNING
+    PAUSED
+    DONE
+    FAILED
+    CANCELLED
+  }
+
+  enum MediaMode {
+    AUDIO_ONLY
+    VIDEO
+  }
+
+  enum ImportSourceType {
+    FOLDER_SERVER
+    FOLDER_CLIENT
+    ITUNES
+    MEDIA_SERVER
+    BEETS
+    PLAYLIST_FILE
+  }
+
+  enum ImportMode {
+    REFERENCE
+    MOVE
+    LINK
+    COPY
+  }
+
+  enum ThrottleLevel {
+    GENTLE
+    NORMAL
+    FAST
+  }
+
+  enum ImportResult {
+    NEW
+    ALREADY_PRESENT
+    REPLACES_LOWER_QUALITY
+    DUPLICATE_IN_SOURCE
+    NEEDS_REVIEW
+    BROKEN
+    SKIPPED
+  }
+}
+
+' =====================================================================
+package "Users & Devices" {
+
+  class User {
+    +id : UUID
+    +username : String
+    +displayName : String
+    +passwordHash : String
+    +role : Role
+    +active : Boolean
+  }
+
+  class UserSettings {
+    +language : String
+    +theme : Theme
+  }
+
+  class Device {
+    +id : UUID
+    +name : String
+    +type : DeviceType
+    +platform : String
+    +lastSeenAt : DateTime
+  }
+
+  class UserDevice {
+    +id : UUID
+    +refreshTokenHash : String
+    +pinHash : String [0..1]
+    +signedInAt : DateTime
+  }
+
+  class UserDeviceSettings {
+    +audioBitrate : BitrateSetting
+    +maxVideoResolution : Integer
+    +offlineLimitBytes : Long [0..1]
+    +wifiOnlySync : Boolean
+    +videosWifiOnly : Boolean
+    +viewPrefsJson : String
+  }
+
+  class OfflineCopy {
+    +id : UUID
+    +variant : String
+    +changeSeq : Long
+    +syncedAt : DateTime
+  }
+
+  class Playlist {
+    +id : UUID
+    +name : String
+    +shared : Boolean
+  }
+
+  class PlaylistEntry {
+    +position : Integer
+  }
+
+  class Favorite {
+    +createdAt : DateTime
+  }
+
+  class PlayHistory {
+    +playedAt : DateTime
+    +durationPlayedMs : Integer
+  }
+
+  class AuditLog {
+    +id : UUID
+    +entityType : String
+    +entityId : UUID
+    +action : String
+    +diffJson : String
+    +at : DateTime
+  }
+
+  enum Role {
+    ADMIN
+    EDITOR
+    LISTENER
+  }
+
+  enum DeviceType {
+    WEB
+    DESKTOP
+    MOBILE
+  }
+
+  enum BitrateSetting {
+    ORIGINAL
+    KBPS_320
+    KBPS_256
+    KBPS_192
+    KBPS_128
+  }
+
+  enum Theme {
+    SYSTEM
+    DARK
+    LIGHT
+  }
+}
+
+' =====================================================================
+package "Playback" {
+
+  class OutputDevice {
+    +id : UUID
+    +adapter : OutputAdapter
+    +name : String
+    +address : String
+    +online : Boolean
+  }
+
+  class OutputZone {
+    +id : UUID
+    +name : String
+  }
+
+  enum OutputAdapter {
+    CLIENT
+    RAUMFELD
+    UPNP
+    SONOS
+    CHROMECAST
+  }
+}
+
+' =====================================================================
+package "Works & Publishers" {
+
+  class Work {
+    +id : UUID
+    +title : String
+    +type : WorkType
+    +composers : String
+    +arrangers : String [0..1]
+    +instrumentation : String [0..1]
+    +grade : String [0..1]
+    +durationSec : Integer [0..1]
+    +mbWorkId : UUID [0..1]
+    +iswc : String [0..1]
+  }
+
+  class WorkRelation {
+    +type : WorkRelationType
+    +position : Integer [0..1]
+    +sectionStart : String [0..1]
+    +sectionEnd : String [0..1]
+    +origin : String
+    +confidence : Confidence
+  }
+
+  class RecordingWork {
+    +confirmed : Boolean
+  }
+
+  class Publisher {
+    +id : UUID
+    +name : String
+    +country : String [0..1]
+    +website : String [0..1]
+    +adapterType : PublisherAdapterType
+    +adapterConfigJson : String
+    +active : Boolean
+    +rateLimitPerMin : Integer
+    +lastQueriedAt : DateTime [0..1]
+  }
+
+  class Publication {
+    +id : UUID
+    +orderNumber : String [0..1]
+    +ismn : String [0..1]
+    +title : String
+    +instrumentation : String [0..1]
+    +grade : String [0..1]
+    +durationSec : Integer [0..1]
+    +productUrl : String [0..1]
+    +fetchedAt : DateTime
+  }
+
+  class WorkCandidate {
+    +id : UUID
+    +field : String
+    +proposedValue : String
+    +origin : CandidateOrigin
+    +confidence : Confidence
+    +evidence : String [0..1]
+    +status : ReviewStatus
+  }
+
+  enum WorkType {
+    ORIGINAL
+    ARRANGEMENT
+    MEDLEY
+    ADAPTATION
+  }
+
+  enum WorkRelationType {
+    ARRANGEMENT_OF
+    MEDLEY_CONTAINS
+    PART_OF
+  }
+
+  enum PublisherAdapterType {
+    STRUCTURED_DATA
+    HTML_SELECTORS
+    PLUGIN
+    LLM
+    CSV_IMPORT
+  }
+
+  enum CandidateOrigin {
+    PUBLISHER
+    MUSICBRAINZ
+    LLM
+    FUZZY_MATCH
+  }
+
+  enum Confidence {
+    HIGH
+    MEDIUM
+    LOW
+  }
+
+  enum ReviewStatus {
+    OPEN
+    ACCEPTED
+    REJECTED
+    AUTO_ACCEPTED
+  }
+}
+
+' =====================================================================
+package "Sheet Music" {
+
+  class Sheet {
+    +id : UUID
+    +type : SheetType
+    +instrument : String
+    +voice : String [0..1]
+    +transposition : Transposition
+    +clef : String [0..1]
+    +recognitionStatus : RecognitionStatus
+    +reviewStatus : ReviewStatus
+    +displayMode : DisplayMode
+  }
+  note right of Sheet
+    SCORE  -> page mode
+    PART   -> line (system) mode
+    Keyboard / accordion parts:
+    one system = all braced staves
+  end note
+
+  class SheetFile {
+    +id : UUID
+    +kind : SheetFileKind
+    +path : String
+    +version : Integer
+  }
+
+  class SheetPage {
+    +id : UUID
+    +pageNumber : Integer
+    +width : Float
+    +height : Float
+    +previewPath : String
+  }
+
+  class SheetSystem {
+    +id : UUID
+    +index : Integer
+    +bbox : Rect
+    +staffCount : Integer
+  }
+
+  class MeasureMapEntry {
+    +measureNumber : Integer
+    +bbox : Rect
+    +startMs : Integer
+    +endMs : Integer
+    +recognitionConfidence : Float [0..1]
+  }
+
+  class SheetPermission {
+    +canView : Boolean
+    +canDownload : Boolean
+  }
+
+  class SheetAnnotation {
+    +id : UUID
+    +measureNumber : Integer
+    +dataJson : String
+  }
+
+  enum SheetType {
+    SCORE
+    PART
+  }
+
+  enum DisplayMode {
+    AUTO
+    PAGE
+    SYSTEM
+  }
+
+  enum Transposition {
+    C
+    B_FLAT
+    E_FLAT
+    F
+    OTHER
+  }
+
+  enum SheetFileKind {
+    PDF
+    IMAGE
+    MUSICXML
+    MEI
+    MIDI
+  }
+
+  enum RecognitionStatus {
+    NOT_NEEDED
+    PENDING
+    RUNNING
+    RECOGNIZED
+    FAILED
+  }
+}
+
+' =====================================================================
+package "Video" {
+
+  class VideoFile {
+    +id : UUID
+    +path : String
+    +container : String
+    +videoCodec : String
+    +audioCodec : String
+    +width : Integer
+    +height : Integer
+    +durationMs : Integer
+    +sizeBytes : Long
+    +thumbnailPath : String
+  }
+
+  class VideoRendition {
+    +id : UUID
+    +height : Integer
+    +bitrateKbps : Integer
+    +hlsPath : String
+    +lastAccessedAt : DateTime
+  }
+
+  class VideoChapter {
+    +id : UUID
+    +title : String
+    +startMs : Integer
+    +endMs : Integer
+  }
+}
+
+' =====================================================================
+' Relationships – Library
+Recording "1" -- "0..1" AudioFile : original >
+AudioFile "1" -- "0..*" FileLocation : located at >
+AudioFile "1" -- "0..1" QualityAnalysis : analysed by >
+AudioFile "1" -- "0..*" TranscodeCacheEntry : variants >
+AudioFile "0..*" -- "1" Source : retrieved from >
+ReleaseGroup "1" *-- "1..*" Release
+Release "1" *-- "1..*" Track
+Track "0..*" -- "1" Recording : plays >
+Release "0..*" -- "0..1" Cover
+Recording "0..*" -- "0..1" Cover
+
+' Relationships – Jobs & Import
+Job "1" *-- "0..*" JobItem
+Job "0..*" -- "1" User : created by >
+JobItem "0..*" -- "0..1" Recording : produced >
+Job "1" -- "0..1" CdImportSession
+Job "1" -- "0..1" LibraryImport
+LibraryImport "1" *-- "0..*" ImportItem
+ImportItem "0..*" -- "0..1" AudioFile : matched / created >
+CdImportSession "0..*" -- "1" Device : ripped on >
+
+' Relationships – Users & Devices
+User "1" *-- "1" UserSettings
+User "1" *-- "0..*" UserDevice
+Device "1" *-- "0..*" UserDevice
+UserDevice "1" *-- "1" UserDeviceSettings
+UserDeviceSettings "0..*" -- "0..1" OutputDevice : default output >
+UserDevice "1" *-- "0..*" OfflineCopy
+OfflineCopy "0..*" -- "1" Recording
+User "1" *-- "0..*" Playlist
+Playlist "1" *-- "0..*" PlaylistEntry
+PlaylistEntry "0..*" -- "1" Track
+User "1" -- "0..*" Favorite
+Favorite "0..*" -- "1" Recording
+User "1" -- "0..*" PlayHistory
+PlayHistory "0..*" -- "1" Track
+AuditLog "0..*" -- "1" User : by >
+
+' Relationships – Playback
+OutputZone "0..1" o-- "1..*" OutputDevice
+
+' Relationships – Works & Publishers
+Work "1" -- "0..*" WorkRelation : source >
+WorkRelation "0..*" -- "1" Work : target >
+Recording "1" -- "0..*" RecordingWork
+RecordingWork "0..*" -- "1" Work
+Publisher "1" *-- "0..*" Publication
+Publication "0..*" -- "1" Work : edition of >
+WorkCandidate "0..*" -- "1" Work : proposes for >
+WorkCandidate "0..*" -- "0..1" Publication : found in >
+WorkCandidate "0..*" -- "0..1" User : reviewed by >
+
+' Relationships – Sheet Music
+Work "1" *-- "0..*" Sheet
+Sheet "0..*" -- "0..1" Publication : from >
+Sheet "1" *-- "1..*" SheetFile
+Sheet "1" *-- "0..*" SheetPage
+SheetPage "1" *-- "0..*" SheetSystem
+SheetSystem "1" *-- "1..*" MeasureMapEntry
+Sheet "1" *-- "0..*" SheetPermission
+SheetPermission "0..*" -- "0..1" User
+SheetAnnotation "0..*" -- "1" Sheet
+SheetAnnotation "0..*" -- "1" User : by >
+Sheet "0..*" -- "0..1" User : uploaded by >
+
+' Relationships – Video
+VideoFile "0..*" -- "0..1" Recording : video of >
+VideoFile "0..*" -- "1" Source : retrieved from >
+VideoFile "1" *-- "0..*" VideoRendition
+VideoFile "1" *-- "0..*" VideoChapter
+VideoChapter "0..*" -- "0..1" Work : performs >
+VideoFile "0..*" -- "0..1" QualityAnalysis
+
+@enduml

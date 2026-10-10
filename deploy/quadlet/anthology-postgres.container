@@ -1,0 +1,18 @@
+# PostgreSQL for Anthology
+[Unit]
+Description=Anthology database
+
+[Container]
+ContainerName=anthology-postgres
+Pod=anthology.pod
+Image=docker.io/library/postgres:17
+Environment=POSTGRES_USER=anthology
+Environment=POSTGRES_PASSWORD=CHANGE_ME
+Environment=POSTGRES_DB=anthology
+Volume=anthology-db.volume:/var/lib/postgresql/data:U
+
+[Service]
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

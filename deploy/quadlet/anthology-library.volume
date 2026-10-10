@@ -1,0 +1,3 @@
+# Originals (music library). For an existing collection on the host, consider a bind mount instead.
+[Volume]
+VolumeName=anthology-library

@@ -1,0 +1,77 @@
+/*
+ * Anthology design tokens – extracted from the UI mockups (docs/design/mockups).
+ * Dark theme is the reference; a light theme is still to be designed.
+ * Use these tokens in the client (client/src/styles); never hard-code colors.
+ */
+:root {
+  /* Typography */
+  --font-sans: 'Ubuntu', system-ui, sans-serif;          /* UI text */
+  --font-mono: 'Ubuntu Mono', ui-monospace, monospace;   /* numbers, bitrates, paths, IDs */
+  --text-xs: 11px;
+  --text-sm: 13px;
+  --text-md: 15px;
+  --text-lg: 18px;
+  --text-xl: 28px;
+  --text-2xl: 32px;
+  --text-3xl: 40px;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-bold: 700;
+
+  /* Surfaces */
+  --color-bg: #0F1113;            /* page background */
+  --color-sidebar: #14171A;       /* navigation, player, action bars */
+  --color-surface: #171A1E;       /* cards, lists */
+  --color-surface-raised: #1A1E23;/* popovers, user button */
+  --color-hover: #1F242A;         /* hover, active nav item */
+  --color-skeleton: #232930;      /* skeleton rows while loading */
+
+  /* Lines */
+  --color-border: #262C33;
+  --color-border-strong: #3A424C;
+  --color-divider: #22272E;
+
+  /* Text */
+  --color-text: #E9ECEF;
+  --color-text-secondary: #C9D0D7;
+  --color-text-muted: #9AA3AD;
+
+  /* Accent (primary actions, selection, progress) */
+  --color-accent: #5EC2D6;
+  --color-accent-strong: #8FD8E6; /* accent text on dark */
+  --color-on-accent: #0B1F24;     /* text on accent buttons */
+  --color-selection-bg: #16323A;  /* selected rows in edit mode */
+  --color-selection-ring: #2F6B78;
+  --color-active-bg: #15292F;     /* now playing, active output */
+
+  /* Status – always combined with an icon or label, never color alone */
+  --color-status-ok: #4CC38A;        /* complete / done / online */
+  --color-status-warning: #F2B544;   /* tags missing / replace / review */
+  --color-status-duplicate: #B99AF5; /* possible duplicate / already present */
+  --color-status-error: #F2827C;     /* error / read error */
+  --color-status-running: #5EC2D6;   /* running / loading */
+  --color-status-waiting: #9AA3AD;   /* waiting / offline */
+
+  /* Works / sheet music accent */
+  --color-work: #F2C77A;
+  --color-work-bg: #2A2418;
+
+  /* Shape and spacing */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-pill: 999px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  /* Layout */
+  --sidebar-width: 220px;
+  --touch-target: 44px;  /* minimum size of interactive elements */
+  --row-height: 52px;    /* list rows */
+}

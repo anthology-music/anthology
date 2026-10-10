@@ -1,0 +1,70 @@
+# sync-protocol Specification
+
+## Purpose
+Keep clients usable immediately by loading only the needed subset first and streaming the rest, through all layers: database, server, WebSocket protocol and client.
+
+## Requirements
+
+### Requirement: WebSocket connection
+Each client SHALL keep one authenticated WebSocket connection to the server and SHALL multiplex all list and status subscriptions over it.
+
+#### Scenario: Connect
+- **WHEN** a client connects and sends `hello` with its token and last known change sequence
+- **THEN** the server answers with `welcome` including the current change sequence
+
+### Requirement: Counts first
+For every subscription the server SHALL send `snapshot_meta` with total count and status counters before any rows.
+
+#### Scenario: Opening the library
+- **WHEN** a client subscribes to the track list
+- **THEN** the total number of tracks is displayed before the first rows arrive
+
+### Requirement: Windowed chunks
+The server SHALL deliver rows in chunks for the window requested by the client, prioritising the visible window over background filling, and SHALL use keyset pagination in the database.
+
+#### Scenario: Scrolling
+- **WHEN** the client scrolls and sends a new `window`
+- **THEN** the server sends the missing rows of that window first
+- **AND** the database query does not use OFFSET
+
+### Requirement: Deltas
+After the snapshot the server SHALL send only changes (`delta`) for subscribed data, each with a change sequence number.
+
+#### Scenario: Change by another user
+- **WHEN** another user edits a track that is visible on this client
+- **THEN** the client receives a delta and updates the row without reloading the list
+
+### Requirement: Resume after disconnect
+On reconnect the server SHALL send only the deltas missed since the client's last change sequence, or request a new snapshot of the visible window if the gap is too large.
+
+#### Scenario: Short network loss
+- **WHEN** a client reconnects after a 30-second loss
+- **THEN** it receives the missed deltas and no full reload happens
+
+### Requirement: Backpressure
+The server MUST NOT send more chunks than the client has acknowledged or can buffer.
+
+#### Scenario: Slow mobile client
+- **WHEN** a slow client has not acknowledged previous chunks
+- **THEN** the server pauses sending further chunks for that subscription
+
+### Requirement: Media over HTTP
+Audio and video SHALL be delivered over HTTP with range requests, not over the WebSocket.
+
+#### Scenario: Seeking
+- **WHEN** the user seeks within a track
+- **THEN** the client requests the needed byte range over HTTP
+
+### Requirement: Interaction budget
+The current view SHALL be interactive within 2 seconds (95th percentile) and SHALL show first data from the local cache within 300 milliseconds.
+
+#### Scenario: Cold start without cache in the LAN
+- **WHEN** a client starts without local cache on the local network
+- **THEN** the current view is interactive within 2 seconds
+
+### Requirement: Rule-based selection
+Bulk actions SHALL accept a selection rule (e.g. folder plus filter) instead of an explicit list of IDs.
+
+#### Scenario: Select whole folder
+- **WHEN** the user selects a folder with 5,000 files and applies a tag change
+- **THEN** the client sends one rule and receives live progress

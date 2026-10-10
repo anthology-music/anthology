@@ -1,0 +1,17 @@
+# anthology-tagger – GPL-2.0-or-later (mutagen)
+[Unit]
+Description=Anthology tagger
+
+[Container]
+ContainerName=anthology-tagger
+Pod=anthology.pod
+Image=ghcr.io/<organisation>/anthology-tagger:latest
+Volume=anthology-library.volume:/data/library:U
+Volume=anthology-cache.volume:/data/cache:U
+Volume=anthology-imports.volume:/data/imports:U
+
+[Service]
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

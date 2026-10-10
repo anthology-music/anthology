@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Profil wählen – Handy</title>
+<!-- Static export of the Anthology design mockup "Mobile-Profil.dc.html". Interactions are not included; the initial state is shown. -->
+<link href="https://fonts.googleapis.com/css2?family=Ubuntu+Mono:wght@400;700&amp;family=Ubuntu:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0F1113}
+a{color:#5EC2D6}a:hover{color:#8FD8E6}
+.prof{display:flex;flex-direction:column;align-items:center;gap:10px;min-height:44px;padding:16px 8px;border-radius:14px;border:1px solid #262C33;background:#171A1E;color:#E9ECEF;cursor:pointer;font:500 15px 'Ubuntu',sans-serif;text-decoration:none}
+.key{min-height:56px;border-radius:12px;border:0;background:#1A1E23;color:#E9ECEF;font:500 22px 'Ubuntu',sans-serif;cursor:pointer}
+.mono{font-family:'Ubuntu Mono',monospace}
+</style>
+</head>
+<body>
+<div style="width: 390px; height: 844px; background: #0F1113; color: #E9ECEF; font-family: 'Ubuntu', sans-serif; display: flex; flex-direction: column; padding: 40px 20px 28px; box-sizing: border-box; gap: 24px; overflow: hidden">
+  <div style="display: flex; flex-direction: column; align-items: center; gap: 8px">
+    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#5EC2D6" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 14v-4M8 18V6M12 15V9M16 20V4M20 13v-2"></path></svg>
+    <h1 style="margin: 0; font-size: 26px; font-weight: 700">Wer hört?</h1>
+    <span style="font-size: 13px; color: #9AA3AD">Familien-Tablet · geteiltes Gerät</span>
+  </div>
+
+  <div role="group" aria-label="Profile" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+    
+      <button type="button" class="prof" aria-pressed="true" style="border-color: #5EC2D6; background: #15292F">
+        <span style="width: 56px; height: 56px; border-radius: 50%; background: #2B4A52; color: #8FD8E6; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px">AN</span>
+        Andrea
+        <span style="font-size: 11px; color: #9AA3AD">Editor</span>
+      </button>
+    
+      <button type="button" class="prof" aria-pressed="false" style="border-color: #262C33; background: #171A1E">
+        <span style="width: 56px; height: 56px; border-radius: 50%; background: #3A2F52; color: #C9B4F7; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px">LU</span>
+        Luca
+        <span style="font-size: 11px; color: #9AA3AD">Hörer</span>
+      </button>
+    
+      <button type="button" class="prof" aria-pressed="false" style="border-color: #262C33; background: #171A1E">
+        <span style="width: 56px; height: 56px; border-radius: 50%; background: #262C33; color: #C9D0D7; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px">+</span>
+        Anmelden
+        <span style="font-size: 11px; color: #9AA3AD">anderes Konto</span>
+      </button>
+    
+  </div>
+
+  <div style="display: flex; flex-direction: column; align-items: center; gap: 12px">
+    <span id="pinl" style="font-size: 14px; color: #C9D0D7">PIN für Andrea</span>
+    <div role="group" aria-labelledby="pinl" style="display: flex; gap: 14px">
+      <span style="width: 14px; height: 14px; border-radius: 50%; background: #5EC2D6"></span>
+      <span style="width: 14px; height: 14px; border-radius: 50%; background: #5EC2D6"></span>
+      <span style="width: 14px; height: 14px; border-radius: 50%; border: 2px solid #3A424C; box-sizing: border-box"></span>
+      <span style="width: 14px; height: 14px; border-radius: 50%; border: 2px solid #3A424C; box-sizing: border-box"></span>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: auto">
+    <button type="button" class="key">1</button><button type="button" class="key">2</button><button type="button" class="key">3</button>
+    <button type="button" class="key">4</button><button type="button" class="key">5</button><button type="button" class="key">6</button>
+    <button type="button" class="key">7</button><button type="button" class="key">8</button><button type="button" class="key">9</button>
+    <span></span><button type="button" class="key">0</button>
+    <button type="button" class="key" aria-label="Löschen"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 5H9l-6 7 6 7h12z"></path><path d="M15 9l-4 6M11 9l4 6"></path></svg></button>
+  </div>
+  <span style="text-align: center; font-size: 12px; color: #9AA3AD; line-height: 1.5">Einstellungen und Offline-Titel sind pro Profil getrennt. Die Musik ist für alle gleich.</span>
+</div>
+</body>
+</html>

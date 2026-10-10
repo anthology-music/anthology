@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+
+# Node / client
+node_modules/
+dist/
+.quasar/
+client/src-tauri/target/
+client/src-capacitor/android/
+client/src-capacitor/ios/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Media and local data (never commit copyrighted material)
+/data/
+*.flac
+*.wav
+*.mp3
+*.m4a
+*.opus
+*.mkv
+*.mp4
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Private working notes (any language, never committed)
+*.local.md
+
+# Local agent settings
+.claude/settings.local.json
+.claude/CLAUDE.md

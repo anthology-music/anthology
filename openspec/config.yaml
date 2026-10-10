@@ -1,0 +1,43 @@
+schema: spec-driven
+
+context: |
+  Project: Anthology – open-source, self-hosted music app (acquire, listen, edit, multi-room,
+  works/arrangements/medleys, sheet music, video). Monorepo.
+  Server: Python 3.12, uv, FastAPI, SQLAlchemy 2 async, Alembic, PostgreSQL (SQLite in dev),
+  FFmpeg (LGPL, separate process), tinytag, Chromaprint, MusicBrainz, Verovio, pypdfium2.
+  Copyleft components run in own containers under services/ (tagger with mutagen – GPL-2.0+,
+  source-tidal with streamrip – GPL-3.0, audiveris – AGPL-3.0) and are never imported by the core.
+  Deployment: OCI images, Podman first (Quadlet), Docker via Compose.
+  Client: Vue 3 + TypeScript, Quasar, Pinia, vue-i18n; Tauri 2 (desktop), Capacitor (mobile).
+  Sync: one WebSocket per client with subscriptions (snapshot chunks + deltas, change_seq);
+  audio/video over HTTP range requests.
+  Non-functional: current view interactive <= 2 s; scale to 500,000 tracks.
+  Agent rules: AGENTS.md (root, server/, client/). Background: docs/concept/anthology-six-pager.md.
+  Decisions: docs/adr/. Data model: docs/architecture/data-model.puml. UI reference: docs/design/.
+  Domains: library, sources, jobs, sync-protocol, transcoding, playback, users, works,
+  publishers, sheet-music, video, library-import, quality-analysis, cd-import.
+
+rules:
+  proposal:
+    - Name the affected domains (spec folders) explicitly.
+    - State the impact on the non-functional requirements (2 s, 500,000 tracks) or say "none".
+    - Mention data-model changes and whether a migration is needed.
+  specs:
+    - Write in English. Requirements use SHALL or MUST.
+    - Every requirement has at least one "#### Scenario:" with WHEN/THEN bullets.
+    - Keep one domain per spec file; do not duplicate requirements across domains – reference them.
+  design:
+    - Describe how progressive loading is kept through DB, server, protocol and client.
+    - List new dependencies with license; flag GPL/AGPL dependencies explicitly.
+  tasks:
+    - Small, verifiable tasks; include tests and, if the API changes, regenerating packages/api-types.
+    - Include a task to update docs/architecture/data-model.puml when the data model changes.
+
+operations:
+  apply:
+    guidance:
+      - Read the affected specs and the domain's AGENTS.md before coding.
+      - Run server and client tests and linters before marking tasks done.
+  archive:
+    guidance:
+      - Make sure openspec validate --strict passes after archiving.

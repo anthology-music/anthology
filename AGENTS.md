@@ -1,0 +1,150 @@
+# AGENTS.md – Anthology
+
+Instructions for AI coding agents (Claude Code, opencode and others) working in this repository.
+`CLAUDE.md` files only import this file; keep all shared rules here.
+
+## Project
+
+Anthology is an open-source, self-hosted music application built as one integrated product:
+
+- **Streaming** view: acquire music (Tidal, Spotify, YouTube, CD, library import) – audio only or video.
+- **Local** view: listen to and edit the shared library (tags, works, sheet music).
+- Server–client architecture: clients only send orders; the server does the work in the background.
+- Multi-room playback (Teufel Raumfeld first) through exchangeable output adapters.
+- Works, arrangements and medleys for wind bands, with publishers and sheet music.
+
+Background and rationale: `docs/concept/anthology-six-pager.md`. Decisions: `docs/adr/`. Data model: `docs/architecture/data-model.puml`. UI reference: `docs/design/`.
+
+## Language
+
+- **Conversation:** reply in the language the user writes in.
+- **Everything in the repository is English:** code, identifiers, comments, commit messages, specs, ADRs and documentation.
+- **Exception:** files named `*.local.md` (e.g. a maintainer's German concept notes in `docs/concept/`) are private, git-ignored working notes. They may be in any language, are never the source of truth and must not be referenced from committed files.
+- UI texts: via i18n only; German is the first UI language, English second.
+
+## Spec-driven workflow (OpenSpec)
+
+The source of truth for behavior is `openspec/specs/<domain>/spec.md`.
+
+1. Before implementing anything that changes behavior, read the affected specs.
+2. New or changed behavior needs an OpenSpec change in `openspec/changes/<change-name>/`
+   (proposal, design if needed, tasks, delta specs). Use the `opsx` commands
+   (`/opsx:propose`, `/opsx:apply`, `/opsx:archive`; in opencode `/opsx-propose` etc.).
+3. Implement only what the change's tasks describe; tick tasks off as you go.
+4. Archive the change when done so the specs reflect the new state.
+5. Pure refactorings and bug fixes that restore specified behavior need no change proposal.
+
+Requirements use **SHALL/MUST**; every requirement has at least one `#### Scenario:` with **WHEN/THEN**.
+
+## Domains – one name everywhere
+
+| Spec (`openspec/specs/`) | Server module (`server/anthology/`) |
+|---|---|
+| `library` | `library` |
+| `sources` | `sources` |
+| `jobs` | `jobs` |
+| `sync-protocol` | `sync` |
+| `transcoding` | `transcoding` |
+| `playback` | `playback` |
+| `users` | `users` |
+| `works` | `works` |
+| `publishers` | `publishers` |
+| `sheet-music` | `sheet_music` |
+| `video` | `video` |
+| `library-import` | `library_import` |
+| `quality-analysis` | `quality_analysis` |
+| `cd-import` | `cd_import` |
+
+Client feature folders use the same names (kebab-case) under `client/src/features/`.
+
+## Architecture principles (do not break)
+
+- **One original per recording.** Album folders reference it (symlink/hardlink/reflink). Never store a second copy of the same recording.
+- **Metadata comes from the database, by context.** Tags shown or delivered depend on the album/context; files only carry neutral base tags.
+- **Effective quality, not declared quality,** drives ranking, replacement and transcoding. Never upscale.
+- **Everything is an adapter:** sources, outputs (playback), publishers. New integrations implement the adapter interface; no special cases in core code.
+- **Progressive loading through all layers:** keyset pagination in the DB (never `OFFSET`), async generators on the server, chunked WebSocket subscriptions with deltas, virtual scrolling in the client. The UI must never wait for a full list.
+- **Long work runs as a job** (download, import, tagging, OMR, analysis) and reports progress live. Clients may disconnect at any time.
+- **Audio and video are served over HTTP with range requests,** never over the WebSocket.
+- **Library is shared, settings are personal** (per user and per device).
+
+## Non-functional requirements
+
+- Current view interactive in **≤ 2 s** (95th percentile); first data from local cache in < 300 ms.
+- Must handle **500,000 tracks**. Test with the generator in `tools/`.
+- Performance budgets are enforced in CI; a pull request that breaks them fails.
+
+## Repository layout
+
+```
+openspec/        specs (truth) and changes
+server/          Python, FastAPI – see server/AGENTS.md
+client/          Vue 3 + Quasar (web/PWA, Tauri desktop, Capacitor mobile) – see client/AGENTS.md
+packages/        shared packages, e.g. api-types generated from the server's OpenAPI
+services/        separate containers with their own licenses:
+                 tagger (GPL-2.0+, mutagen), source-tidal (GPL-3.0, streamrip), audiveris (AGPL-3.0)
+deploy/          Podman Quadlet files (primary) and compose.yaml (Podman/Docker)
+docs/            concept, architecture, ADRs, design
+tools/           test data generator, scripts
+```
+
+## Commands
+
+```
+# server
+cd server && uv sync && uv run pytest && uv run ruff check . && uv run ruff format --check .
+
+# client
+cd client && pnpm install && pnpm test && pnpm lint && pnpm build
+
+# api types (after changing the server API)
+pnpm --filter api-types generate
+
+# specs
+openspec list && openspec validate --strict
+
+# containers (Podman)
+podman build -t anthology-server -f server/Containerfile .
+podman compose -f deploy/compose.yaml up
+```
+
+Run the relevant tests and linters before finishing a task.
+
+## Git
+
+- Conventional Commits (`feat(library): …`, `fix(sync): …`, `docs(specs): …`).
+- One OpenSpec change per pull request where possible; reference the change name in the PR.
+
+## License
+
+Anthology is MIT-licensed. Do not add GPL/AGPL code or import such libraries in `server/` or `client/`.
+Copyleft components run in their own container under `services/`, each with its own `LICENSE`,
+and are called only through their narrow, versioned interface:
+
+- **mutagen** → `services/tagger` (GPL-2.0-or-later). The core reads tags quickly with **tinytag** (MIT) and writes/reads full tags via the tagger.
+- **streamrip** → `services/source-tidal` (GPL-3.0-only), optional.
+- **Audiveris** → `services/audiveris` (AGPL-3.0), optional.
+- **PyMuPDF is not used** – use **pypdfium2** (BSD-3/Apache-2.0) for PDFs.
+- **FFmpeg**: LGPL build, called as a separate process; no non-free encoders.
+
+The core must keep working when optional services are absent and hide the affected features.
+Check the license of every new dependency (see `docs/adr/0004-license.md`, `docs/adr/0005-containers-podman.md`).
+
+## Containers
+
+- Podman is the primary platform (rootless, Quadlet in `deploy/quadlet/`); Docker is supported via `deploy/compose.yaml`.
+- Images are built from `Containerfile`s and are plain OCI images. Use fully qualified image names (`ghcr.io/…`, `docker.io/…`).
+- All services of one installation run in one pod; only `anthology-server` publishes a port.
+
+## Never
+
+- Commit credentials, tokens or `.env` files.
+- Add copyrighted audio, video, sheet music or cover art to the repository – tests use generated data only.
+- Bypass a source's or publisher's terms of service, rate limits or robots.txt.
+- Write tags into referenced (imported, not managed) files unless the user enabled it.
+- Delete originals without verification (checksums) and an explicit rule or confirmation.
+
+## CI
+
+- Use only GitHub-hosted **standard** runners (`ubuntu-latest`, `windows-latest`, `macos-latest`/`macos-14`); they are free for this public repository. Never use larger runners (`*-large`, `*-xlarge`).
+- Never run pull-request-triggered workflows on self-hosted runners.

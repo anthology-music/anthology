@@ -1,0 +1,16 @@
+# audiveris – AGPL-3.0 (upstream, unmodified) – OPTIONAL
+# Install only if you want sheet-music recognition from PDFs. Delete this file to disable it.
+[Unit]
+Description=Anthology optical music recognition (optional)
+
+[Container]
+ContainerName=anthology-audiveris
+Pod=anthology.pod
+Image=ghcr.io/<organisation>/anthology-audiveris:latest
+Volume=anthology-imports.volume:/data/imports:U
+
+[Service]
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

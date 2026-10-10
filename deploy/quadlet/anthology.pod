@@ -1,0 +1,13 @@
+# Anthology pod – Podman Quadlet
+# Copy deploy/quadlet/* to ~/.config/containers/systemd/ (rootless), then:
+#   systemctl --user daemon-reload && systemctl --user start anthology-pod
+# Status: placeholder – images do not exist yet.
+
+[Pod]
+PodName=anthology
+PublishPort=8400:8400
+# For UPnP/Raumfeld discovery (multicast) host networking may be required:
+# Network=host
+
+[Install]
+WantedBy=default.target

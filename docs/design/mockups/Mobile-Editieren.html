@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lokal editieren – Handy</title>
+<!-- Static export of the Anthology design mockup "Mobile-Editieren.dc.html". Interactions are not included; the initial state is shown. -->
+<link href="https://fonts.googleapis.com/css2?family=Ubuntu+Mono:wght@400;700&amp;family=Ubuntu:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0F1113}
+a{color:#5EC2D6}a:hover{color:#8FD8E6}
+.badge{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:6px;background:#262C33;color:#E9ECEF;font:600 10px 'Ubuntu Mono',monospace;flex:none}
+.tab{display:inline-flex;align-items:center;justify-content:center;flex:1;min-height:40px;border-radius:7px;color:#C9D0D7;text-decoration:none;font-size:14px;font-weight:500}
+.act{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:56px;border:0;background:transparent;color:#E9ECEF;font:500 12px 'Ubuntu',sans-serif;cursor:pointer}
+.mono{font-family:'Ubuntu Mono',monospace}
+input[type=checkbox]{width:22px;height:22px;accent-color:#5EC2D6;margin:0;cursor:pointer;flex:none}
+</style>
+</head>
+<body>
+<div style="width: 390px; height: 844px; background: #0F1113; color: #E9ECEF; font-family: 'Ubuntu', sans-serif; display: flex; flex-direction: column; overflow: hidden">
+  <div style="padding: 16px 16px 10px; display: flex; flex-direction: column; gap: 12px; border-bottom: 1px solid #22272E">
+    <div role="group" aria-label="Modus" style="display: flex; background: #171A1E; border: 1px solid #262C33; border-radius: 9px; padding: 3px">
+      <a class="tab" href="Mobile-Hoeren.html">Hören</a>
+      <a class="tab" href="Mobile-Editieren.html" aria-current="page" style="background: #E9ECEF; color: #0F1113">Editieren</a>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px">
+      <span class="mono" style="min-width: 40px; height: 40px; padding: 0 10px; box-sizing: border-box; border-radius: 20px; background: #5EC2D6; color: #0B1F24; display: inline-flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 600">4</span>
+      <span style="flex: 1; font-size: 17px; font-weight: 600">ausgewählt <span style="font-weight: 400; color: #9AA3AD; font-size: 14px">von 12</span></span>
+      <button type="button" style="min-height: 44px; padding: 0 14px; border-radius: 8px; border: 1px solid #3A424C; background: transparent; color: #E9ECEF; font: 500 14px 'Ubuntu', sans-serif; cursor: pointer">Alle</button>
+    </div>
+    <div aria-label="Status-Legende" style="display: flex; gap: 6px; overflow-x: auto">
+      
+        <span style="display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 10px; border-radius: 16px; border: 1px solid #2E353D; font-size: 12px; white-space: nowrap">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: #4CC38A"></span>Vollständig<span class="mono" style="color: #9AA3AD">7</span></span>
+      
+        <span style="display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 10px; border-radius: 16px; border: 1px solid #2E353D; font-size: 12px; white-space: nowrap">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: #F2B544"></span>Tags fehlen<span class="mono" style="color: #9AA3AD">3</span></span>
+      
+        <span style="display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 10px; border-radius: 16px; border: 1px solid #2E353D; font-size: 12px; white-space: nowrap">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: #B99AF5"></span>Duplikat<span class="mono" style="color: #9AA3AD">1</span></span>
+      
+        <span style="display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 10px; border-radius: 16px; border: 1px solid #2E353D; font-size: 12px; white-space: nowrap">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: #F2827C"></span>Fehler<span class="mono" style="color: #9AA3AD">1</span></span>
+      
+    </div>
+  </div>
+
+  <div style="flex: 1; overflow: hidden; padding: 4px 8px">
+    
+      <label style="display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 0 10px; border-radius: 10px; margin-bottom: 2px; background: transparent; box-shadow: none; cursor: pointer">
+        <input type="checkbox" aria-label="Eisfeld auswählen">
+        <span class="badge">TD</span>
+        <span style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+          <span style="font-size: 15px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Eisfeld</span>
+          <span style="font-size: 12px; color: #4CC38A; display: flex; align-items: center; gap: 5px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M8 12l3 3 5-6"></path></svg>
+            
+            
+            
+            Vollständig</span>
+        </span>
+      </label>
+    
+      <label style="display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 0 10px; border-radius: 10px; margin-bottom: 2px; background: transparent; box-shadow: none; cursor: pointer">
+        <input type="checkbox" aria-label="Polarnacht auswählen">
+        <span class="badge">TD</span>
+        <span style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+          <span style="font-size: 15px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Polarnacht</span>
+          <span style="font-size: 12px; color: #4CC38A; display: flex; align-items: center; gap: 5px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M8 12l3 3 5-6"></path></svg>
+            
+            
+            
+            Vollständig</span>
+        </span>
+      </label>
+    
+      <label style="display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 0 10px; border-radius: 10px; margin-bottom: 2px; background: #16323A; box-shadow: inset 0 0 0 1px #2F6B78; cursor: pointer">
+        <input type="checkbox" checked aria-label="Weisses Rauschen auswählen">
+        <span class="badge">TD</span>
+        <span style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+          <span style="font-size: 15px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Weisses Rauschen</span>
+          <span style="font-size: 12px; color: #B99AF5; display: flex; align-items: center; gap: 5px">
+            
+            
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="13" height="13" rx="2"></rect><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"></path></svg>
+            
+            Duplikat</span>
+        </span>
+      </label>
+    
+      <label style="display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 0 10px; border-radius: 10px; margin-bottom: 2px; background: transparent; box-shadow: none; cursor: pointer">
+        <input type="checkbox" aria-label="Driftlinie auswählen">
+        <span class="badge">TD</span>
+        <span style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+          <span style="font-size: 15px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Driftlinie</span>
+          <span style="font-size: 12px; color: #4CC38A; display: flex; align-items: center; gap: 5px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M8 12l3 3 5-6"></path></svg>
+            
+            
+            
+            Vollständig</span>
+        </span>
+      </label>
+    
+      <label style="display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 0 10px; border-radius: 10px; margin-bottom: 2px; background: #16323A; box-shadow: inset 0 0 0 1px #2F6B78; cursor: pointer">
+        <input type="checkbox" checked aria-label="Nordwand auswählen">
+        <span class="badge">TD</span>
+        <span style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+          <span style="font-size: 15px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Nordwand</span>
+          <span style="font-size: 12px; color: #F2B544; display: flex; align-items: center; gap: 5px">
+            
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12V4h8l10 10-7 7z"></path></svg>
+            
+            
+            Tags fehlen</span>
+        </span>
+      </label>
+    
+      <label style="display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 0 10px; border-radius: 10px; margin-bottom: 2px; background: transparent; box-shadow: none; cursor: pointer">
+        <input type="checkbox" aria-label="Treibeis auswählen">
+        <span class="badge">TD</span>
+        <span style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+          <span style="font-size: 15px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Treibeis</span>
+          <span style="font-size: 12px; color: #4CC38A; display: flex; align-items: center; gap: 5px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M8 12l3 3 5-6"></path></svg>
+            
+            
+            
+            Vollständig</span>
+        </span>
+      </label>
+    
+      <label style="display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 0 10px; border-radius: 10px; margin-bottom: 2px; background: transparent; box-shadow: none; cursor: pointer">
+        <input type="checkbox" aria-label="Lichtjahre auswählen">
+        <span class="badge">TD</span>
+        <span style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+          <span style="font-size: 15px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Lichtjahre</span>
+          <span style="font-size: 12px; color: #4CC38A; display: flex; align-items: center; gap: 5px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M8 12l3 3 5-6"></path></svg>
+            
+            
+            
+            Vollständig</span>
+        </span>
+      </label>
+    
+      <label style="display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 0 10px; border-radius: 10px; margin-bottom: 2px; background: #16323A; box-shadow: inset 0 0 0 1px #2F6B78; cursor: pointer">
+        <input type="checkbox" checked aria-label="Polarnacht (Live) auswählen">
+        <span class="badge">YT</span>
+        <span style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+          <span style="font-size: 15px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Polarnacht (Live)</span>
+          <span style="font-size: 12px; color: #F2B544; display: flex; align-items: center; gap: 5px">
+            
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12V4h8l10 10-7 7z"></path></svg>
+            
+            
+            Tags fehlen</span>
+        </span>
+      </label>
+    
+      <label style="display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 0 10px; border-radius: 10px; margin-bottom: 2px; background: transparent; box-shadow: none; cursor: pointer">
+        <input type="checkbox" aria-label="Schneeblind auswählen">
+        <span class="badge">TD</span>
+        <span style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+          <span style="font-size: 15px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Schneeblind</span>
+          <span style="font-size: 12px; color: #4CC38A; display: flex; align-items: center; gap: 5px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M8 12l3 3 5-6"></path></svg>
+            
+            
+            
+            Vollständig</span>
+        </span>
+      </label>
+    
+      <label style="display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 0 10px; border-radius: 10px; margin-bottom: 2px; background: #16323A; box-shadow: inset 0 0 0 1px #2F6B78; cursor: pointer">
+        <input type="checkbox" checked aria-label="Eisfeld (Remix) auswählen">
+        <span class="badge">SP</span>
+        <span style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+          <span style="font-size: 15px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Eisfeld (Remix)</span>
+          <span style="font-size: 12px; color: #F2B544; display: flex; align-items: center; gap: 5px">
+            
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12V4h8l10 10-7 7z"></path></svg>
+            
+            
+            Tags fehlen</span>
+        </span>
+      </label>
+    
+      <label style="display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 0 10px; border-radius: 10px; margin-bottom: 2px; background: transparent; box-shadow: none; cursor: pointer">
+        <input type="checkbox" aria-label="Morgengrauen auswählen">
+        <span class="badge">TD</span>
+        <span style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+          <span style="font-size: 15px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Morgengrauen</span>
+          <span style="font-size: 12px; color: #F2827C; display: flex; align-items: center; gap: 5px">
+            
+            
+            
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M15 9l-6 6M9 9l6 6"></path></svg>
+            Fehler</span>
+        </span>
+      </label>
+    
+      <label style="display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 0 10px; border-radius: 10px; margin-bottom: 2px; background: transparent; box-shadow: none; cursor: pointer">
+        <input type="checkbox" aria-label="Tauwetter auswählen">
+        <span class="badge">TD</span>
+        <span style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+          <span style="font-size: 15px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Tauwetter</span>
+          <span style="font-size: 12px; color: #4CC38A; display: flex; align-items: center; gap: 5px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M8 12l3 3 5-6"></path></svg>
+            
+            
+            
+            Vollständig</span>
+        </span>
+      </label>
+    
+  </div>
+
+  <div aria-label="Aktionen" style="display: flex; background: #14171A; border-top: 1px solid #22272E; padding: 6px 8px 22px">
+    <button type="button" class="act" style="color: #8FD8E6"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12V4h8l10 10-7 7z"></path><path d="M7.5 7.5h.01"></path></svg>Taggen</button>
+    <button type="button" class="act"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h6l2 2h10v10H3z"></path><path d="M12 13h5M15 11l2 2-2 2"></path></svg>Verschieben</button>
+    <button type="button" class="act" style="color: #F2827C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"></path></svg>Löschen</button>
+    <button type="button" class="act"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"></path></svg>Aufheben</button>
+  </div>
+</div>
+</body>
+</html>

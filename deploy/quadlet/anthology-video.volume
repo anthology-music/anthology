@@ -1,0 +1,3 @@
+# Videos (separate storage area with its own limit)
+[Volume]
+VolumeName=anthology-video

@@ -1,0 +1,62 @@
+# Anthology – Compose file for `podman compose` or `docker compose`.
+# Podman users: the recommended setup is Quadlet (see deploy/quadlet/).
+# Status: placeholder – images do not exist yet. Replace <organisation>.
+
+name: anthology
+
+services:
+  anthology-server:            # MIT
+    image: ghcr.io/anthology-music/anthology-server:latest
+    ports:
+      - "8400:8400"
+    environment:
+      ANTHOLOGY_DATABASE_URL: postgresql+asyncpg://anthology:${ANTHOLOGY_DB_PASSWORD}@postgres:5432/anthology
+      ANTHOLOGY_TAGGER_URL: http://anthology-tagger:8410
+      ANTHOLOGY_TIDAL_URL: http://anthology-source-tidal:8420     # optional
+      ANTHOLOGY_OMR_URL: http://audiveris:8430                   # optional
+    volumes:
+      - library:/data/library
+      - cache:/data/cache
+      - imports:/data/imports
+      - video:/data/video
+    depends_on:
+      - postgres
+      - anthology-tagger
+
+  anthology-tagger:            # GPL-2.0-or-later (mutagen)
+    image: ghcr.io/anthology-music/anthology-tagger:latest
+    volumes:
+      - library:/data/library
+      - cache:/data/cache
+      - imports:/data/imports
+
+  anthology-source-tidal:      # GPL-3.0-only (streamrip) – optional
+    image: ghcr.io/anthology-music/anthology-source-tidal:latest
+    profiles: ["tidal"]
+    volumes:
+      - imports:/data/imports
+
+  audiveris:                   # AGPL-3.0 – optional
+    image: ghcr.io/anthology-music/anthology-audiveris:latest
+    profiles: ["omr"]
+    volumes:
+      - imports:/data/imports
+
+  postgres:
+    image: docker.io/library/postgres:17
+    environment:
+      POSTGRES_USER: anthology
+      POSTGRES_PASSWORD: ${ANTHOLOGY_DB_PASSWORD}
+      POSTGRES_DB: anthology
+    volumes:
+      - db:/var/lib/postgresql/data
+
+volumes:
+  library:
+  cache:
+  imports:
+  video:
+  db:
+
+# Start with optional services:
+#   podman compose -f deploy/compose.yaml --profile tidal --profile omr up -d

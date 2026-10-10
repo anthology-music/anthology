@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Einstellungen – Handy</title>
+<!-- Static export of the Anthology design mockup "Mobile-Einstellungen.dc.html". Interactions are not included; the initial state is shown. -->
+<link href="https://fonts.googleapis.com/css2?family=Ubuntu+Mono:wght@400;700&amp;family=Ubuntu:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0F1113}
+a{color:#5EC2D6}a:hover{color:#8FD8E6}
+.badge{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;background:#262C33;color:#E9ECEF;font:600 10px 'Ubuntu Mono',monospace;flex:none}
+.card{background:#171A1E;border:1px solid #262C33;border-radius:12px;padding:4px 14px;display:flex;flex-direction:column}
+.row{display:flex;align-items:center;gap:12px;min-height:52px;border-bottom:1px solid #22272E}
+.row:last-child{border-bottom:0}
+.h{margin:0;font-size:12px;font-weight:600;color:#9AA3AD;text-transform:uppercase;letter-spacing:0.06em;padding:0 4px}
+.rate{flex:1;min-height:44px;border-radius:8px;border:1px solid #3A424C;background:transparent;color:#C9D0D7;font:500 13px 'Ubuntu Mono',monospace;cursor:pointer;padding:0}
+.rate[aria-checked="true"]{background:#5EC2D6;border-color:#5EC2D6;color:#0B1F24;font-weight:600}
+.sw{display:inline-flex;align-items:center;width:46px;height:26px;border-radius:13px;background:#5EC2D6;padding:3px;box-sizing:border-box;justify-content:flex-end;flex:none}
+.sw span{width:20px;height:20px;border-radius:50%;background:#0B1F24}
+.tabl{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:56px;color:#9AA3AD;text-decoration:none;font-size:12px;font-weight:500}
+.mono{font-family:'Ubuntu Mono',monospace}
+</style>
+</head>
+<body>
+<div style="width: 390px; height: 844px; background: #0F1113; color: #E9ECEF; font-family: 'Ubuntu', sans-serif; display: flex; flex-direction: column; overflow: hidden">
+  <div style="flex: 1; overflow: hidden; padding: 24px 16px 0; display: flex; flex-direction: column; gap: 12px">
+    <h1 style="margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.02em">Einstellungen</h1>
+    <div class="card" style="padding: 10px 14px">
+      <div style="display: flex; align-items: center; gap: 12px; min-height: 48px">
+        <span style="width: 40px; height: 40px; border-radius: 50%; background: #2B4A52; color: #8FD8E6; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; flex: none">AN</span>
+        <span style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 15px; font-weight: 500">Andrea auf iPhone</span><span style="font-size: 12px; color: #9AA3AD">Editor · gilt nur für dieses Gerät</span></span>
+        <a href="Mobile-Profil.html" style="min-height: 44px; display: inline-flex; align-items: center; font-size: 14px; text-decoration: none">Wechseln</a>
+      </div>
+    </div>
+
+    <h2 class="h" id="mbr">Bitrate dieses Geräts</h2>
+    <div role="radiogroup" aria-labelledby="mbr" style="display: flex; gap: 6px">
+      <button type="button" role="radio" class="rate" aria-checked="false" style="font-family: 'Ubuntu', sans-serif">Orig.</button>
+      <button type="button" role="radio" class="rate" aria-checked="false">320</button>
+      <button type="button" role="radio" class="rate" aria-checked="false">256</button>
+      <button type="button" role="radio" class="rate" aria-checked="false">192</button>
+      <button type="button" role="radio" class="rate" aria-checked="true">128</button>
+    </div>
+    <span style="font-size: 12px; color: #9AA3AD; padding: 0 4px; line-height: 1.45">kbit/s, AAC. Originale unter der Grenze werden unverändert geliefert.</span>
+
+    <div class="card">
+      <div class="row" style="flex-direction: column; align-items: stretch; justify-content: center; gap: 8px; padding: 12px 0">
+        <div style="display: flex; justify-content: space-between; font-size: 14px"><span>Offline-Speicher</span><span class="mono" style="color: #9AA3AD; font-size: 13px">9.8 / 32 GB</span></div>
+        <div style="height: 6px; border-radius: 3px; background: #262C33; overflow: hidden"><div style="width: 31%; height: 100%; background: #5EC2D6"></div></div>
+      </div>
+      <button type="button" role="switch" aria-checked="true" class="row" style="border-left: 0; border-right: 0; border-top: 0; background: transparent; color: #E9ECEF; padding: 0; font: 15px 'Ubuntu', sans-serif; text-align: left; justify-content: space-between; cursor: pointer">Nur im WLAN synchronisieren<span class="sw"><span></span></span></button>
+      <button type="button" role="switch" aria-checked="true" class="row" style="border: 0; background: transparent; color: #E9ECEF; padding: 0; font: 15px 'Ubuntu', sans-serif; text-align: left; justify-content: space-between; cursor: pointer">Bessere Version automatisch ersetzen<span class="sw"><span></span></span></button>
+    </div>
+
+    <h2 class="h" style="margin-top: 6px">Server</h2>
+    <div class="card">
+      <div class="row">
+        <span style="width: 8px; height: 8px; border-radius: 50%; background: #4CC38A"></span>
+        <span style="flex: 1; font-size: 15px">Verbunden</span>
+        <span class="mono" style="font-size: 12px; color: #9AA3AD">192.168.1.20:8400</span>
+      </div>
+    </div>
+
+    <h2 class="h" style="margin-top: 6px">Quellen</h2>
+    <div class="card">
+      
+        <div class="row">
+          <span class="badge">TD</span>
+          <span style="flex: 1; font-size: 15px">Tidal</span>
+          <span style="font-size: 13px; color: #4CC38A">Verbunden</span>
+        </div>
+      
+        <div class="row">
+          <span class="badge">SP</span>
+          <span style="flex: 1; font-size: 15px">Spotify</span>
+          <span style="font-size: 13px; color: #4CC38A">Verbunden</span>
+        </div>
+      
+        <div class="row">
+          <span class="badge">YT</span>
+          <span style="flex: 1; font-size: 15px">YouTube</span>
+          <span style="font-size: 13px; color: #4CC38A">Bereit</span>
+        </div>
+      
+    </div>
+
+    <h2 class="h" style="margin-top: 6px">Ausgabegeräte</h2>
+    <div class="card">
+      
+        <div class="row">
+          <span style="flex: 1; font-size: 15px">Wohnzimmer <span style="font-size: 12px; color: #9AA3AD">· Raumfeld</span></span>
+          <span style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #4CC38A"><span style="width: 8px; height: 8px; border-radius: 50%; background: #4CC38A"></span>Online</span>
+        </div>
+      
+        <div class="row">
+          <span style="flex: 1; font-size: 15px">Küche <span style="font-size: 12px; color: #9AA3AD">· Raumfeld</span></span>
+          <span style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #4CC38A"><span style="width: 8px; height: 8px; border-radius: 50%; background: #4CC38A"></span>Online</span>
+        </div>
+      
+        <div class="row">
+          <span style="flex: 1; font-size: 15px">Büro <span style="font-size: 12px; color: #9AA3AD">· Raumfeld</span></span>
+          <span style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #9AA3AD"><span style="width: 8px; height: 8px; border-radius: 50%; background: #9AA3AD"></span>Offline</span>
+        </div>
+      
+    </div>
+  </div>
+
+  <nav aria-label="Hauptnavigation" style="display: flex; background: #14171A; border-top: 1px solid #22272E; padding: 6px 8px 22px">
+    <a class="tabl" href="Mobile-Streaming.html">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"></path></svg>Streaming</a>
+    <a class="tabl" href="Mobile-Hoeren.html">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>Lokal</a>
+    <a class="tabl" href="Mobile-Einstellungen.html" aria-current="page" style="color: #5EC2D6">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"></path></svg>Einstellungen</a>
+  </nav>
+</div>
+</body>
+</html>
