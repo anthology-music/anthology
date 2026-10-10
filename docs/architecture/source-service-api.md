@@ -6,7 +6,17 @@ Status: draft – nothing built yet.
 
 ## Configuration
 
-The core reads `ANTHOLOGY_SOURCE_SERVICES`, a comma-separated list of base URLs (e.g. `http://anthology-source-tidal:8420`). At startup and periodically it calls `GET /v1/info` and `GET /v1/health` on each; unreachable services or unsupported interface versions are hidden from users and reported to admins.
+The core reads `ANTHOLOGY_SOURCE_SERVICES`, a comma-separated list of base URLs (e.g. `http://localhost:8420` in a Quadlet pod). At startup and periodically it calls `GET /v1/info` and `GET /v1/health` on each; unreachable services or unsupported interface versions are hidden from users and reported to admins.
+
+## Services and ports
+
+Source services live in the GitHub organisation `anthology-sources` and are published as `ghcr.io/anthology-sources/<name>`. Ports 8420–8429 are reserved for them; in a Quadlet pod they are reached via `localhost:<port>`, with Compose via `<name>:<port>`.
+
+| Service | Port | Wraps |
+|---|---|---|
+| `anthology-source-streamrip` | 8420 | streamrip (Tidal first) |
+| `anthology-source-ytdlp` | 8421 | yt-dlp (YouTube, YouTube Music; audio and video) |
+| `anthology-source-spotdl` | 8422 | spotDL (Spotify metadata, audio via YouTube Music) |
 
 ## Endpoints
 

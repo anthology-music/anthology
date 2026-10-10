@@ -46,7 +46,7 @@ Anthology runs as one pod of OCI containers. **Podman is the primary platform** 
 | `anthology-server` | MIT | yes |
 | `anthology-tagger` | GPL-2.0-or-later | yes |
 | `postgres` | PostgreSQL | yes |
-| `anthology-source-tidal` / `-spotify` / `-youtube` | GPL-3.0-only / MIT / MIT | optional, separate repositories |
+| `anthology-source-streamrip` / `-ytdlp` / `-spotdl` | GPL-3.0-only / MIT / MIT | optional, separate repositories |
 | `audiveris` | AGPL-3.0 | optional |
 
 ```

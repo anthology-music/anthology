@@ -100,7 +100,7 @@ These components never enter the MIT images. Each runs in its own container with
 | Component | License | Handling |
 |---|---|---|
 | **mutagen** | GPL-2.0-or-later | only inside `services/tagger` (image `anthology-tagger`, GPL-2.0-or-later) |
-| **streamrip** | GPL-3.0-only | not in this repository – only in the separate `anthology-source-tidal` repository and image (ADR 0017) |
+| **streamrip** | GPL-3.0-only | not in this repository – only in the separate `anthology-source-streamrip` repository and image (ADR 0017) |
 | **Audiveris** | AGPL-3.0 | unmodified, own image `audiveris`, optional |
 | **PyMuPDF** | AGPL-3.0 or commercial | **not used** – replaced by pypdfium2 |
 | **FFmpeg** | LGPL-2.1+ (build without GPL/non-free options) | separate process; no non-free encoders such as libfdk_aac |

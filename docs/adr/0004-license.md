@@ -16,7 +16,7 @@ Copyleft components are kept out of the MIT code:
 | Component | License | Handling |
 |---|---|---|
 | mutagen | GPL-2.0-or-later | separate service `services/tagger`, itself GPL-2.0-or-later, own container |
-| streamrip | GPL-3.0-only | optional source service `anthology-source-tidal` in its own repository (ADR 0017), itself GPL-3.0-only, own container |
+| streamrip | GPL-3.0-only | optional source service `anthology-source-streamrip` in its own repository (ADR 0017), itself GPL-3.0-only, own container |
 | PyMuPDF | AGPL-3.0 | not used; replaced by pypdfium2 (BSD-3-Clause / Apache-2.0) |
 | Audiveris | AGPL-3.0 | optional, unmodified, own container |
 | Verovio | LGPL-3.0 | used unmodified as libraries; modifications published under LGPL |

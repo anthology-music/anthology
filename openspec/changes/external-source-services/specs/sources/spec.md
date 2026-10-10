@@ -14,7 +14,7 @@ The system SHALL integrate every external source through a source adapter with a
 - **THEN** the video option is offered for that source
 
 ### Requirement: Initial sources
-Tidal, Spotify and YouTube SHALL be provided by optional source services (`anthology-source-tidal`, `anthology-source-spotify`, `anthology-source-youtube`) that are developed and distributed outside the core repository; the core repository MUST NOT contain a download adapter for a commercial streaming service.
+Tidal, Spotify and YouTube SHALL be provided by optional source services (`anthology-source-streamrip`, `anthology-source-spotdl`, `anthology-source-ytdlp`) that are developed and distributed outside the core repository; the core repository MUST NOT contain a download adapter for a commercial streaming service.
 
 #### Scenario: Tidal album order
 - **WHEN** the Tidal source service is installed and a user submits a Tidal album link
@@ -30,12 +30,12 @@ Tidal, Spotify and YouTube SHALL be provided by optional source services (`antho
 Source services SHALL run as separate, optional containers and the core MUST NOT import their code; the core SHALL detect at startup which configured source services are available and SHALL hide unavailable sources in the UI.
 
 #### Scenario: Tidal service not installed
-- **WHEN** the `anthology-source-tidal` container is not part of the installation
+- **WHEN** the `anthology-source-streamrip` container is not part of the installation
 - **THEN** Tidal does not appear as a source
 - **AND** all other sources work normally
 
 #### Scenario: Tidal service added later
-- **WHEN** an admin adds the `anthology-source-tidal` container and restarts the pod
+- **WHEN** an admin adds the `anthology-source-streamrip` container and restarts the pod
 - **THEN** Tidal appears as a source without changes to the core image
 
 #### Scenario: Incompatible interface version

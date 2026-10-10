@@ -17,11 +17,11 @@ Today the plan mixes two models: Spotify and YouTube as in-process adapters usin
 
 ## Decisions
 
-### One repository and one container per service
+### One repository and one container per service, named after the tool
 
-`anthology-source-tidal` (GPL-3.0-only, streamrip), `anthology-source-spotify` (MIT, spotDL), `anthology-source-youtube` (MIT, yt-dlp; also YouTube video). Separate repositories isolate a takedown to one service, and each has its own license.
+`anthology-source-streamrip` (GPL-3.0-only, streamrip), `anthology-source-spotdl` (MIT, spotDL), `anthology-source-ytdlp` (MIT, yt-dlp; also YouTube video). Separate repositories in the GitHub organisation `anthology-sources` isolate a takedown to one service and keep complaints away from the core organisation; each has its own license. Names follow the wrapped tool, because streamrip and yt-dlp cover several services and brand names stay out of repository names.
 
-Alternative considered: one `anthology-sources` repository like `anthology-publishers`. Rejected: a takedown would remove all sources at once, and the repository would mix GPL and MIT code.
+Alternative considered: one combined repository like `anthology-publishers`. Rejected: a takedown would remove all sources at once, and the repository would mix GPL and MIT code.
 
 Alternative considered: Python plugin packages installed into the server image. Rejected: ADR 0005 enables optional features by adding a container, not by building a different image, and the GPL Tidal service needs a container anyway.
 

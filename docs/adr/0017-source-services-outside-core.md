@@ -10,20 +10,20 @@ Download adapters for commercial streaming services (Tidal via streamrip, Spotif
 ## Decision
 
 - The core repository and core images contain **no download adapter for a commercial streaming service**.
-- Each such source is an optional **source service** in its own repository and container:
+- Each such source is an optional **source service** in its own repository and container, in the separate GitHub organisation **`anthology-sources`** (images `ghcr.io/anthology-sources/…`), so that complaints against one service never affect the core organisation. Services are named after the **tool** they wrap, not after a streaming service: a tool often covers several services, and brand names stay out of repository names.
 
-  | Service | Based on | License |
+  | Service | Based on / provides | License |
   |---|---|---|
-  | `anthology-source-tidal` | streamrip | GPL-3.0-only |
-  | `anthology-source-spotify` | spotDL | MIT |
-  | `anthology-source-youtube` | yt-dlp (audio and video) | MIT |
+  | `anthology-source-streamrip` | streamrip – Tidal first (also Qobuz, Deezer, SoundCloud) | GPL-3.0-only |
+  | `anthology-source-ytdlp` | yt-dlp – YouTube and YouTube Music, audio and video | MIT |
+  | `anthology-source-spotdl` | spotDL – Spotify metadata, audio via YouTube Music | MIT |
 
 - The core talks to all of them through one generic, versioned **source service interface** (`docs/architecture/source-service-api.md`) and has no per-service code. Services are configured with `ANTHOLOGY_SOURCE_SERVICES`; the core detects them at startup and shows only available sources.
 - Services download only into the shared `imports` volume. Duplicate checks, credentials and the acquisition pipeline stay in the core.
 
 ## Alternatives considered
 
-- **One `anthology-sources` repository:** a single takedown would remove all sources, and it would mix GPL and MIT code.
+- **One combined repository for all sources:** a single takedown would remove all sources, and it would mix GPL and MIT code.
 - **Python plugin packages in the server image:** contradicts ADR 0005 (features are added as containers, not by building a different image).
 
 ## Consequences

@@ -130,7 +130,7 @@ Copyleft components run in their own container under `services/`, each with its 
 and are called only through their narrow, versioned interface:
 
 - **mutagen** → `services/tagger` (GPL-2.0-or-later). The core reads tags quickly with **tinytag** (MIT) and writes/reads full tags via the tagger.
-- **streamrip** → `anthology-source-tidal` (GPL-3.0-only), optional, separate repository (ADR 0017).
+- **streamrip** → `anthology-source-streamrip` (GPL-3.0-only), optional, separate repository (ADR 0017).
 - Download tools for commercial streaming services (streamrip, spotDL, yt-dlp) are never part of this repository; they run in source services behind `docs/architecture/source-service-api.md`.
 - **Audiveris** → `services/audiveris` (AGPL-3.0), optional.
 - **PyMuPDF is not used** – use **pypdfium2** (BSD-3/Apache-2.0) for PDFs.

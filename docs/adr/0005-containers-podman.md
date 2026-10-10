@@ -16,7 +16,7 @@ Copyleft components must stay separate from the MIT core (ADR 0004). The maintai
   | `anthology-server` | MIT | yes |
   | `anthology-tagger` | GPL-2.0-or-later | yes |
   | `postgres` | PostgreSQL | yes (SQLite for small setups) |
-  | `anthology-source-tidal`, `anthology-source-spotify`, `anthology-source-youtube` | GPL-3.0-only / MIT / MIT | optional, from separate repositories (ADR 0017) |
+  | `anthology-source-streamrip`, `anthology-source-spotdl`, `anthology-source-ytdlp` | GPL-3.0-only / MIT / MIT | optional, from separate repositories (ADR 0017) |
   | `audiveris` | AGPL-3.0 | optional |
 
 - Images are plain **OCI images** built from `Containerfile`s and published with fully qualified names (e.g. `ghcr.io/<organisation>/anthology-server`).

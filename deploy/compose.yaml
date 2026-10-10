@@ -12,7 +12,7 @@ services:
     environment:
       ANTHOLOGY_DATABASE_URL: postgresql+asyncpg://anthology:${ANTHOLOGY_DB_PASSWORD}@postgres:5432/anthology
       ANTHOLOGY_TAGGER_URL: http://anthology-tagger:8410
-      ANTHOLOGY_TIDAL_URL: http://anthology-source-tidal:8420     # optional
+      ANTHOLOGY_SOURCE_SERVICES: ""                              # optional source services (ADR 0017), comma-separated URLs
       ANTHOLOGY_OMR_URL: http://audiveris:8430                   # optional
     volumes:
       - library:/data/library
@@ -30,11 +30,8 @@ services:
       - cache:/data/cache
       - imports:/data/imports
 
-  anthology-source-tidal:      # GPL-3.0-only (streamrip) – optional
-    image: ghcr.io/anthology-music/anthology-source-tidal:latest
-    profiles: ["tidal"]
-    volumes:
-      - imports:/data/imports
+  # Optional source services (streamrip, yt-dlp, spotDL) live in the
+  # anthology-sources organisation; merge their deploy/compose.snippet.yaml here.
 
   audiveris:                   # AGPL-3.0 – optional
     image: ghcr.io/anthology-music/anthology-audiveris:latest
