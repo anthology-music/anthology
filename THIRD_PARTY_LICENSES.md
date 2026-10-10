@@ -83,6 +83,7 @@ Licenses as published on PyPI/npm or by the projects. ⚠ marks components whose
 | OpenSheetMusicDisplay | BSD-3-Clause | sheet music rendering (alternative) |
 | hls.js | Apache-2.0 | video streaming in the client |
 | Dexie.js | Apache-2.0 | local cache in the browser |
+| Pillow | MIT-CMU | cover thumbnails |
 | cd-da-reader (Rust) | MIT | CD reading in the desktop client (ADR 0018) |
 
 ### 6.2 Weak copyleft – allowed with conditions

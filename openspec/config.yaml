@@ -16,7 +16,8 @@ context: |
   Agent rules: AGENTS.md (root, server/, client/). Background: docs/concept/anthology-six-pager.md.
   Decisions: docs/adr/. Data model: docs/architecture/data-model.puml. UI reference: docs/design/.
   Domains: library, sources, jobs, sync-protocol, transcoding, playback, users, works,
-  publishers, sheet-music, video, library-import, quality-analysis, cd-import, review.
+  publishers, sheet-music, video, library-import, quality-analysis, cd-import, review, tagging, search,
+  personal-data, covers, metadata-lookup, offline.
 
 rules:
   proposal:

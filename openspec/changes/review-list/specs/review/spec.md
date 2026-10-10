@@ -7,7 +7,7 @@ Collect every suggestion and uncertain result that needs a human decision in one
 ## ADDED Requirements
 
 ### Requirement: Central review list
-The system SHALL collect all results that other domains do not apply automatically in one central review list shared by all editors and admins.
+The system SHALL collect all results that other domains do not apply automatically in one central review list shared by all editors and admins; tag conflicts have their own list (see tagging) and are not shown here.
 
 #### Scenario: Entries from several domains
 - **WHEN** an import produces a fuzzy recording match and a publisher search produces a medium-confidence arranger
@@ -16,9 +16,9 @@ The system SHALL collect all results that other domains do not apply automatical
 ### Requirement: Review entry content
 Each entry SHALL state its type, the subject it concerns, its origin, its confidence, the evidence (e.g. spectrogram, text excerpt, MusicBrainz value) and the proposed change in a form that shows current and proposed value.
 
-#### Scenario: Tag difference to MusicBrainz
-- **WHEN** a user opens an entry for an album title that differs from MusicBrainz
-- **THEN** the entry shows the current title, the MusicBrainz title, the origin "MusicBrainz" and its confidence
+#### Scenario: Fuzzy recording match
+- **WHEN** a user opens an entry for a fuzzy recording match
+- **THEN** the entry shows both recordings with artist, title and duration, the origin "fuzzy match" and its confidence
 
 ### Requirement: Decisions
 Editors and admins SHALL be able to accept, reject or defer an entry; accepting SHALL apply the proposed change, and every decision SHALL be recorded with user and time.
@@ -54,12 +54,16 @@ The review list SHALL be filterable by type, origin, confidence and status, SHAL
 - **THEN** the counts per type appear first and the first entries are interactive within 2 seconds
 
 ### Requirement: Bulk decisions
-Editors and admins SHALL be able to accept or reject all entries matching a selection rule; bulk decisions SHALL run as a job with live progress.
+Editors and admins SHALL be able to accept or reject several entries at once, either selected individually (multi-select) or as all entries matching a selection rule or a group (e.g. by field, album, artist or origin); bulk decisions SHALL run as a job with live progress.
 
 #### Scenario: Accept high-confidence candidates of one publisher
 - **WHEN** an editor accepts all open work candidates with high confidence from publisher X
 - **THEN** a job applies them and reports progress
 - **AND** each entry records the editor's decision
+
+#### Scenario: Multi-select
+- **WHEN** an editor selects seven entries individually and rejects them
+- **THEN** all seven are marked rejected with the editor's decision
 
 ### Requirement: Access
 Only editors and admins SHALL see the review list and decide entries.

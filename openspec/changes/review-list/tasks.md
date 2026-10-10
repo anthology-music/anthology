@@ -15,7 +15,7 @@
 
 ## 3. Producers
 
-- [ ] 3.1 Register handlers and create entries in library (recording match), quality-analysis (finding), works/publishers (work assignment), library-import (tag difference), sources (download replacement) and sheet-music (OMR); verify with one test per producer that an entry is created and accepting applies the change
+- [ ] 3.1 Register handlers and create entries in library (recording match), quality-analysis (finding), works/publishers (work assignment), library-import (needs review), sources (download replacement) and sheet-music (OMR); verify with one test per producer that an entry is created and accepting applies the change
 
 ## 4. Client
 

@@ -26,6 +26,8 @@ Collected decisions to revisit or features deferred on purpose; each needs its o
 | Further multi-room systems (Sonos, Chromecast) | ADR 0011 | new output adapters |
 | OIDC sign-in (Authentik, Keycloak) | ADR 0015 | |
 | Binary encoding of the sync protocol | change `sync-protocol-details` | negotiated via protocol version |
+| Smart playlists (saved search plus play count, last played) | change `personal-data` | uses the search syntax |
+| Offline video | change `offline-sync` | per-device resolution limit applies |
 | Purchase stores as sources | change `external-source-services` | via the source service interface |
 
 ## Open questions

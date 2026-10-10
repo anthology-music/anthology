@@ -2,7 +2,7 @@
 
 ## Why
 
-Five specs send uncertain results "to the review list" – fuzzy recording matches (library), inconclusive quality findings (quality-analysis), work candidates (works, publishers), tag differences to MusicBrainz (library-import) and inconclusive downloads (sources) – but no spec defines that list: what an entry contains, who decides, what accepting or rejecting does, or how it scales. Without one definition each domain would build its own.
+Five specs send uncertain results "to the review list" – fuzzy recording matches (library), inconclusive quality findings (quality-analysis), work candidates (works, publishers), import results needing review (library-import) and inconclusive downloads (sources) – but no spec defines that list: what an entry contains, who decides, what accepting or rejecting does, or how it scales. Without one definition each domain would build its own.
 
 ## What Changes
 

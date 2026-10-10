@@ -55,6 +55,12 @@ Requirements use **SHALL/MUST**; every requirement has at least one `#### Scenar
 | `quality-analysis` | `quality_analysis` |
 | `cd-import` | `cd_import` |
 | `review` | `review` |
+| `tagging` | `tagging` |
+| `search` | `search` |
+| `personal-data` | `personal_data` |
+| `covers` | `covers` |
+| `metadata-lookup` | `metadata_lookup` |
+| `offline` | `offline` |
 
 Client feature folders use the same names (kebab-case) under `client/src/features/`.
 

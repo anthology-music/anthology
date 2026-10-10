@@ -27,7 +27,7 @@ ReviewItem
   createdAt, decidedBy [0..1], decidedAt [0..1], changeSeq
 ```
 
-`ReviewType`: `RECORDING_MATCH`, `QUALITY_FINDING`, `WORK_ASSIGNMENT`, `TAG_DIFFERENCE`, `DOWNLOAD_REPLACEMENT`, `SHEET_OMR`. `ReviewOrigin`: `PUBLISHER`, `MUSICBRAINZ`, `LLM`, `FUZZY_MATCH`, `QUALITY_ANALYSIS`, `IMPORT`, `SOURCE`, `OMR`.
+`ReviewType`: `RECORDING_MATCH`, `QUALITY_FINDING`, `WORK_ASSIGNMENT`, `DOWNLOAD_REPLACEMENT`, `SHEET_OMR`. `ReviewOrigin`: `PUBLISHER`, `MUSICBRAINZ`, `LLM`, `FUZZY_MATCH`, `QUALITY_ANALYSIS`, `IMPORT`, `SOURCE`, `OMR`.
 
 `WorkCandidate` is replaced by `ReviewItem` of type `WORK_ASSIGNMENT` (its fields map one to one; the publication reference moves into `evidenceJson`). `ReviewStatus` keeps `AUTO_ACCEPTED` only for `Sheet.reviewStatus` (e.g. MusicXML uploads); automatic decisions never create a `ReviewItem`.
 
