@@ -15,4 +15,4 @@ Use Tauri 2.
 
 - Much smaller installers and lower memory use than Electron – relevant for a music app running in the background.
 - Uses the operating system's web engine; rendering differences between platforms must be tested.
-- Native helpers (e.g. cyanrip for CD ripping) are shipped as Tauri sidecars.
+- Native functionality (e.g. CD ripping) is implemented in the Tauri Rust layer on permissively licensed crates (ADR 0018); the desktop installer contains no GPL code.

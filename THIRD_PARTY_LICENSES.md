@@ -46,8 +46,7 @@ Generated from `client/src-tauri/Cargo.lock`.
 | Service | License | License file |
 |---|---|---|
 | `anthology-tagger` | GPL-2.0-or-later | [`services/tagger/LICENSE`](services/tagger/LICENSE) |
-| `anthology-source-tidal` | GPL-3.0-only | [`services/source-tidal/LICENSE`](services/source-tidal/LICENSE) |
-| `audiveris` | AGPL-3.0 (upstream, unmodified) | [`services/audiveris/README.md`](services/audiveris/README.md) |
+| `audiveris` | AGPL-3.0 (upstream, unmodified) | [`services/audiveris/LICENSE`](services/audiveris/LICENSE) |
 
 ## 5a. Separately run tools, fonts and data
 
@@ -71,9 +70,6 @@ Licenses as published on PyPI/npm or by the projects. ⚠ marks components whose
 | pydantic | MIT | data validation |
 | SQLAlchemy, Alembic | MIT | database, migrations |
 | httpx | BSD-3-Clause | HTTP client |
-| spotDL | MIT | Spotify source adapter |
-| yt-dlp | Unlicense | YouTube source adapter |
-| spotipy, ytmusicapi | MIT | search/metadata |
 | pyacoustid | MIT | fingerprint lookup |
 | musicbrainzngs | BSD-2-Clause | MusicBrainz client |
 | music21 | BSD-3-Clause | sheet-music data processing |
@@ -87,13 +83,14 @@ Licenses as published on PyPI/npm or by the projects. ⚠ marks components whose
 | OpenSheetMusicDisplay | BSD-3-Clause | sheet music rendering (alternative) |
 | hls.js | Apache-2.0 | video streaming in the client |
 | Dexie.js | Apache-2.0 | local cache in the browser |
+| Pillow | MIT-CMU | cover thumbnails |
+| cd-da-reader (Rust) | MIT | CD reading in the desktop client (ADR 0018) |
 
 ### 6.2 Weak copyleft – allowed with conditions
 
 | Component | License | Condition |
 |---|---|---|
-| Verovio (Python and npm) | LGPL-3.0 | use unmodified, as a separately loadable library; publish modifications under LGPL |
-| tidalapi | LGPL-3.0-or-later | same as above |
+| Verovio (Python and npm) | LGPL-3.0 | use unmodified, as a separately loadable library (client: separate lazily loaded asset, not bundled, ADR 0014); publish modifications under LGPL |
 | `[OTHER LGPL COMPONENT]` | `[LICENSE]` | `[CONDITION]` |
 
 ### 6.3 Strong copyleft – kept out of the MIT code (decided 2026-10-09)
@@ -103,11 +100,13 @@ These components never enter the MIT images. Each runs in its own container with
 | Component | License | Handling |
 |---|---|---|
 | **mutagen** | GPL-2.0-or-later | only inside `services/tagger` (image `anthology-tagger`, GPL-2.0-or-later) |
-| **streamrip** | GPL-3.0-only | only inside `services/source-tidal` (image `anthology-source-tidal`, GPL-3.0-only, optional) |
+| **streamrip** | GPL-3.0-only | not in this repository – only in the separate `anthology-source-streamrip` repository and image (ADR 0017) |
 | **Audiveris** | AGPL-3.0 | unmodified, own image `audiveris`, optional |
 | **PyMuPDF** | AGPL-3.0 or commercial | **not used** – replaced by pypdfium2 |
 | **FFmpeg** | LGPL-2.1+ (build without GPL/non-free options) | separate process; no non-free encoders such as libfdk_aac |
-| **cyanrip** | `[CHECK LICENSE]` | Tauri sidecar, separate process |
+| **cyanrip** | LGPL-2.1, but requires libcdio-paranoia (GPL-3.0) | **not used** – replaced by an in-house ripper on `cd-da-reader` (ADR 0018) |
+| **libcdio, libcdio-paranoia** | GPL-3.0 | **not used** (ADR 0018) |
+| **libdiscid** | LGPL-2.1-or-later | not used – MusicBrainz Disc ID is computed in-house (ADR 0018) |
 | **Chromaprint / fpcalc** | `[CHECK LICENSE]` | separate process |
 | **FluidSynth** | LGPL-2.1+ | separately loaded library |
 

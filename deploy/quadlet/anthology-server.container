@@ -7,10 +7,11 @@ After=anthology-postgres.service anthology-tagger.service
 [Container]
 ContainerName=anthology-server
 Pod=anthology.pod
-Image=ghcr.io/<organisation>/anthology-server:latest
+Image=ghcr.io/anthology-music/anthology-server:latest
 Environment=ANTHOLOGY_DATABASE_URL=postgresql+asyncpg://anthology:CHANGE_ME@localhost:5432/anthology
 Environment=ANTHOLOGY_TAGGER_URL=http://localhost:8410
-Environment=ANTHOLOGY_TIDAL_URL=http://localhost:8420
+# Optional source services (ADR 0017), comma-separated, e.g. http://localhost:8420,http://localhost:8421
+Environment=ANTHOLOGY_SOURCE_SERVICES=
 Environment=ANTHOLOGY_OMR_URL=http://localhost:8430
 Volume=anthology-library.volume:/data/library:U
 Volume=anthology-cache.volume:/data/cache:U

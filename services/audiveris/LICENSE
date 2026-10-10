@@ -1,0 +1,23 @@
+anthology-audiveris
+Copyright (c) 2026 The Anthology contributors
+
+SPDX-License-Identifier: AGPL-3.0-only
+
+The files in this folder (Containerfile and configuration) are licensed under
+the GNU Affero General Public License version 3.
+
+The container image built from this folder runs the unmodified upstream release
+of Audiveris (https://github.com/Audiveris/audiveris), which is distributed
+under its own license (AGPL-3.0).
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program; if not, see <https://www.gnu.org/licenses/>.
+
+[PLACEHOLDER] Add the full text of the GNU Affero General Public License version 3
+(https://www.gnu.org/licenses/agpl-3.0.txt) to this folder as COPYING before the
+first release.

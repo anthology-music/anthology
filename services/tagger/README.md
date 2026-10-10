@@ -11,8 +11,8 @@ Tag reading and writing service for Anthology, based on [mutagen](https://github
 | Endpoint | Purpose |
 |---|---|
 | `POST /v1/tags/read` | read full tags, cover and audio properties of one or more files |
-| `POST /v1/tags/write` | write tags (and cover) into one or more files |
-| `POST /v1/header/build` | build a tag header with context tags for streaming an original (FLAC metadata blocks, ID3v2) and return audio-data offsets |
+| `POST /v1/tags/write` | write tags (and cover) into one or more files; `mode: atomic` (temp file + rename, for managed originals) or `mode: in_place` (keeps hardlinks, for referenced files with tag writing enabled) |
+| `POST /v1/tags/copy` | write a copy of a file with complete context tags (and cover) into the cache; the source is opened read-only |
 | `GET /v1/health` | health and version |
 
 Status: placeholder – nothing built yet.

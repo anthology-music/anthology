@@ -6,7 +6,7 @@ Description=Anthology optical music recognition (optional)
 [Container]
 ContainerName=anthology-audiveris
 Pod=anthology.pod
-Image=ghcr.io/<organisation>/anthology-audiveris:latest
+Image=ghcr.io/anthology-music/anthology-audiveris:latest
 Volume=anthology-imports.volume:/data/imports:U
 
 [Service]
