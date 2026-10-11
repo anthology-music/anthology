@@ -42,7 +42,7 @@ Deltas are upserts or removals by `id` and must be applied idempotently: a delta
 
 ## Windows and jumps
 
-Clients request rows by position (`start`, `end`, end exclusive, at most 1,000 rows). The server answers in chunks of 200 rows, the requested window first; a new `window` replaces the previous one. To serve any position without `OFFSET`, the server keeps **anchors** per subscription – the sort key at every 1,000th position, built from index-only key scans on demand – and reads from the nearest anchor with keyset pagination. At most 4 chunks per subscription are unacknowledged.
+Clients request rows by position (`start`, `end`, end exclusive, at most 1,000 rows). The server answers in chunks of 200 rows, the requested window first; a new `window` replaces the previous one. To serve any position without `OFFSET`, the server keeps **anchors** per subscription – the sort key at every 1,000th position, computed in the database on demand (only every 1,000th key is returned) – and reads from the nearest anchor with keyset pagination. At most 4 chunks per subscription are unacknowledged.
 
 ## Close codes
 

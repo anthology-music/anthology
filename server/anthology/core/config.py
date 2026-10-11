@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     sync_changelog_retention_days: int = 7
     background_tasks: bool = True
     ws_hello_timeout_seconds: float = 10.0
+    dev_demo: bool = False
 
     tagger_url: str = "http://localhost:8410"
     omr_url: str = ""

@@ -26,6 +26,8 @@ from anthology.sync.streams import (
     StreamContext,
     StreamError,
     StreamRegistry,
+    scan_anchors,
+    scan_keys,
 )
 from anthology.users.service import SessionCache, SessionInfo
 
@@ -194,7 +196,7 @@ class Connection:
             id=message.sub,
             stream=stream,
             ctx=ctx,
-            anchors=Anchors(self._key_scanner(stream, ctx)),
+            anchors=self._anchors(stream, ctx),
             threshold=self._feed_position.last_seq,
         )
         # Registered before reading so that no change after `threshold` is missed;
@@ -251,12 +253,18 @@ class Connection:
         for event in sorted(latest.values(), key=lambda item: item.seq):
             await self.apply_event(db, subscription, event)
 
-    def _key_scanner(self, stream: Stream, ctx: StreamContext):
-        async def scan(after: SortKey | None, limit: int) -> list[SortKey]:
-            async with self._sessionmaker() as db:
-                return await stream.keys(db, ctx, after, limit)
+    def _anchors(self, stream: Stream, ctx: StreamContext) -> Anchors:
+        key_query = stream.key_query(ctx)
 
-        return scan
+        async def keys(after: SortKey | None, limit: int) -> list[SortKey]:
+            async with self._sessionmaker() as db:
+                return await scan_keys(db, key_query, after, limit)
+
+        async def anchors(after: SortKey | None, step: int, count: int) -> list[SortKey]:
+            async with self._sessionmaker() as db:
+                return await scan_anchors(db, key_query, after, step, count)
+
+        return Anchors(keys, anchors)
 
     # --- windows and chunks -----------------------------------------------
 

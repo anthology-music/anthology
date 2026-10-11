@@ -16,6 +16,9 @@ dependencies = [
     "uvicorn[standard]>=0.54.0",
 ]
 
+[project.scripts]
+anthology = "anthology.cli:main"
+
 [dependency-groups]
 dev = [
     "httpx>=0.28.1",
@@ -49,3 +52,4 @@ asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "session"
 asyncio_default_test_loop_scope = "session"
 testpaths = ["tests"]
+markers = ["performance: performance budget tests (PostgreSQL, large data)"]

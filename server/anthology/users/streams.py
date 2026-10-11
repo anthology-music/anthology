@@ -6,7 +6,15 @@ from sqlalchemy import Select, func, select, tuple_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from anthology.sync.feed import ChangeEvent
-from anthology.sync.streams import Meta, Row, RowChange, SortKey, StreamContext, StreamError
+from anthology.sync.streams import (
+    KeyQuery,
+    Meta,
+    Row,
+    RowChange,
+    SortKey,
+    StreamContext,
+    StreamError,
+)
 from anthology.users.models import Device, Role, User, UserDevice
 from anthology.users.service import SessionInfo
 
@@ -34,11 +42,8 @@ class UsersStream:
         active = await db.scalar(select(func.count()).select_from(User).where(User.active))
         return Meta(total=total or 0, counters={"active": active or 0})
 
-    async def keys(
-        self, db: AsyncSession, ctx: StreamContext, after: SortKey | None, limit: int
-    ) -> list[SortKey]:
-        query = _after(select(User.username, User.id), (User.username, User.id), after)
-        return [tuple(row) for row in await db.execute(query.limit(limit))]
+    def key_query(self, ctx: StreamContext) -> KeyQuery:
+        return KeyQuery(query=select(User), columns=(User.username, User.id))
 
     async def rows(
         self, db: AsyncSession, ctx: StreamContext, after: SortKey | None, limit: int
@@ -83,12 +88,8 @@ class MyDevicesStream:
         )
         return Meta(total=total or 0)
 
-    async def keys(
-        self, db: AsyncSession, ctx: StreamContext, after: SortKey | None, limit: int
-    ) -> list[SortKey]:
-        query = _after(self._base(ctx), (Device.name, Device.id), after)
-        query = query.with_only_columns(Device.name, Device.id)
-        return [tuple(row) for row in await db.execute(query.limit(limit))]
+    def key_query(self, ctx: StreamContext) -> KeyQuery:
+        return KeyQuery(query=self._base(ctx), columns=(Device.name, Device.id))
 
     async def rows(
         self, db: AsyncSession, ctx: StreamContext, after: SortKey | None, limit: int
