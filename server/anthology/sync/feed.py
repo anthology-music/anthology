@@ -29,6 +29,18 @@ class ChangeEvent:
 Consumer = Callable[[ChangeEvent], Awaitable[None]]
 
 
+def event_from_row(row) -> ChangeEvent:
+    return ChangeEvent(
+        seq=row.change_seq,
+        entity_type=row.entity_type,
+        entity_id=row.entity_id,
+        operation=ChangeOperation(row.operation),
+        scope=ChangeScope(row.scope),
+        owner_user_id=row.owner_user_id,
+        device_id=row.device_id,
+    )
+
+
 class ChangeFeed:
     def __init__(self, engine: AsyncEngine) -> None:
         self._engine = engine
@@ -59,15 +71,7 @@ class ChangeFeed:
                     )
                 ).all()
             for row in rows:
-                event = ChangeEvent(
-                    seq=row.change_seq,
-                    entity_type=row.entity_type,
-                    entity_id=row.entity_id,
-                    operation=ChangeOperation(row.operation),
-                    scope=ChangeScope(row.scope),
-                    owner_user_id=row.owner_user_id,
-                    device_id=row.device_id,
-                )
+                event = event_from_row(row)
                 for consumer in self._consumers:
                     try:
                         await consumer(event)

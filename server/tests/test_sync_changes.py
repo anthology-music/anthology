@@ -5,7 +5,7 @@ import uuid
 from datetime import timedelta
 
 import pytest
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from anthology.core.changes import ChangeLog, ChangeOperation, ChangeScope, record_change
@@ -200,3 +200,22 @@ async def test_background_numbers_and_delivers_without_manual_steps(app) -> None
 
     async with asyncio.timeout(2):
         await delivered.wait()
+
+
+async def test_retention_keeps_the_newest_entry_so_numbering_continues(
+    engine: AsyncEngine, sequencers
+) -> None:
+    for _ in range(3):
+        await _write(engine)
+    sequencer = sequencers()
+    await sequencer.run_once()
+    async with engine.begin() as connection:
+        await connection.execute(update(ChangeLog).values(changed_at=utcnow() - timedelta(days=30)))
+        newest = await connection.scalar(select(func.max(ChangeLog.change_seq)))
+
+    deleted = await prune_change_log(engine, days=7)
+    later = await _write(engine)
+    await sequencer.run_once()
+
+    assert deleted == 2
+    assert await _seq_of(engine, later) == newest + 1

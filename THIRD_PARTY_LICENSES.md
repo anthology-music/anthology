@@ -77,6 +77,7 @@ Licenses as published on PyPI/npm or by the projects. ⚠ marks components whose
 | argon2-cffi | MIT | password hashing |
 | PyJWT | MIT | access tokens |
 | pytest, pytest-asyncio, ruff | MIT / Apache-2.0 / MIT | tests and linting (development only) |
+| httpx-ws, wsproto | MIT / MIT | WebSocket tests (development only) |
 | pyacoustid | MIT | fingerprint lookup |
 | musicbrainzngs | BSD-2-Clause | MusicBrainz client |
 | music21 | BSD-3-Clause | sheet-music data processing |
