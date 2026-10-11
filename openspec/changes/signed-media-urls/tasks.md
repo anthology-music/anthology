@@ -7,9 +7,9 @@
 
 ## 2. Signed URLs (server)
 
-- [ ] 2.1 Implement URL signing and verification with key generation and rotation; verify with tests for valid, expired, tampered and rotated-key URLs
+- [x] 2.1 Implement URL signing and verification with key generation and rotation; verify with tests for valid, expired, tampered and rotated-key URLs
 - [ ] 2.2 Protect all media endpoints (originals, transcodes, tagged copies, HLS playlists and segments) with signed URLs including range requests; verify with API tests per endpoint
-- [ ] 2.3 Add the revocation check with cache invalidation on device sign-out and user deactivation; verify with tests that requests fail immediately after each
+- [x] 2.3 Add the revocation check with cache invalidation on device sign-out and user deactivation; verify with tests that requests fail immediately after each
 
 ## 3. Clients and outputs
 

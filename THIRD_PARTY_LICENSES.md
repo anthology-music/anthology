@@ -70,6 +70,13 @@ Licenses as published on PyPI/npm or by the projects. ⚠ marks components whose
 | pydantic | MIT | data validation |
 | SQLAlchemy, Alembic | MIT | database, migrations |
 | httpx | BSD-3-Clause | HTTP client |
+| Uvicorn | BSD-3-Clause | ASGI server |
+| pydantic-settings | MIT | configuration |
+| aiosqlite | MIT | SQLite driver (development, tests) |
+| asyncpg | Apache-2.0 | PostgreSQL driver |
+| argon2-cffi | MIT | password hashing |
+| PyJWT | MIT | access tokens |
+| pytest, pytest-asyncio, ruff | MIT / Apache-2.0 / MIT | tests and linting (development only) |
 | pyacoustid | MIT | fingerprint lookup |
 | musicbrainzngs | BSD-2-Clause | MusicBrainz client |
 | music21 | BSD-3-Clause | sheet-music data processing |

@@ -43,7 +43,7 @@ A user opens Anthology and sees two main views. **Streaming** is where music com
 
 **Works** connect the music to the people who play it. A medley lists its originals in order, each with a play button if it is in the library, or a button to acquire it if not. Every song shows the arrangements and medleys it appears in. Publishers can be registered; their catalogues are searched to find arrangers, originals and editions. Findings that are not confirmed by a hard identifier land in a review list with their source, confidence and the evidence from the publisher's page. Sheet music can be attached to a work, as a conductor's score or as individual parts with instrument and transposition. Anthology plays the notes at concert pitch and follows along: a score page by page, a part system by system, and for piano or accordion with both staves of a system together. In practice mode all other parts play while one's own part stays silent.
 
-Behind all views, Anthology knows who is using it. The library is shared by everyone; bitrate, maximum video resolution, offline storage, default output and preferences belong to a user on a particular device. Shared devices such as a family tablet offer a profile picker with an optional PIN. Changes to shared data are recorded with user and time.
+Behind all views, Anthology knows who is using it. The library is shared by everyone; bitrate, maximum video resolution, offline storage, default output and preferences belong to a user on a particular device. Every person has one account; on a shared device such as a family tablet one account is signed in at a time. Changes to shared data are recorded with user and time.
 
 ## 7. How It Works
 

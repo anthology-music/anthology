@@ -56,4 +56,4 @@ volumes:
   db:
 
 # Start with optional services:
-#   podman compose -f deploy/compose.yaml --profile tidal --profile omr up -d
+#   podman compose -f deploy/compose.yaml --profile omr up -d

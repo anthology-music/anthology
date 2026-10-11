@@ -8,12 +8,14 @@ import os
 from collections.abc import AsyncIterator
 
 import pytest
+from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncEngine
 
+import anthology.models  # noqa: F401  (registers all tables)
 from anthology.api.app import create_app
 from anthology.core.config import Settings
-from anthology.db import create_engine
+from anthology.db import Base, create_engine
 from anthology.db.migrations import downgrade, upgrade
 
 TEST_DATABASE_URL = os.environ.get("ANTHOLOGY_TEST_DATABASE_URL", "")
@@ -35,9 +37,22 @@ async def engine(settings: Settings) -> AsyncIterator[AsyncEngine]:
 
 
 @pytest.fixture
-async def client(settings: Settings, engine: AsyncEngine) -> AsyncIterator[AsyncClient]:
+async def clean_db(engine: AsyncEngine) -> None:
+    """Delete all rows so that a test starts from an empty installation."""
+    async with engine.begin() as connection:
+        for table in reversed(Base.metadata.sorted_tables):
+            await connection.execute(table.delete())
+
+
+@pytest.fixture
+async def app(settings: Settings, engine: AsyncEngine) -> AsyncIterator[FastAPI]:
     app = create_app(settings)
     async with app.router.lifespan_context(app):
-        transport = ASGITransport(app=app)
-        async with AsyncClient(transport=transport, base_url="http://test") as client:
-            yield client
+        yield app
+
+
+@pytest.fixture
+async def client(app: FastAPI) -> AsyncIterator[AsyncClient]:
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        yield client

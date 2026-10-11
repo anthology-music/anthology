@@ -18,7 +18,7 @@ ADR 0007: iOS background playback and durable offline storage require the native
 
 ### Server side: selections, client side: files
 
-`OfflineSelection(user, device, targetType ∈ {RELEASE, PLAYLIST}, targetId)` is stored on the server so a re-installed app or a second profile on the same device knows what to fetch. The client computes the needed set (tracks of selected albums and playlists), requests delivery decisions for the offline bitrate and formats, downloads via signed URLs with range resume, and reports `OfflineCopy(device, recording, variant, sizeBytes, syncedAt)` back.
+`OfflineSelection(user, device, targetType ∈ {RELEASE, PLAYLIST}, targetId)` is stored on the server so a re-installed app or another account signing in on the same device knows what to fetch. The client computes the needed set (tracks of selected albums and playlists), requests delivery decisions for the offline bitrate and formats, downloads via signed URLs with range resume, and reports `OfflineCopy(device, recording, variant, sizeBytes, syncedAt)` back.
 
 ### Storage
 

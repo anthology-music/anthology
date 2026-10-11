@@ -9,7 +9,11 @@ from fastapi import FastAPI
 from anthology import __version__
 from anthology.api import health
 from anthology.core.config import Settings, get_settings
+from anthology.core.media_urls import MediaKeys, MediaUrlSigner
+from anthology.core.security import load_or_create_key
 from anthology.db import create_engine, create_sessionmaker
+from anthology.users import api as users_api
+from anthology.users.service import SessionCache, TokenSettings
 
 API_PREFIX = "/api/v1"
 
@@ -23,9 +27,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         engine = create_engine(settings)
+        sessionmaker = create_sessionmaker(engine)
+        token_key = load_or_create_key(settings.keys_dir / "token.key")
+
         app.state.settings = settings
         app.state.engine = engine
-        app.state.sessionmaker = create_sessionmaker(engine)
+        app.state.sessionmaker = sessionmaker
+        app.state.token_key = token_key
+        app.state.token_settings = TokenSettings(
+            key=token_key, access_ttl_seconds=settings.access_token_ttl_seconds
+        )
+        app.state.session_cache = SessionCache(sessionmaker, settings.session_cache_ttl_seconds)
+        app.state.media_signer = MediaUrlSigner(
+            MediaKeys(settings.keys_dir, settings.media_key_overlap_seconds)
+        )
         try:
             yield
         finally:
@@ -33,4 +48,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app = FastAPI(title="Anthology", version=__version__, lifespan=lifespan)
     app.include_router(health.router, prefix=API_PREFIX)
+    app.include_router(users_api.router, prefix=API_PREFIX)
     return app
