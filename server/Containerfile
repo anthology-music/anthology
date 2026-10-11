@@ -1,0 +1,46 @@
+# anthology-server – MIT
+# Build from the repository root:
+#   podman build -t anthology-server -f server/Containerfile .
+
+FROM docker.io/library/python:3.12-slim AS builder
+
+COPY --from=ghcr.io/astral-sh/uv:0.13.0 /uv /usr/local/bin/uv
+
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    UV_PYTHON_DOWNLOADS=0 \
+    UV_PROJECT_ENVIRONMENT=/app/.venv
+
+WORKDIR /src
+
+# Dependencies first for layer caching
+COPY server/pyproject.toml server/uv.lock ./
+RUN uv sync --frozen --no-dev --no-install-project
+
+COPY server/anthology ./anthology
+RUN uv sync --frozen --no-dev --no-editable
+
+
+FROM docker.io/library/python:3.12-slim
+
+RUN groupadd --gid 1000 anthology \
+    && useradd --uid 1000 --gid anthology --home-dir /app --no-create-home anthology \
+    && mkdir -p /data \
+    && chown anthology:anthology /data
+
+WORKDIR /app
+
+COPY --from=builder /app/.venv /app/.venv
+COPY server/alembic.ini ./alembic.ini
+COPY server/migrations ./migrations
+COPY server/entrypoint.sh ./entrypoint.sh
+
+ENV PATH=/app/.venv/bin:$PATH \
+    PYTHONUNBUFFERED=1 \
+    ANTHOLOGY_DATA_DIR=/data \
+    ANTHOLOGY_MIGRATIONS_DIR=/app/migrations
+
+USER anthology
+EXPOSE 8400
+
+ENTRYPOINT ["/app/entrypoint.sh"]

@@ -5,11 +5,12 @@ Description=Anthology database
 [Container]
 ContainerName=anthology-postgres
 Pod=anthology.pod
-Image=docker.io/library/postgres:17
+Image=docker.io/library/postgres:18
 Environment=POSTGRES_USER=anthology
 Environment=POSTGRES_PASSWORD=CHANGE_ME
 Environment=POSTGRES_DB=anthology
-Volume=anthology-db.volume:/var/lib/postgresql/data:U
+# From PostgreSQL 18 on the image keeps its data below /var/lib/postgresql/<major>/docker
+Volume=anthology-db.volume:/var/lib/postgresql:U
 
 [Service]
 Restart=on-failure

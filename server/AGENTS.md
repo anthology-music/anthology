@@ -44,6 +44,8 @@ Cross-domain access goes through the other domain's `service.py`, never its mode
 
 ## Tests
 
+- Tests run on SQLite by default. Set `ANTHOLOGY_TEST_DATABASE_URL` to run them on PostgreSQL as well (CI does both), e.g. `ANTHOLOGY_TEST_DATABASE_URL=postgresql+asyncpg://anthology:anthology@localhost:5432/anthology-test uv run pytest`. The PostgreSQL test database must be **dedicated to tests**: every test session migrates it down to base and up to head, which drops all tables.
+- Code that differs between engines must be tested on both; never assume SQLite behavior matches PostgreSQL.
 - Unit tests per service; API tests with the httpx test client; WebSocket protocol tests for every stream.
 - Media fixtures are generated (sine tones, silence, synthetic MusicXML) – never copyrighted material.
 - Performance tests use the 500,000-track generator in `tools/` and must meet the budgets in the root `AGENTS.md`.

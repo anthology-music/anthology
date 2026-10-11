@@ -1,0 +1,14 @@
+# Build context is the repository root; keep it small.
+.git
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+**/node_modules
+client/dist
+client/.quasar
+client/src-tauri/target
+data
+*.local.md
+.env
+.env.*
