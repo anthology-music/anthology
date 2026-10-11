@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     media_key_overlap_seconds: int = 24 * 60 * 60
     sync_changelog_retention_days: int = 7
     background_tasks: bool = True
+    ws_hello_timeout_seconds: float = 10.0
 
     tagger_url: str = "http://localhost:8410"
     omr_url: str = ""

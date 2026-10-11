@@ -21,20 +21,28 @@ Clients and servers ignore unknown optional fields and unknown message types the
 
 ## Message types
 
-| Type | Direction | Purpose |
+| Type | Direction | `data` |
 |---|---|---|
-| `hello` | client → server | protocol version, access token, device ID, last known change sequence |
-| `welcome` | server → client | protocol version, current change sequence |
-| `auth` | client → server | renewed access token for the open connection |
-| `subscribe` | client → server | subscription type, filter, sort, initial window |
-| `unsubscribe` | client → server | end a subscription |
-| `window` | client → server | new visible window (+ buffer) of a subscription |
-| `snapshot_meta` | server → client | `total` and `counters` of a subscription, before any rows |
-| `chunk` | server → client | rows for a window range |
-| `ack` | client → server | chunk received (backpressure) |
-| `delta` | server → client | change of subscribed data, with `seq` |
-| `resync` | server → client | client is too far behind; snapshot of the visible window follows |
-| `error` | server → client | malformed or rejected message; connection stays open |
+| `hello` | client → server | `protocol`, `token` (access token), `device_id`?, `last_seq`? |
+| `welcome` | server → client | `protocol`, `current_seq`, `oldest_seq` |
+| `auth` | client → server | `token` – renewed access token for the open connection |
+| `subscribe` | client → server | `stream`, `params`, `since`? (newest `seq` the client has for this list), `start`, `end` (initial window) |
+| `unsubscribe` | client → server | – |
+| `window` | client → server | `start`, `end` – new visible window (+ buffer) by position |
+| `snapshot_meta` | server → client | `total`, `counters`; envelope `seq` = feed position the snapshot is based on |
+| `chunk` | server → client | `chunk` (number), `start` (position of the first row), `rows` |
+| `ack` | client → server | `chunk` – chunk received (backpressure) |
+| `delta` | server → client | `op` (`upsert` or `remove`), `id`, `key` (sort key), `row`?, `total`; envelope `seq` |
+| `resync` | server → client | – the client drops its cached rows; `snapshot_meta` and the window follow |
+| `error` | server → client | `code`, `message`; connection stays open |
+
+The first message must be `hello` within 10 seconds; the access token is never accepted in the URL.
+
+Deltas are upserts or removals by `id` and must be applied idempotently: a delta may repeat a state that the snapshot already contained (changes committed shortly before the subscription are numbered after it).
+
+## Windows and jumps
+
+Clients request rows by position (`start`, `end`, end exclusive, at most 1,000 rows). The server answers in chunks of 200 rows, the requested window first; a new `window` replaces the previous one. To serve any position without `OFFSET`, the server keeps **anchors** per subscription – the sort key at every 1,000th position, built from index-only key scans on demand – and reads from the nearest anchor with keyset pagination. At most 4 chunks per subscription are unacknowledged.
 
 ## Close codes
 

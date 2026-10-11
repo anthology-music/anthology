@@ -12,10 +12,14 @@ from anthology.core.config import Settings, get_settings
 from anthology.core.media_urls import MediaKeys, MediaUrlSigner
 from anthology.core.security import load_or_create_key
 from anthology.db import create_engine, create_sessionmaker
+from anthology.sync import api as sync_api
 from anthology.sync.background import ChangeBackground
 from anthology.sync.feed import ChangeFeed
+from anthology.sync.hub import Hub
+from anthology.sync.streams import StreamRegistry
 from anthology.users import api as users_api
 from anthology.users.service import SessionCache, TokenSettings
+from anthology.users.streams import MyDevicesStream, UsersStream
 
 API_PREFIX = "/api/v1"
 
@@ -47,6 +51,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         feed = ChangeFeed(engine)
         feed.subscribe(session_cache.on_change)
         app.state.change_feed = feed
+        hub = Hub(sessionmaker)
+        feed.subscribe(hub.on_change)
+        app.state.hub = hub
         background = ChangeBackground(engine, feed, settings.sync_changelog_retention_days)
         app.state.change_background = background
         if settings.background_tasks:
@@ -58,6 +65,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             await engine.dispose()
 
     app = FastAPI(title="Anthology", version=__version__, lifespan=lifespan)
+    app.state.streams = _streams()
     app.include_router(health.router, prefix=API_PREFIX)
     app.include_router(users_api.router, prefix=API_PREFIX)
+    app.include_router(sync_api.router, prefix=API_PREFIX)
     return app
+
+
+def _streams() -> StreamRegistry:
+    registry = StreamRegistry()
+    registry.register(UsersStream())
+    registry.register(MyDevicesStream())
+    return registry

@@ -18,7 +18,7 @@
 
 ## 4. WebSocket token renewal
 
-- [ ] 4.1 Handle the `auth` message and close with code 4401 on expiry; verify with protocol tests for renewal and expiry
+- [x] 4.1 Handle the `auth` message and close with code 4401 on expiry; verify with protocol tests for renewal and expiry
 - [ ] 4.2 Refresh the token in the client before expiry, and reconnect and resume after 4401; verify with a client test that no full reload happens
 
 ## Workflow follow-up
