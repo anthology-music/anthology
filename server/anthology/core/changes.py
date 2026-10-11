@@ -1,8 +1,9 @@
-"""Global change sequence (change log) and audit log.
+"""Change log (outbox) and audit log.
 
-Every write draws a change sequence number by inserting a change log entry in the same
-transaction (see ``docs/architecture/sync-protocol.md``). Writes to shared data also
-write an audit log entry.
+Every write inserts a change log entry in the same transaction. The entry has no change
+sequence number yet: the sequencer numbers committed entries afterwards, so numbers appear
+in commit order (see ``anthology/sync/sequencer.py`` and ADR 0003). Writes to shared data
+also write an audit log entry.
 """
 
 import enum
@@ -11,7 +12,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import BigInteger, Identity, Integer, String, Text, Uuid
+from sqlalchemy import BigInteger, Identity, Integer, String, Text, Uuid, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -20,7 +21,7 @@ from anthology.db.enums import str_enum
 from anthology.db.types import UTCDateTime, utcnow
 
 # SQLite only autoincrements an INTEGER PRIMARY KEY.
-ChangeSeqType = BigInteger().with_variant(Integer(), "sqlite")
+IdType = BigInteger().with_variant(Integer(), "sqlite")
 
 
 class ChangeScope(enum.StrEnum):
@@ -38,7 +39,8 @@ class ChangeOperation(enum.StrEnum):
 class ChangeLog(Base):
     __tablename__ = "change_log"
 
-    change_seq: Mapped[int] = mapped_column(ChangeSeqType, Identity(), primary_key=True)
+    id: Mapped[int] = mapped_column(IdType, Identity(), primary_key=True)
+    change_seq: Mapped[int | None] = mapped_column(BigInteger, unique=True)
     entity_type: Mapped[str] = mapped_column(String(64))
     entity_id: Mapped[uuid.UUID] = mapped_column(Uuid)
     operation: Mapped[ChangeOperation] = mapped_column(str_enum(ChangeOperation, "operation"))
@@ -70,8 +72,8 @@ async def record_change(
     scope: ChangeScope,
     owner_user_id: uuid.UUID | None = None,
     device_id: uuid.UUID | None = None,
-) -> int:
-    """Write a change log entry in the current transaction and return its change sequence."""
+) -> None:
+    """Write a change log entry in the current transaction; the sequencer numbers it later."""
     entry = ChangeLog(
         entity_type=entity_type,
         entity_id=entity_id,
@@ -82,7 +84,9 @@ async def record_change(
     )
     session.add(entry)
     await session.flush()
-    return entry.change_seq
+    if session.bind.dialect.name == "postgresql":
+        # Delivered on commit; wakes the sequencer immediately.
+        await session.execute(text("SELECT pg_notify('anthology_changes', '')"))
 
 
 async def record_audit(

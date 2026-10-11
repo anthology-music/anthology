@@ -19,6 +19,7 @@ from anthology.core.security import (
     verify_secret,
 )
 from anthology.db.types import utcnow
+from anthology.sync.feed import ChangeEvent
 from anthology.users import schemas
 from anthology.users.models import (
     Device,
@@ -99,6 +100,13 @@ class SessionCache:
 
     def invalidate_user_device(self, user_device_id: uuid.UUID) -> None:
         self._entries.pop(user_device_id, None)
+
+    async def on_change(self, event: ChangeEvent) -> None:
+        """Change feed consumer: drop entries changed by any server process."""
+        if event.entity_type == "user_device":
+            self.invalidate_user_device(event.entity_id)
+        elif event.entity_type == "user":
+            self.invalidate_user(event.entity_id)
 
     def invalidate_user(self, user_id: uuid.UUID) -> None:
         for key, (_, info) in list(self._entries.items()):

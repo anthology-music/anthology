@@ -13,7 +13,7 @@
 
 ## 3. Change sequence and deltas
 
-- [ ] 3.1 Implement the global change sequence and scoped `ChangeLog` writes in the same transaction as each change; verify with a test that concurrent changes get distinct increasing numbers on PostgreSQL and SQLite
+- [x] 3.1 Implement the global change sequence and scoped `ChangeLog` writes in the same transaction as each change; verify with a test that concurrent changes get distinct increasing numbers on PostgreSQL and SQLite
 - [ ] 3.2 Implement the change notifier and per-connection visibility filtering; verify with tests that personal and device deltas reach only their owners
 - [ ] 3.3 Implement change log retention and `resync`; verify with a test using a fake clock that an outdated client is resynchronised with counts first
 

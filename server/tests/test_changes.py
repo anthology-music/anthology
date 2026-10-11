@@ -15,25 +15,6 @@ from anthology.core.changes import (
 from anthology.db import create_sessionmaker
 
 
-async def test_change_sequence_increases_across_transactions(engine: AsyncEngine) -> None:
-    sessionmaker = create_sessionmaker(engine)
-    sequence = []
-    for scope in (ChangeScope.SHARED, ChangeScope.USER, ChangeScope.DEVICE):
-        async with sessionmaker() as session, session.begin():
-            sequence.append(
-                await record_change(
-                    session,
-                    entity_type="test",
-                    entity_id=uuid.uuid4(),
-                    operation=ChangeOperation.UPDATE,
-                    scope=scope,
-                )
-            )
-
-    assert sequence == sorted(sequence)
-    assert len(set(sequence)) == 3
-
-
 async def test_change_and_audit_are_part_of_the_transaction(engine: AsyncEngine) -> None:
     sessionmaker = create_sessionmaker(engine)
     entity_id = uuid.uuid4()
