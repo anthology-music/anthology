@@ -25,7 +25,7 @@
 
 ## 6. CI and docs
 
-- [ ] 6.1 Add `.github/workflows/server.yml` (ubuntu-latest; ruff; pytest on SQLite and on a PostgreSQL 18 service container); verify the workflow file passes a YAML parse and runs green after push
+- [x] 6.1 Add `.github/workflows/server.yml` (ubuntu-latest; ruff; pytest on SQLite and on a PostgreSQL 18 service container); verify the workflow file passes a YAML parse and runs green after push
 - [x] 6.2 Document the test database variable and the dedicated test database in `server/AGENTS.md`; verify the section exists
 
 ## Workflow follow-up
