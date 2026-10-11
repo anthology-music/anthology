@@ -1,0 +1,16 @@
+{
+  "name": "anthology",
+  "private": true,
+  "description": "Anthology – self-hosted music application (workspace root)",
+  "license": "MIT",
+  "packageManager": "pnpm@12.11.2",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "api-types": "pnpm --filter @anthology/api-types generate",
+    "lint": "pnpm --filter client lint",
+    "test": "pnpm --filter client test",
+    "build": "pnpm --filter client build"
+  }
+}
