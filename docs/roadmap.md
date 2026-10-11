@@ -24,7 +24,8 @@ Collected decisions to revisit or features deferred on purpose; each needs its o
 | HTOA, CD-Text and pre-emphasis in the CD ripper | ADR 0018 | |
 | CUETools database (CTDB) as second rip verification | ADR 0018 | |
 | Further multi-room systems (Sonos, Chromecast) | ADR 0011 | new output adapters |
-| OIDC sign-in (Authentik, Keycloak) | ADR 0015 | |
+| OIDC sign-in (Authentik, Keycloak) | ADR 0015 | configured via environment variables (issuer, client, admin group); members of the admin group become admins; local accounts stay available and the admin can disable local sign-in |
+| Protection against password guessing (increasing delay per user name and IP, no permanent lock-out) | change `users-and-devices` | |
 | Binary encoding of the sync protocol | change `sync-protocol-details` | negotiated via protocol version |
 | Smart playlists (saved search plus play count, last played) | change `personal-data` | uses the search syntax |
 | Offline video | change `offline-sync` | per-device resolution limit applies |

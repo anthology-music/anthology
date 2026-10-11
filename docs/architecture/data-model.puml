@@ -398,9 +398,20 @@ package "Users & Devices" {
     +id : UUID
     +username : String
     +displayName : String
-    +passwordHash : String
+    +passwordHash : String [0..1]
     +role : Role
+    +origin : AccountOrigin
     +active : Boolean
+    +createdAt : DateTime
+  }
+  note right of User
+    One account per person, no profiles;
+    passwordHash empty for OIDC accounts.
+  end note
+
+  enum AccountOrigin {
+    LOCAL
+    OIDC
   }
 
   class UserSettings {
@@ -420,8 +431,8 @@ package "Users & Devices" {
   class UserDevice {
     +id : UUID
     +refreshTokenHash : String
-    +pinHash : String [0..1]
     +signedInAt : DateTime
+    +lastUsedAt : DateTime [0..1]
     +revokedAt : DateTime [0..1]
   }
 
@@ -432,6 +443,7 @@ package "Users & Devices" {
     +offlineLimitBytes : Long [0..1]
     +wifiOnlySync : Boolean
     +videosWifiOnly : Boolean
+    +defaultOutput : String [0..1]
     +viewPrefsJson : String
   }
 
@@ -514,6 +526,7 @@ package "Users & Devices" {
     +action : String
     +diffJson : String
     +changeSetId : UUID [0..1]
+    +userId : UUID [0..1]
     +at : DateTime
   }
 

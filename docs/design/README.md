@@ -25,7 +25,7 @@ UI mockups and design tokens for the Anthology client. They are the **visual ref
 | `Mobile-Hoeren.html` | Local – listen with mini player | Phone |
 | `Mobile-Editieren.html` | Local – edit mode with action bar | Phone |
 | `Mobile-Einstellungen.html` | Settings with user/device context | Phone |
-| `Mobile-Profil.html` | Profile picker with PIN (shared device) | Phone |
+| `Mobile-Profil.html` | **Obsolete** – profile picker with PIN, dropped on 2026-10-11 (one account per person, ADR 0015) | Phone |
 
 UI texts in the mockups are German (the first UI language); in the client they come from i18n files.
 

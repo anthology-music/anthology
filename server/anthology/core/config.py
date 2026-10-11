@@ -17,6 +17,12 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     migrations_dir: Path = SERVER_ROOT / "migrations"
 
+    access_token_ttl_seconds: int = 15 * 60
+    session_cache_ttl_seconds: float = 5.0
+    media_url_client_ttl_seconds: int = 60 * 60
+    media_url_output_max_ttl_seconds: int = 24 * 60 * 60
+    media_key_overlap_seconds: int = 24 * 60 * 60
+
     tagger_url: str = "http://localhost:8410"
     omr_url: str = ""
     source_services: str = ""
@@ -31,6 +37,10 @@ class Settings(BaseSettings):
     def source_service_urls(self) -> list[str]:
         """Configured source service base URLs (ADR 0017)."""
         return [url.strip() for url in self.source_services.split(",") if url.strip()]
+
+    @property
+    def keys_dir(self) -> Path:
+        return self.data_dir / "keys"
 
     @property
     def is_sqlite(self) -> bool:
