@@ -18,7 +18,16 @@ async def test_upgrade_and_downgrade_round_trip(settings: Settings, engine: Asyn
 
 async def test_migrations_match_models(engine: AsyncEngine) -> None:
     def diff(sync_conn):
-        context = MigrationContext.configure(sync_conn, opts={"compare_type": True})
+        context = MigrationContext.configure(
+            sync_conn,
+            opts={
+                "compare_type": True,
+                # like migrations/env.py: only tables of Base.metadata (not the demo table)
+                "include_name": lambda name, type_, _parents: (
+                    type_ != "table" or name in Base.metadata.tables
+                ),
+            },
+        )
         return compare_metadata(context, Base.metadata)
 
     async with engine.connect() as connection:

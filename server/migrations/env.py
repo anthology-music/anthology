@@ -17,6 +17,13 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 
+def include_name(name, type_, parent_names) -> bool:
+    """Only manage tables of ``Base.metadata`` (e.g. ignore the developer demo table)."""
+    if type_ == "table":
+        return name in target_metadata.tables
+    return True
+
+
 def _database_url() -> str:
     return config.get_main_option("sqlalchemy.url") or get_settings().database_url
 
@@ -25,6 +32,7 @@ def run_migrations_offline() -> None:
     context.configure(
         url=_database_url(),
         target_metadata=target_metadata,
+        include_name=include_name,
         literal_binds=True,
         render_as_batch=True,
     )
@@ -36,6 +44,7 @@ def _run_migrations(connection: Connection) -> None:
     context.configure(
         connection=connection,
         target_metadata=target_metadata,
+        include_name=include_name,
         render_as_batch=connection.dialect.name == "sqlite",
     )
     with context.begin_transaction():

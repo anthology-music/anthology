@@ -20,7 +20,7 @@ Audio and video use HTTP range requests, not the WebSocket.
 
 ### Jumps without OFFSET (amended 2026-10-11)
 
-Clients request windows by position. Each subscription keeps **anchors** – the sort key at every 1,000th position, built from index-only key scans on demand – so any position is reached from the nearest anchor with keyset pagination and at most one further key scan.
+Clients request windows by position. Each subscription keeps **anchors** – the sort key at every 1,000th position – so any position is reached from the nearest anchor with keyset pagination and at most one further key scan. The database computes the anchors itself (`row_number()` over the sort index, returning only every 1,000th key and stopping at the requested position), so only the anchors travel to the server; at 500,000 rows a jump to the middle takes about 0.3 s.
 
 ### Several server processes (amended 2026-10-11)
 

@@ -2,7 +2,8 @@
 
 ``anchors[i]`` is the sort key of the row at position ``i * STEP - 1`` (the key to read
 *after* to start at position ``i * STEP``); ``anchors[0]`` is ``None`` (start of list).
-Anchors are built from index-only key scans on demand and cached per subscription.
+Anchors are computed in the database (only every ``STEP``-th key is returned) on demand
+and cached per subscription.
 """
 
 from collections.abc import Awaitable, Callable
@@ -10,16 +11,24 @@ from collections.abc import Awaitable, Callable
 from anthology.sync.streams import SortKey
 
 STEP = 1000
-SCAN_BATCH = 10 * STEP
+ANCHOR_BATCH = 20  # extra anchors computed beyond the requested position
 
 KeyScan = Callable[[SortKey | None, int], Awaitable[list[SortKey]]]
+AnchorScan = Callable[[SortKey | None, int, int], Awaitable[list[SortKey]]]
 
 
 class Anchors:
-    def __init__(self, scan: KeyScan, step: int = STEP, scan_batch: int = SCAN_BATCH) -> None:
+    def __init__(
+        self,
+        scan: KeyScan,
+        anchor_scan: AnchorScan,
+        step: int = STEP,
+        anchor_batch: int = ANCHOR_BATCH,
+    ) -> None:
         self._scan = scan
+        self._anchor_scan = anchor_scan
         self._step = step
-        self._scan_batch = scan_batch
+        self._anchor_batch = anchor_batch
         self._anchors: list[SortKey | None] = [None]
         self._complete = False  # True once the end of the list was reached while building
 
@@ -57,9 +66,8 @@ class Anchors:
 
     async def _build_until(self, index: int) -> None:
         while len(self._anchors) <= index and not self._complete:
-            after = self._anchors[-1]
-            keys = await self._scan(after, self._scan_batch)
-            for offset in range(self._step - 1, len(keys), self._step):
-                self._anchors.append(keys[offset])
-            if len(keys) < self._scan_batch:
+            count = index + 1 - len(self._anchors) + self._anchor_batch
+            keys = await self._anchor_scan(self._anchors[-1], self._step, count)
+            self._anchors.extend(keys)
+            if len(keys) < count:
                 self._complete = True

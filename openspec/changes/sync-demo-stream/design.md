@@ -31,6 +31,10 @@
 
 Marked `@pytest.mark.performance`, runs only with `ANTHOLOGY_TEST_DATABASE_URL` (PostgreSQL) and is skipped on SQLite. It seeds 500,000 rows once per session, then measures over the WebSocket: subscribe → `snapshot_meta` and first window; `window` at 250,000 → chunk. Budget: 2 seconds each.
 
+### Finding from the performance test
+
+The first measurement showed 8 s for a jump to row 250,000: anchors were built by fetching every key into Python. Anchors are now computed in the database (`row_number()` over the sort index, only every 1,000th key returned, ordered by the key columns so that the `LIMIT` stops the scan early) and only up to the requested position plus a small reserve. Result on PostgreSQL 18 with 500,000 rows: first window ≈ 0.06 s, jump ≈ 0.3 s. Streams now provide a `KeyQuery` (query and sort columns) instead of their own `keys()`.
+
 ## Risks / Trade-offs
 
 - [Seeding 500,000 rows slows the PostgreSQL test job] → batched inserts (a few seconds); seeding only when the table is not already filled with the expected count.

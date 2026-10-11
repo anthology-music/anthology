@@ -65,15 +65,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             await engine.dispose()
 
     app = FastAPI(title="Anthology", version=__version__, lifespan=lifespan)
-    app.state.streams = _streams()
+    app.state.streams = _streams(settings)
     app.include_router(health.router, prefix=API_PREFIX)
     app.include_router(users_api.router, prefix=API_PREFIX)
     app.include_router(sync_api.router, prefix=API_PREFIX)
     return app
 
 
-def _streams() -> StreamRegistry:
+def _streams(settings: Settings) -> StreamRegistry:
     registry = StreamRegistry()
     registry.register(UsersStream())
     registry.register(MyDevicesStream())
+    if settings.dev_demo:
+        from anthology.sync.demo import DemoItemsStream
+
+        registry.register(DemoItemsStream())
     return registry

@@ -43,10 +43,21 @@ Cross-domain access goes through the other domain's `service.py`, never its mode
 - Migrations: one Alembic revision per change; never edit applied revisions.
 - API changes: update the OpenAPI schema and regenerate `packages/api-types`.
 
+## Developer demo (large list)
+
+To try virtual scrolling and jumps by hand, seed a generated list and enable its stream (developer installations only; the table is not part of the migrations):
+
+```
+ANTHOLOGY_DEV_DEMO=true uv run anthology dev seed-demo --rows 500000
+ANTHOLOGY_DEV_DEMO=true uv run uvicorn anthology.api.app:create_app --factory --reload
+```
+
+Subscribe to the stream `demo.items`. `seed-demo` refuses to run without `ANTHOLOGY_DEV_DEMO=true`; `--reset` recreates the table.
+
 ## Tests
 
 - Tests run on SQLite by default. Set `ANTHOLOGY_TEST_DATABASE_URL` to run them on PostgreSQL as well (CI does both), e.g. `ANTHOLOGY_TEST_DATABASE_URL=postgresql+asyncpg://anthology:anthology@localhost:5432/anthology-test uv run pytest`. The PostgreSQL test database must be **dedicated to tests**: every test session migrates it down to base and up to head, which drops all tables.
 - Code that differs between engines must be tested on both; never assume SQLite behavior matches PostgreSQL.
 - Unit tests per service; API tests with the httpx test client; WebSocket protocol tests for every stream.
 - Media fixtures are generated (sine tones, silence, synthetic MusicXML) – never copyrighted material.
-- Performance tests use the 500,000-track generator in `tools/` and must meet the budgets in the root `AGENTS.md`.
+- Performance tests are marked `@pytest.mark.performance` and run on PostgreSQL only; the protocol budget test uses the demo stream with 500,000 rows. Library performance tests will use the 500,000-track generator in `tools/` (milestone 2). All must meet the budgets in the root `AGENTS.md`.
