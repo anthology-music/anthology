@@ -102,11 +102,11 @@ tools/           test data generator, scripts
 # server
 cd server && uv sync && uv run pytest && uv run ruff check . && uv run ruff format --check .
 
-# client
-cd client && pnpm install && pnpm test && pnpm lint && pnpm build
+# client (pnpm workspace at the repository root)
+pnpm install && pnpm lint && pnpm test && pnpm build
 
-# api types (after changing the server API)
-pnpm --filter api-types generate
+# api types (after changing the server API or the sync messages; commit the result)
+pnpm api-types
 
 # specs
 openspec list && openspec validate --strict

@@ -55,11 +55,18 @@ def test_window_is_clamped_to_the_maximum_size() -> None:
 
 def test_json_schema_covers_both_directions() -> None:
     schema = json_schema()
+    definitions = schema["$defs"]
 
-    client_types = {
-        ref.split("/")[-1] for ref in schema["client"]["discriminator"]["mapping"].values()
+    client_refs = definitions["ClientMessage"]["discriminator"]["mapping"].values()
+    server_types = set(definitions["ServerMessage"]["discriminator"]["mapping"])
+
+    assert {ref.split("/")[-1] for ref in client_refs} == {
+        "Hello",
+        "Auth",
+        "Subscribe",
+        "SetWindow",
+        "Ack",
+        "Unsubscribe",
     }
-    server_types = set(schema["server"]["discriminator"]["mapping"])
-
-    assert client_types == {"Hello", "Auth", "Subscribe", "Window", "Ack", "Unsubscribe"}
     assert server_types == {"welcome", "snapshot_meta", "chunk", "delta", "resync", "error"}
+    assert "type" in definitions["Delta"]["required"]

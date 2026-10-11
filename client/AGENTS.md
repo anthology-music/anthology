@@ -23,7 +23,17 @@ src/
   styles/              design tokens
 ```
 
-API types come from `packages/api-types`; never hand-write request/response types.
+API types come from `@anthology/api-types` (REST: `paths`/`components` from OpenAPI; WebSocket: `ClientMessage`/`ServerMessage` from the sync protocol schema); never hand-write request/response or message types. Regenerate with `pnpm api-types` at the repository root after server changes and commit the result (CI checks it).
+
+## Setup and commands
+
+- pnpm workspace at the repository root: `pnpm install`, `pnpm lint` (ESLint, Prettier, vue-tsc), `pnpm test` (Vitest), `pnpm build`; `pnpm --filter client dev` for the dev server.
+- Web/SPA only for now; Tauri (`src-tauri/`) and Capacitor (`src-capacitor/`) follow in milestone 3.
+- Colours come from `docs/design/tokens.css`: `src/styles/tokens.css` imports it and `quasar.config.ts` reads the brand colours from it at build time. Never copy hex values.
+- Fonts (Ubuntu, Ubuntu Mono) are self-hosted via `@fontsource`; the app makes no requests to third parties.
+- i18n: `src/i18n/de.ts` is the reference, `en.ts` must have the same keys (tested). `src/i18n/setup.ts` creates the instance; boot files only call it, so tests can use it without Quasar CLI.
+- Tests mount the whole app (`test/mount.ts`: Quasar, i18n, routes); `test/setup.ts` stubs browser APIs missing in jsdom.
+- Install scripts of dependencies must be allowed explicitly in `pnpm-workspace.yaml` (`allowBuilds`).
 
 ## UI rules (from the mockups in docs/design)
 

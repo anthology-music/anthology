@@ -110,7 +110,7 @@ class Connection:
         self._queue.put_nowait(message.model_dump(mode="json", exclude_none=True))
 
     def error(self, code: str, message: str = "", sub: str | None = None) -> None:
-        self.send(m.Error(sub=sub, data=m.ErrorData(code=code, message=message)))
+        self.send(m.ErrorMessage(sub=sub, data=m.ErrorData(code=code, message=message)))
 
     async def _writer(self) -> None:
         while True:
@@ -133,7 +133,7 @@ class Connection:
                 await self._auth(message.data.token)
             case m.Subscribe():
                 await self._subscribe(message)
-            case m.Window():
+            case m.SetWindow():
                 subscription = self._subscriptions.get(message.sub)
                 if subscription is None:
                     self.error("unknown_subscription", sub=message.sub)

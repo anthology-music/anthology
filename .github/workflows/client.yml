@@ -1,0 +1,86 @@
+name: client
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "client/**"
+      - "packages/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "docs/design/tokens.css"
+      - "server/anthology/**"
+      - ".github/workflows/client.yml"
+  pull_request:
+    paths:
+      - "client/**"
+      - "packages/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "docs/design/tokens.css"
+      - "server/anthology/**"
+      - ".github/workflows/client.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: client-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  client:
+    # GitHub-hosted standard runner only (see AGENTS.md, CI)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint (ESLint, Prettier, vue-tsc)
+        run: pnpm lint
+
+      - name: Tests
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+  api-types:
+    # The committed generated types must match the server.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.13.0"
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pnpm install --frozen-lockfile
+          uv sync --project server --frozen
+
+      - name: Regenerate API types
+        run: pnpm api-types
+
+      - name: Check that the generated types are up to date
+        run: git diff --exit-code -- packages/api-types/src

@@ -1,0 +1,8 @@
+packages:
+  - client
+  - packages/*
+
+# Install scripts of dependencies run only when allowed here (supply-chain policy).
+# @parcel/watcher ships prebuilt binaries; its install script is not needed.
+allowBuilds:
+  '@parcel/watcher': false

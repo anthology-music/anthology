@@ -22,7 +22,9 @@ class _Data(BaseModel):
 
 
 class _Message(BaseModel):
-    model_config = ConfigDict(extra="ignore")
+    # Fields with defaults (e.g. ``type``) are always sent, so they are required in the
+    # serialization schema used for the generated client types.
+    model_config = ConfigDict(extra="ignore", json_schema_serialization_defaults_required=True)
 
 
 # --- client → server ------------------------------------------------------
@@ -70,7 +72,7 @@ class Subscribe(_Message):
     data: SubscribeData
 
 
-class Window(_Message):
+class SetWindow(_Message):
     type: Literal["window"]
     sub: SubId
     data: WindowData
@@ -93,7 +95,7 @@ class Unsubscribe(_Message):
 
 
 ClientMessage = Annotated[
-    Hello | Auth | Subscribe | Window | Ack | Unsubscribe, Field(discriminator="type")
+    Hello | Auth | Subscribe | SetWindow | Ack | Unsubscribe, Field(discriminator="type")
 ]
 client_message = TypeAdapter(ClientMessage)
 
@@ -162,23 +164,38 @@ class ErrorData(_Data):
     message: str = ""
 
 
-class Error(_Message):
+class ErrorMessage(_Message):
     type: Literal["error"] = "error"
     sub: str | None = None
     data: ErrorData
 
 
 ServerMessage = Annotated[
-    Welcome | SnapshotMeta | Chunk | Delta | Resync | Error, Field(discriminator="type")
+    Welcome | SnapshotMeta | Chunk | Delta | Resync | ErrorMessage, Field(discriminator="type")
 ]
 server_message = TypeAdapter(ServerMessage)
 
 
 def json_schema() -> dict[str, Any]:
+    """One schema for both directions: ``ClientMessage`` and ``ServerMessage`` in ``$defs``.
+
+    Server messages use the serialization schema, so fields the server always sends
+    (such as ``type``) are required.
+    """
+    client = client_message.json_schema()
+    server = server_message.json_schema(mode="serialization")
+    definitions = {**client.pop("$defs"), **server.pop("$defs")}
+    definitions["ClientMessage"] = {**client, "title": "ClientMessage"}
+    definitions["ServerMessage"] = {**server, "title": "ServerMessage"}
     return {
-        "client": client_message.json_schema(),
-        "server": server_message.json_schema(),
+        "title": "SyncProtocol",
         "protocol": PROTOCOL_VERSION,
+        "type": "object",
+        "properties": {
+            "client": {"$ref": "#/$defs/ClientMessage"},
+            "server": {"$ref": "#/$defs/ServerMessage"},
+        },
+        "$defs": definitions,
     }
 
 

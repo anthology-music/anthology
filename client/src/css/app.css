@@ -1,0 +1,27 @@
+@import '../styles/fonts.css';
+@import '../styles/tokens.css';
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-md);
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+.text-muted {
+  color: var(--color-text-muted);
+}
+
+.page {
+  padding: var(--space-8) var(--space-10);
+}
+
+@media (max-width: 599px) {
+  .page {
+    padding: var(--space-5) var(--space-4);
+  }
+}
