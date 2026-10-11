@@ -53,6 +53,10 @@ Clients and servers ignore unknown optional fields and unknown message types the
 - Each change log entry has a scope: `SHARED` (all users), `USER` (owner only), `DEVICE` (one device only).
 - The server sends a delta only to connections that subscribed to the affected data and may see it.
 
+## Several server processes
+
+Change sequence numbers are assigned after commit by a single sequencer (outbox pattern, PostgreSQL advisory lock), so they appear in commit order. Every server process reads the numbered change log and delivers deltas to its own connections; clients may be connected to any process. Several processes require PostgreSQL.
+
 ## Resume and retention
 
 - `hello` carries the client's last change sequence. If it is within the change log retention (default 7 days), the server sends the missed deltas.

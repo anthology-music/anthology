@@ -18,6 +18,14 @@ Progressive loading is designed into every layer:
 
 Audio and video use HTTP range requests, not the WebSocket.
 
+### Several server processes (amended 2026-10-11)
+
+An installation may run several server processes; this requires PostgreSQL (SQLite installations run one process).
+
+- **Outbox with sequencer:** writers insert change log rows without a number; a single sequencer (the process holding a PostgreSQL advisory lock, with automatic takeover) numbers committed rows afterwards. Numbers therefore appear in commit order, and a client that has seen a number never misses a smaller one.
+- **Change feed per process:** every process reads newly numbered rows and dispatches them to its own consumers – WebSocket connections and the session cache, so revocation reaches all processes within a second.
+- `NOTIFY` wakes sequencer and feeds on PostgreSQL; otherwise they poll (50 ms / 100 ms).
+
 ## Consequences
 
 - Every list feature needs a stream implementation and protocol tests.

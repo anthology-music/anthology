@@ -22,6 +22,8 @@ class Settings(BaseSettings):
     media_url_client_ttl_seconds: int = 60 * 60
     media_url_output_max_ttl_seconds: int = 24 * 60 * 60
     media_key_overlap_seconds: int = 24 * 60 * 60
+    sync_changelog_retention_days: int = 7
+    background_tasks: bool = True
 
     tagger_url: str = "http://localhost:8410"
     omr_url: str = ""

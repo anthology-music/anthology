@@ -36,7 +36,8 @@ Cross-domain access goes through the other domain's `service.py`, never its mode
 
 - **No blocking I/O on the event loop.** Use async libraries or run blocking work in a thread/process pool.
 - **Lists are streams:** keyset pagination (`WHERE (sort_key, id) > (:k, :id)`), async generators yielding chunks; never `OFFSET`, never load a full table.
-- Every write (shared, personal, job or device data) draws the global `change_seq` and writes a scoped `change_log` entry in the same transaction; writes to shared data also write an `audit_log` entry (see `docs/architecture/sync-protocol.md`).
+- Every write (shared, personal, job or device data) calls `record_change()` to write a scoped `change_log` entry in the same transaction; the sequencer assigns the global `change_seq` after commit, so never rely on a number inside the transaction. Writes to shared data also write an `audit_log` entry (see `docs/architecture/sync-protocol.md`).
+- Several server processes are supported on PostgreSQL only; never keep state that must be consistent across requests in process memory unless it is invalidated through the change feed.
 - Long-running work is a job: idempotent, resumable, reports progress, respects the throttle level.
 - Adapters are discovered via entry points (e.g. `anthology.sources`, `anthology.outputs`, `anthology.publishers`); external source services are integrated only through the generic source service adapter (ADR 0017), publisher plugins load from `/data/plugins` (ADR 0011).
 - Migrations: one Alembic revision per change; never edit applied revisions.

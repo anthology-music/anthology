@@ -12,6 +12,8 @@ from anthology.core.config import Settings, get_settings
 from anthology.core.media_urls import MediaKeys, MediaUrlSigner
 from anthology.core.security import load_or_create_key
 from anthology.db import create_engine, create_sessionmaker
+from anthology.sync.background import ChangeBackground
+from anthology.sync.feed import ChangeFeed
 from anthology.users import api as users_api
 from anthology.users.service import SessionCache, TokenSettings
 
@@ -37,13 +39,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.token_settings = TokenSettings(
             key=token_key, access_ttl_seconds=settings.access_token_ttl_seconds
         )
-        app.state.session_cache = SessionCache(sessionmaker, settings.session_cache_ttl_seconds)
+        session_cache = SessionCache(sessionmaker, settings.session_cache_ttl_seconds)
+        app.state.session_cache = session_cache
         app.state.media_signer = MediaUrlSigner(
             MediaKeys(settings.keys_dir, settings.media_key_overlap_seconds)
         )
+        feed = ChangeFeed(engine)
+        feed.subscribe(session_cache.on_change)
+        app.state.change_feed = feed
+        background = ChangeBackground(engine, feed, settings.sync_changelog_retention_days)
+        app.state.change_background = background
+        if settings.background_tasks:
+            await background.start()
         try:
             yield
         finally:
+            await background.stop()
             await engine.dispose()
 
     app = FastAPI(title="Anthology", version=__version__, lifespan=lifespan)
