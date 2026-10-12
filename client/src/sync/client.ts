@@ -66,6 +66,7 @@ export class SyncClient {
   private route(message: ServerMessage): void {
     if (message.type === 'error') {
       this.errors.push({ code: message.data.code, sub: message.sub });
+      if (message.sub) this.subscriptions.get(message.sub)?.fail(message.data.code);
       return;
     }
     if ('sub' in message && message.sub) this.subscriptions.get(message.sub)?.handle(message);

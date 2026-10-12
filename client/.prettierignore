@@ -1,2 +1,4 @@
 dist
 .quasar
+test-results
+playwright-report

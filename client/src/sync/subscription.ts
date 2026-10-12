@@ -27,6 +27,8 @@ export class Subscription {
   counters: Record<string, number> = {};
   seq: number | null = null;
   source: RowSource | null = null;
+  /** Error code from the server, e.g. `unknown_stream` or `forbidden`. */
+  error: string | null = null;
   readonly rows = new Map<number, Row>();
   private window: [number, number] = [0, 0];
   /** `subscribe` was sent on the current connection; windows may be sent only then. */
@@ -113,6 +115,19 @@ export class Subscription {
         break;
       default:
         break;
+    }
+  }
+
+  /** The server rejected this subscription or one of its requests. */
+  fail(code: string): void {
+    this.error = code;
+    this.emit();
+  }
+
+  /** Drop loaded rows outside [start, end) to bound memory while scrolling far. */
+  prune(start: number, end: number): void {
+    for (const position of [...this.rows.keys()]) {
+      if (position < start || position >= end) this.rows.delete(position);
     }
   }
 

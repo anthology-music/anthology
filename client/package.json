@@ -11,7 +11,8 @@
     "build": "quasar build",
     "lint": "eslint . && prettier --check . && vue-tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "@anthology/api-types": "workspace:*",
@@ -28,6 +29,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.64.0",
     "@quasar/app-vite": "^3.10.2",
     "@quasar/vite-plugin": "^2.0.2",
     "@types/node": "^22.20.5",

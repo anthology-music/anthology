@@ -1,0 +1,17 @@
+#!/bin/sh
+# Starts the Python server for the end-to-end tests on a fresh database:
+# migrations down and up (the database must be dedicated to tests), demo list seeded.
+set -eu
+
+cd "$(dirname "$0")/../../server"
+: "${ANTHOLOGY_E2E_DATABASE_URL:?set ANTHOLOGY_E2E_DATABASE_URL to a PostgreSQL test database}"
+
+export ANTHOLOGY_DATABASE_URL="$ANTHOLOGY_E2E_DATABASE_URL"
+export ANTHOLOGY_DEV_DEMO=true
+export ANTHOLOGY_DATA_DIR="${ANTHOLOGY_E2E_DATA_DIR:-${TMPDIR:-/tmp}/anthology-e2e}"
+rm -rf "$ANTHOLOGY_DATA_DIR"
+
+uv run alembic downgrade base
+uv run alembic upgrade head
+uv run anthology dev seed-demo --rows "${ANTHOLOGY_E2E_DEMO_ROWS:-500000}"
+exec uv run uvicorn anthology.api.app:create_app --factory --port "${ANTHOLOGY_E2E_SERVER_PORT:-8490}"

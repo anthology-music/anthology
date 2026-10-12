@@ -14,6 +14,16 @@ const routes: RouteRecordRaw[] = [
       { path: 'local', name: 'local', component: () => import('@/pages/LocalPage.vue') },
       { path: 'works', name: 'works', component: () => import('@/pages/WorksPage.vue') },
       { path: 'settings', name: 'settings', component: () => import('@/pages/SettingsPage.vue') },
+      // Developer demo of a large list (server needs ANTHOLOGY_DEV_DEMO=true); dev builds only.
+      ...(import.meta.env.DEV
+        ? [
+            {
+              path: 'dev/demo',
+              name: 'demo',
+              component: () => import('@/features/dev/DemoListPage.vue'),
+            },
+          ]
+        : []),
     ],
   },
   {
