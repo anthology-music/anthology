@@ -5,10 +5,11 @@ import logging
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from sqlalchemy import text
+from sqlalchemy import select, text
 from sqlalchemy.exc import SQLAlchemyError
 
 from anthology import __version__
+from anthology.core.services import ServiceStatus
 from anthology.db.migrations import current_revisions, head_revisions
 
 logger = logging.getLogger(__name__)
@@ -25,6 +26,8 @@ class Readiness(BaseModel):
     status: str
     database: str
     migrations: str
+    # Status per service (e.g. tagger); informational, readiness does not depend on it.
+    services: dict[str, str] = {}
 
 
 @router.get("/health")
@@ -45,7 +48,12 @@ async def ready(request: Request) -> Readiness:
 
     if current != head_revisions(request.app.state.settings):
         return _not_ready(database="ok", migrations="behind")
-    return Readiness(status="ready", database="ok", migrations="current")
+    async with request.app.state.sessionmaker() as session:
+        services = {
+            service.name: service.status.value
+            for service in await session.scalars(select(ServiceStatus))
+        }
+    return Readiness(status="ready", database="ok", migrations="current", services=services)
 
 
 def _not_ready(*, database: str, migrations: str) -> JSONResponse:

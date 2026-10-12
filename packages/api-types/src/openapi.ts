@@ -536,6 +536,13 @@ export interface components {
             database: string;
             /** Migrations */
             migrations: string;
+            /**
+             * Services
+             * @default {}
+             */
+            services: {
+                [key: string]: string;
+            };
             /** Status */
             status: string;
         };

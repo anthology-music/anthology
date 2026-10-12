@@ -8,7 +8,7 @@ Rules for the Python server. The root `AGENTS.md` applies as well.
 - **FastAPI** (REST + WebSocket), **pydantic** v2, **pydantic-settings**.
 - **SQLAlchemy 2.x async** + **Alembic** migrations; SQLite for development/tests, PostgreSQL for production.
 - Media: **FFmpeg/ffprobe** (LGPL build, via `asyncio.create_subprocess_exec`, never `shell=True`), **Chromaprint/pyacoustid**, **tinytag** (fast read-only tags), **pypdfium2** (PDF pages).
-- Full tag reading/writing goes through the **tagger service** (`services/tagger`, client in `anthology/library/tagger_client.py`). **Never import mutagen, streamrip or PyMuPDF here** (license – see root `AGENTS.md`).
+- Full tag reading/writing goes through the **tagger service** (`services/tagger`, client in `anthology/tagging/tagger_client.py`). **Never import mutagen, streamrip or PyMuPDF here** (license – see root `AGENTS.md`).
 - Streaming sources (Tidal, Spotify, YouTube) are optional source services from separate repositories (ADR 0017). The server integrates them only through the generic adapter for `docs/architecture/source-service-api.md`; never import spotDL, yt-dlp, streamrip or tidalapi here.
 - Tests: **pytest** + **pytest-asyncio** + **httpx**. Lint/format: **ruff**.
 
@@ -52,6 +52,12 @@ Long-running work is a job (spec: jobs). To add a job type:
 3. Create jobs from the domain service with `jobs.service.create_job(session, type_=…, title=…, items=[…], created_by=…, params=…, priority_class=…)` inside the domain's transaction.
 
 The runner claims jobs with leases, so a job runs in one process at a time and continues elsewhere after a crash (30 s lease). Items must therefore be **idempotent**: an item that was running when a process died runs again. Throttle level: `ANTHOLOGY_JOBS_THROTTLE` (`gentle`/`normal`/`fast` = 1/2/4 background jobs per process); interactive jobs have their own slots. A demo job (`POST /api/v1/dev/jobs/demo`) exists with `ANTHOLOGY_DEV_DEMO=true`.
+
+## Tagger and service status
+
+Use the tagger only through `TaggerClient` (`app.state.tagger`, `anthology/tagging/tagger_client.py`); it splits lists into batches and raises `TaggerUnavailable` / `TaggerIncompatible`. Per-file errors are in the results. Never assume the tagger is running: callers (jobs) must keep their work resumable when it is unavailable.
+
+A `ServiceMonitor` per process (`anthology/core/services.py`) checks the tagger's health (30 s while available, 5 s otherwise, immediately after a failed call) and stores the status in `service_status` with a change-log entry; clients see it live in the `services` stream. Further services (source services, recognition) report through the same monitor.
 
 ## Developer demo (large list)
 

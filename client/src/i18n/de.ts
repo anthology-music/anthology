@@ -107,6 +107,17 @@ export default {
       failed: 'Das hat nicht geklappt. Bitte versuche es noch einmal.',
     },
   },
+  services: {
+    title: 'Dienste',
+    names: { tagger: 'Tagger (Tags lesen und schreiben)' },
+    status: {
+      available: 'Verfügbar',
+      unavailable: 'Nicht erreichbar',
+      incompatible: 'Inkompatible Version',
+    },
+    versions: 'Version {version} · Schnittstelle {api}',
+    none: 'Noch keine Dienste geprüft.',
+  },
   user: { signedOut: 'Nicht angemeldet' },
   pages: {
     streaming: {

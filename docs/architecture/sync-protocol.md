@@ -55,6 +55,10 @@ Clients request rows by position (`start`, `end`, end exclusive, at most 1,000 r
 
 `snapshot_meta.data` = `{ "total": n, "counters": { … } }`. The counter keys of each subscription type are defined by the owning domain's spec (e.g. jobs: `running`, `failed`; review: count per type and status). All values come from maintained counters, never from counting rows on request. Every `delta` of a subscription with counters carries the current `counters` along with `total`, so counter displays stay live without a new snapshot.
 
+## Service availability
+
+The stream `services` (all signed-in users, no parameters) lists the services the installation uses – currently the tagger – with `status` (`available`, `unavailable`, `incompatible`), `version`, `interface` and `message`; counters per status. Every server process checks the services and stores status changes with a change-log entry, so all connections receive the same deltas. Clients use it to hide features of unavailable services.
+
 ## Change sequence and visibility
 
 - One global, monotonically increasing change sequence covers shared data, personal data, jobs and devices.
