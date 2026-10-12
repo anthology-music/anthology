@@ -123,10 +123,11 @@ package "Library" {
     +height : Integer
     +sizeBytes : Long
     +source : ProvenanceSource
-    +path : String
+    +blobKey : String
   }
   note right of Image
-    Stored once per content hash;
+    Stored once per content hash
+    in the BlobStore (ADR 0019);
     thumbnails are cache entries.
   end note
 
@@ -149,7 +150,7 @@ package "Library" {
     +format : String
     +bitrateKbps : Integer [0..1]
     +contextTrackId : UUID [0..1]
-    +path : String
+    +blobKey : String
     +sizeBytes : Long
     +changeSeq : Long
     +lastAccessedAt : DateTime

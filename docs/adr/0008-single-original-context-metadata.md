@@ -31,3 +31,4 @@ The same recording often appears on several releases (album, deluxe edition, com
 - Referenced and hardlinked imports save space but never get base tags written; superseded referenced files keep using space until the user removes them outside Anthology.
 - The tagger service (ADR 0004) must write complete context tags into a copy without touching the source.
 - Tagged copies use the transcode cache and its size limit; they are never originals.
+- Images from tags and all caches are stored behind the `BlobStore` interface (ADR 0019); originals stay on the file system.

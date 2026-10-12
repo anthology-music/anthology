@@ -1,0 +1,52 @@
+name: tagger
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "services/tagger/**"
+      - ".github/workflows/tagger.yml"
+  pull_request:
+    paths:
+      - "services/tagger/**"
+      - ".github/workflows/tagger.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tagger-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: services/tagger
+
+jobs:
+  test:
+    # GitHub-hosted standard runner only (see AGENTS.md, CI)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install FFmpeg (generates test media)
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.13.0"
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: services/tagger/uv.lock
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Lint
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+
+      - name: Tests
+        run: uv run pytest

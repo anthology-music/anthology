@@ -15,7 +15,7 @@
 ## 3. Propagation and tagger
 
 - [ ] 3.1 Implement the persistent file write queue with coalescing, write modes per storage mode and resume after tagger outage; verify with tests using a fake tagger (down, up, managed, referenced with and without opt-in, superseded)
-- [ ] 3.2 Implement `POST /v1/tags/write` modes in `services/tagger` (atomic, in place); verify that an atomic write interrupted by kill leaves the file unchanged and an in-place write keeps the hardlink count
+- [x] 3.2 ~~Implement `POST /v1/tags/write` modes in `services/tagger`~~ – moved to change `tagger-service` (task 2.4)
 - [ ] 3.3 Invalidate transcodes and tagged copies of affected contexts and send deltas; verify with a test that a title edit discards the cache entries and a subscribed client receives a delta
 
 ## 4. Conflict list and client

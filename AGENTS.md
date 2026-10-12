@@ -105,6 +105,9 @@ cd server && uv sync && uv run pytest && uv run ruff check . && uv run ruff form
 # client (pnpm workspace at the repository root)
 pnpm install && pnpm lint && pnpm test && pnpm build
 
+# tagger service (needs ffmpeg for the generated test media)
+cd services/tagger && uv sync && uv run pytest && uv run ruff check . && uv run ruff format --check .
+
 # api types (after changing the server API or the sync messages; commit the result)
 pnpm api-types
 

@@ -51,12 +51,7 @@ If the tagger is unavailable, entries stay queued; health checks resume the work
 
 ### Tagger interface v1
 
-| Endpoint | Purpose |
-|---|---|
-| `POST /v1/tags/read` | full tags, cover and audio properties of one or more files |
-| `POST /v1/tags/write` | write tags and cover into one or more files; `mode: atomic \| in_place` |
-| `POST /v1/tags/copy` | write a tagged copy into the cache (change `context-tags-on-delivery`) |
-| `GET /v1/health` | health and version |
+Specified and built by change `tagger-service` (`docs/architecture/tagger-api.md`): read, write (`atomic | in_place`), copy, health.
 
 ### Progressive loading
 
