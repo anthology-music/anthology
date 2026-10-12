@@ -14,7 +14,9 @@ class Settings(BaseSettings):
     cache_root: str = "/data/cache"
     journal_dir: str = "/data/cache/tagger/journal"
     max_batch: int = 200
-    host: str = "0.0.0.0"  # noqa: S104 - reachable inside the pod only, no published port
+    # Empty = all interfaces, IPv4 and IPv6 (one socket each), so "localhost" works when it
+    # resolves to ::1 first. The port is reachable inside the pod only, it is not published.
+    host: str = ""
     port: int = 8410
 
     def root_paths(self) -> list[Path]:
