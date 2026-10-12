@@ -24,7 +24,9 @@ class Anchors:
         anchor_scan: AnchorScan,
         step: int = STEP,
         anchor_batch: int = ANCHOR_BATCH,
+        descending: bool = False,
     ) -> None:
+        self._descending = descending
         self._scan = scan
         self._anchor_scan = anchor_scan
         self._step = step
@@ -52,10 +54,10 @@ class Anchors:
         return keys[-1], True
 
     def invalidate_from(self, key: SortKey) -> None:
-        """Drop anchors at or after ``key`` (rows were inserted or removed there)."""
+        """Drop anchors at or after ``key`` in list order (rows were inserted or removed)."""
         for index in range(1, len(self._anchors)):
             anchor = self._anchors[index]
-            if anchor is not None and anchor >= key:
+            if anchor is not None and (anchor <= key if self._descending else anchor >= key):
                 del self._anchors[index:]
                 self._complete = False
                 return

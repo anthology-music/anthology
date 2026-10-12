@@ -12,6 +12,10 @@ from anthology.core.config import Settings, get_settings
 from anthology.core.media_urls import MediaKeys, MediaUrlSigner
 from anthology.core.security import load_or_create_key
 from anthology.db import create_engine, create_sessionmaker
+from anthology.jobs import api as jobs_api
+from anthology.jobs.handlers import HandlerRegistry
+from anthology.jobs.runner import JobRunner
+from anthology.jobs.streams import JobItemsStream, JobsStream
 from anthology.sync import api as sync_api
 from anthology.sync.background import ChangeBackground
 from anthology.sync.feed import ChangeFeed
@@ -56,26 +60,49 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.hub = hub
         background = ChangeBackground(engine, feed, settings.sync_changelog_retention_days)
         app.state.change_background = background
+        runner = JobRunner(
+            engine,
+            app.state.job_handlers,
+            throttle=settings.jobs_throttle,
+            interactive_slots=settings.jobs_interactive_slots,
+            lease_seconds=settings.jobs_lease_seconds,
+        )
+        app.state.job_runner = runner
         if settings.background_tasks:
             await background.start()
+            await runner.start()
         try:
             yield
         finally:
+            await runner.stop()
             await background.stop()
             await engine.dispose()
 
     app = FastAPI(title="Anthology", version=__version__, lifespan=lifespan)
     app.state.streams = _streams(settings)
+    app.state.job_handlers = _job_handlers(settings)
     app.include_router(health.router, prefix=API_PREFIX)
     app.include_router(users_api.router, prefix=API_PREFIX)
     app.include_router(sync_api.router, prefix=API_PREFIX)
+    app.include_router(jobs_api.router, prefix=API_PREFIX)
     return app
+
+
+def _job_handlers(settings: Settings) -> HandlerRegistry:
+    registry = HandlerRegistry()
+    if settings.dev_demo:
+        from anthology.jobs.demo import DemoJobHandler
+
+        registry.register(DemoJobHandler())
+    return registry
 
 
 def _streams(settings: Settings) -> StreamRegistry:
     registry = StreamRegistry()
     registry.register(UsersStream())
     registry.register(MyDevicesStream())
+    registry.register(JobsStream())
+    registry.register(JobItemsStream())
     if settings.dev_demo:
         from anthology.sync.demo import DemoItemsStream
 

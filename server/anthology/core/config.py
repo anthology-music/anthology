@@ -2,6 +2,7 @@
 
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -26,6 +27,9 @@ class Settings(BaseSettings):
     background_tasks: bool = True
     ws_hello_timeout_seconds: float = 10.0
     dev_demo: bool = False
+    jobs_throttle: Literal["gentle", "normal", "fast"] = "normal"
+    jobs_interactive_slots: int = 2
+    jobs_lease_seconds: float = 30.0
 
     tagger_url: str = "http://localhost:8410"
     omr_url: str = ""

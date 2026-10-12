@@ -264,7 +264,7 @@ class Connection:
             async with self._sessionmaker() as db:
                 return await scan_anchors(db, key_query, after, step, count)
 
-        return Anchors(keys, anchors)
+        return Anchors(keys, anchors, descending=key_query.descending)
 
     # --- windows and chunks -----------------------------------------------
 
