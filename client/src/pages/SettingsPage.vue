@@ -1,6 +1,10 @@
 <template>
   <q-page class="page">
     <PageHeader :title="t('pages.settings.title')" :description="t('pages.settings.description')" />
+    <div class="settings">
+      <MyDevices />
+      <UserAdministration v-if="auth.isAdmin" />
+    </div>
   </q-page>
 </template>
 
@@ -8,6 +12,10 @@
 import { useI18n } from 'vue-i18n';
 
 import PageHeader from '@/components/PageHeader.vue';
+import MyDevices from '@/features/users/components/MyDevices.vue';
+import UserAdministration from '@/features/users/components/UserAdministration.vue';
+import { useAuthStore } from '@/features/users/store';
 
 const { t } = useI18n();
+const auth = useAuthStore();
 </script>

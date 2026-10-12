@@ -8,10 +8,9 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
 
-// The real state comes from the sync layer (client-auth-sync).
-withDefaults(defineProps<{ state?: 'offline' | 'connecting' | 'live' | 'reconnecting' }>(), {
-  state: 'offline',
-});
+import type { ConnectionState } from '@/sync/connection';
+
+withDefaults(defineProps<{ state?: ConnectionState }>(), { state: 'offline' });
 
 const { t } = useI18n();
 </script>
@@ -34,6 +33,10 @@ const { t } = useI18n();
 
 .connection[data-state='live'] .connection__dot {
   background: var(--color-status-ok);
+}
+
+.connection[data-state='outdated'] .connection__dot {
+  background: var(--color-status-error);
 }
 
 .connection[data-state='connecting'] .connection__dot,

@@ -17,7 +17,7 @@ function token(name: string): string {
 }
 
 export default defineConfig(() => ({
-  boot: ['i18n'],
+  boot: ['i18n', 'auth'],
   css: ['app.css'],
   extras: ['material-icons'],
   build: {
@@ -25,7 +25,13 @@ export default defineConfig(() => ({
     typescript: { strict: true, vueShim: true },
     vueRouterMode: 'history',
   },
-  devServer: { open: false },
+  devServer: {
+    open: false,
+    // The Python server (uvicorn on port 8400) serves REST and the WebSocket.
+    proxy: {
+      '/api': { target: 'http://localhost:8400', ws: true },
+    },
+  },
   framework: {
     config: {
       dark: true,

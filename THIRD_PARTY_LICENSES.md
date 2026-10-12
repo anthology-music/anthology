@@ -96,6 +96,8 @@ Licenses as published on PyPI/npm or by the projects. ⚠ marks components whose
 | TypeScript | Apache-2.0 | client and generated types (development) |
 | vue-tsc, Vitest, @vue/test-utils, jsdom, ESLint and plugins, Prettier, @quasar/vite-plugin, @vitejs/plugin-vue | MIT | client development only |
 | openapi-typescript, json-schema-to-typescript | MIT | generating `packages/api-types` (development only) |
+| openapi-fetch | MIT | typed REST client |
+| fake-indexeddb | Apache-2.0 | IndexedDB in client tests (development only) |
 | Dexie.js | Apache-2.0 | local cache in the browser |
 | Pillow | MIT-CMU | cover thumbnails |
 | cd-da-reader (Rust) | MIT | CD reading in the desktop client (ADR 0018) |

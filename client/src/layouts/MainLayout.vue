@@ -21,8 +21,29 @@
         </nav>
 
         <div class="sidebar__footer">
-          <ConnectionState />
-          <div class="sidebar__user">{{ t('user.signedOut') }}</div>
+          <ConnectionState :state="sync.connection" />
+          <q-btn
+            v-if="auth.user"
+            flat
+            no-caps
+            align="left"
+            class="sidebar__user"
+            :aria-label="t('userMenu')"
+          >
+            <div class="sidebar__user-text">
+              <span>{{ auth.user.display_name }}</span>
+              <span class="text-muted">{{ t(`roles.${auth.user.role}`) }}</span>
+            </div>
+            <q-menu anchor="top left" self="bottom left">
+              <q-list>
+                <q-item v-close-popup clickable @click="logout">
+                  <q-item-section avatar><q-icon name="logout" /></q-item-section>
+                  <q-item-section>{{ t('auth.logout') }}</q-item-section>
+                </q-item>
+              </q-list>
+            </q-menu>
+          </q-btn>
+          <div v-else class="sidebar__user">{{ t('user.signedOut') }}</div>
         </div>
       </div>
     </q-drawer>
@@ -37,10 +58,21 @@
 // Drawer width matches --sidebar-width in docs/design/tokens.css.
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useRouter } from 'vue-router';
 
 import ConnectionState from '@/components/ConnectionState.vue';
+import { useAuthStore } from '@/features/users/store';
+import { useSyncStore } from '@/sync/store';
 
 const { t } = useI18n();
+const auth = useAuthStore();
+const sync = useSyncStore();
+const router = useRouter();
+
+async function logout() {
+  await auth.logout();
+  await router.replace({ name: 'login' });
+}
 const drawerOpen = ref(false);
 
 const navigation = [
@@ -112,5 +144,12 @@ const navigation = [
 .sidebar__user {
   font-size: var(--text-sm);
   color: var(--color-text-muted);
+}
+
+.sidebar__user-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.3;
 }
 </style>

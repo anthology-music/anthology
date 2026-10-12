@@ -1,14 +1,16 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import App from '@/App.vue';
 
-import { mountWithApp } from './mount';
+import { fakeServices, mountWithApp } from './mount';
 
 function labels(wrapper: Awaited<ReturnType<typeof mountWithApp>>): string[] {
   return wrapper.findAll('nav .sidebar__label').map((label) => label.text());
 }
 
 describe('MainLayout', () => {
+  beforeEach(() => void fakeServices());
+
   it('shows the navigation in German by default', async () => {
     const wrapper = await mountWithApp(App);
 
