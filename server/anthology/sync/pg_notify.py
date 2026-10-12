@@ -3,6 +3,7 @@
 import asyncio
 import contextlib
 import logging
+from collections.abc import Callable
 
 import asyncpg
 from sqlalchemy.engine import make_url
@@ -14,9 +15,12 @@ logger = logging.getLogger(__name__)
 class Listener:
     """Sets ``event`` whenever a notification arrives on ``channel``."""
 
-    def __init__(self, engine: AsyncEngine, channel: str) -> None:
+    def __init__(
+        self, engine: AsyncEngine, channel: str, on_notify: Callable[[], None] | None = None
+    ) -> None:
         self._engine = engine
         self._channel = channel
+        self._on_notify = on_notify
         self._connection: asyncpg.Connection | None = None
         self.event = asyncio.Event()
 
@@ -50,3 +54,5 @@ class Listener:
 
     def _notified(self, *_args) -> None:
         self.event.set()
+        if self._on_notify is not None:
+            self._on_notify()

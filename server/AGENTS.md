@@ -43,6 +43,16 @@ Cross-domain access goes through the other domain's `service.py`, never its mode
 - Migrations: one Alembic revision per change; never edit applied revisions.
 - API changes: update the OpenAPI schema and regenerate `packages/api-types`.
 
+## Adding a job type
+
+Long-running work is a job (spec: jobs). To add a job type:
+
+1. Implement a handler with `type`, `parallel_items` (1 = items one after another) and `async def run_item(ctx) -> ItemResult` (`anthology/jobs/handlers.py`). Call `await ctx.report(progress, message)` for progress (throttled to one write per second) and check `await ctx.cancelled()` inside long items.
+2. Register it in `_job_handlers()` in `anthology/api/app.py`.
+3. Create jobs from the domain service with `jobs.service.create_job(session, type_=…, title=…, items=[…], created_by=…, params=…, priority_class=…)` inside the domain's transaction.
+
+The runner claims jobs with leases, so a job runs in one process at a time and continues elsewhere after a crash (30 s lease). Items must therefore be **idempotent**: an item that was running when a process died runs again. Throttle level: `ANTHOLOGY_JOBS_THROTTLE` (`gentle`/`normal`/`fast` = 1/2/4 background jobs per process); interactive jobs have their own slots. A demo job (`POST /api/v1/dev/jobs/demo`) exists with `ANTHOLOGY_DEV_DEMO=true`.
+
 ## Developer demo (large list)
 
 To try virtual scrolling and jumps by hand, seed a generated list and enable its stream (developer installations only; the table is not part of the migrations):

@@ -262,24 +262,49 @@ package "Sources & Jobs" {
   class Job {
     +id : UUID
     +type : JobType
+    +title : String
+    +paramsJson : String
     +status : JobStatus
+    +priorityClass : PriorityClass
+    +parallelItems : Integer
     +progress : Float
     +totalItems : Integer
     +doneItems : Integer
-    +mediaMode : MediaMode
-    +maxVideoResolution : Integer [0..1]
-    +priority : Integer
+    +failedItems : Integer
+    +error : String [0..1]
+    +leaseOwner : String [0..1]
+    +leaseExpiresAt : DateTime [0..1]
     +createdAt : DateTime
+    +startedAt : DateTime [0..1]
     +finishedAt : DateTime [0..1]
+  }
+  note right of Job
+    Runs in at most one process (lease).
+    Download options (media mode, max
+    video resolution) live in paramsJson.
+  end note
+
+  class JobCounter {
+    +status : JobStatus
+    +count : Integer
+  }
+
+  enum PriorityClass {
+    INTERACTIVE
+    BACKGROUND
   }
 
   class JobItem {
     +id : UUID
+    +position : Integer
     +title : String
     +status : JobStatus
     +progress : Float
     +outcome : ItemOutcome [0..1]
     +message : String [0..1]
+    +resultJson : String [0..1]
+    +startedAt : DateTime [0..1]
+    +finishedAt : DateTime [0..1]
   }
 
   class CdImportSession {
@@ -322,6 +347,7 @@ package "Sources & Jobs" {
   }
 
   enum JobType {
+    DEMO
     DOWNLOAD
     CD_IMPORT
     LIBRARY_IMPORT

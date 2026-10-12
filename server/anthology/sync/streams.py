@@ -1,6 +1,7 @@
 """Stream interface: what a domain implements to make a list available over the protocol."""
 
 import uuid
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Any, Literal, Protocol
 
@@ -44,10 +45,27 @@ class Row:
 
 @dataclass(frozen=True)
 class KeyQuery:
-    """The rows of a list (``query``: FROM/WHERE only) and its sort key columns."""
+    """The rows of a list (``query``: FROM/WHERE only) and its sort key columns.
+
+    With ``descending`` the list is ordered by the key from largest to smallest
+    (e.g. newest first); "after" then means "smaller than".
+    """
 
     query: Select
     columns: tuple[ColumnElement[Any], ...]
+    descending: bool = False
+
+    def after(self, after: SortKey | None) -> ColumnElement[bool] | None:
+        if after is None:
+            return None
+        key = tuple_(*self.columns)
+        return key < tuple_(*after) if self.descending else key > tuple_(*after)
+
+    def ordering(self, columns: Sequence[ColumnElement[Any]] | None = None) -> list[Any]:
+        return [
+            column.desc() if self.descending else column.asc()
+            for column in (columns if columns is not None else self.columns)
+        ]
 
 
 async def scan_keys(
@@ -55,9 +73,10 @@ async def scan_keys(
 ) -> list[SortKey]:
     """Index-only keyset scan of the sort keys after ``after``."""
     query = key_query.query.with_only_columns(*key_query.columns)
-    if after is not None:
-        query = query.where(tuple_(*key_query.columns) > tuple_(*after))
-    query = query.order_by(*key_query.columns).limit(limit)
+    condition = key_query.after(after)
+    if condition is not None:
+        query = query.where(condition)
+    query = query.order_by(*key_query.ordering()).limit(limit)
     return [tuple(row) for row in await db.execute(query)]
 
 
@@ -72,15 +91,21 @@ async def scan_anchors(
     columns = key_query.columns
     labelled = [column.label(f"k{index}") for index, column in enumerate(columns)]
     inner = key_query.query.with_only_columns(
-        *labelled, func.row_number().over(order_by=columns).label("rn")
+        *labelled, func.row_number().over(order_by=key_query.ordering()).label("rn")
     )
-    if after is not None:
-        inner = inner.where(tuple_(*columns) > tuple_(*after))
+    condition = key_query.after(after)
+    if condition is not None:
+        inner = inner.where(condition)
     ranked = inner.subquery()
     keys = [ranked.c[f"k{index}"] for index in range(len(columns))]
     # Ordering by the key columns (not by rn) lets the database stop at the LIMIT
     # instead of numbering the whole list first.
-    query = select(*keys).where(ranked.c.rn % step == 0).order_by(*keys).limit(count)
+    query = (
+        select(*keys)
+        .where(ranked.c.rn % step == 0)
+        .order_by(*key_query.ordering(keys))
+        .limit(count)
+    )
     return [tuple(row) for row in await db.execute(query)]
 
 
