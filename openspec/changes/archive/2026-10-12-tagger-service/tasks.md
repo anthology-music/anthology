@@ -14,9 +14,9 @@
 - [x] 2.3 `POST /v1/tags/read` with neutral fields, audio properties, raw keys, image descriptors and extraction by content hash; verify round trips and per-file errors (missing, corrupt, unsupported) in one batch
 - [x] 2.4 `POST /v1/tags/write` with field semantics (keep, remove, replace all, images), `atomic` and `in_place` modes, hardlink refusal and journal recovery; verify hardlinks are kept, atomic writes to hardlinked files are refused, and killed writes leave old or new state
 - [x] 2.5 `POST /v1/tags/copy`; verify the copy's tags and the unchanged checksum of the source
-- [ ] 2.6 `Containerfile` (non-root, port 8410, volumes as in Quadlet/Compose); verify the image builds and answers health (by the maintainer on the host with Podman)
+- [x] 2.6 `Containerfile` (non-root, port 8410, volumes as in Quadlet/Compose); verify the image builds and answers health (by the maintainer on the host with Podman)
 
 ## 3. CI and verification
 
-- [ ] 3.1 CI workflow `tagger.yml` (standard runner, FFmpeg from apt, ruff, pytest); verify it passes
-- [ ] 3.2 Run all tests and linters; archive this change before pushing
+- [x] 3.1 CI workflow `tagger.yml` (standard runner, FFmpeg from apt, ruff, pytest); verify it passes
+- [x] 3.2 Run all tests and linters; archive this change before pushing
