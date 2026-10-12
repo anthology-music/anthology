@@ -146,7 +146,7 @@ jobs:
 
       - name: Start a Fedora host with systemd and Podman 5
         run: |
-          docker build -t quadlet-host .github/quadlet-host
+          docker build -t quadlet-host -f .github/quadlet-host/Containerfile .github/quadlet-host
           docker run -d --name host --privileged --cgroupns=private \
             --tmpfs /run --tmpfs /tmp -v quadlet-storage:/var/lib/containers quadlet-host
           for attempt in $(seq 1 30); do
