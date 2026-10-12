@@ -158,8 +158,8 @@ jobs:
 
       - name: Install the Quadlet files as documented
         run: |
-          docker cp "${{ runner.temp }}/images.tar" host:/tmp/images.tar
-          docker exec host podman load -i /tmp/images.tar
+          docker cp "${{ runner.temp }}/images.tar" host:/var/tmp/images.tar
+          docker exec host podman load -i /var/tmp/images.tar
           docker cp deploy/quadlet/. host:/etc/containers/systemd/
           docker exec host sh -c 'head -c 24 /dev/urandom | base64 | podman secret create anthology-db-password -'
           docker exec host /usr/libexec/podman/quadlet -dryrun > /dev/null
@@ -168,8 +168,8 @@ jobs:
 
       - name: Smoke test
         run: |
-          docker cp deploy/smoke-test.sh host:/tmp/smoke-test.sh
-          docker exec host sh /tmp/smoke-test.sh http://localhost:8400
+          docker cp deploy/smoke-test.sh host:/var/tmp/smoke-test.sh
+          docker exec host sh /var/tmp/smoke-test.sh http://localhost:8400
 
       - name: Logs
         if: failure()
