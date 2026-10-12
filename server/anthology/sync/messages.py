@@ -144,6 +144,7 @@ class DeltaData(_Data):
     key: list[Any] | None = None
     row: dict[str, Any] | None = None
     total: int | None = None
+    counters: dict[str, int] | None = None
 
 
 class Delta(_Message):

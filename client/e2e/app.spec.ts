@@ -73,3 +73,34 @@ test('the demo list meets the interaction budget, also for a jump', async ({ pag
   expect(firstRows).toBeLessThanOrEqual(BUDGET_MS);
   expect(jump).toBeLessThanOrEqual(BUDGET_MS);
 });
+
+test('a demo job shows live progress and can be paused and resumed', async ({ page }) => {
+  await signIn(page);
+  await page.getByRole('link', { name: 'Streaming' }).click();
+
+  await page.getByTestId('start-demo-job').click();
+  const job = page.locator('.job-row').first();
+  const count = job.getByTestId('job-count');
+  const status = job.locator('.job-status__text');
+  await expect(count).toHaveText('0 / 12');
+
+  // Each demo item takes one second; finished items must show up within one more second.
+  await expect(count).toHaveText('1 / 12', { timeout: 3_000 });
+  await expect(count).toHaveText('2 / 12', { timeout: 2_000 });
+  await expect(status).toHaveText('Läuft');
+  await expect(page.getByTestId('job-counter-running')).toHaveText('1');
+
+  await job.getByTestId('job-pause').click();
+  await expect(status).toHaveText('Pausiert');
+  const pausedAt = await count.textContent();
+  await page.waitForTimeout(1_500);
+  await expect(count).toHaveText(pausedAt!);
+
+  await job.getByTestId('job-resume').click();
+  await expect(status).toHaveText('Läuft');
+  await expect(count).not.toHaveText(pausedAt!, { timeout: 3_000 });
+
+  await job.getByTestId('job-cancel').click();
+  await expect(status).toHaveText('Abgebrochen');
+  await expect(page.getByTestId('job-counter-total')).toHaveText('1');
+});

@@ -209,6 +209,27 @@ async def test_counters_follow_status_changes(demo_app: FastAPI, demo_client: As
         assert (await session.scalar(select(Job.status))) == JobStatus.PAUSED
 
 
+async def test_job_deltas_carry_the_current_counters(
+    demo_app: FastAPI, demo_client: AsyncClient
+) -> None:
+    admin = await setup_admin(demo_client)
+
+    async with ws_connect(demo_app) as ws:
+        await ws.hello(admin.access_token)
+        await ws.subscribe("jobs", "jobs")
+        job = await start_demo(demo_client, admin, items=1, seconds=0.0)
+        counters: dict[str, int] = {}
+        async with asyncio.timeout(10):
+            while counters.get("done") != 1:
+                message = await ws.recv()
+                if message["type"] == "delta":
+                    counters = message["data"]["counters"]
+
+    assert message["data"]["id"] == job["id"]
+    assert message["data"]["total"] == 1
+    assert counters["running"] == 0
+
+
 # --- descending keys -------------------------------------------------------------------
 
 
