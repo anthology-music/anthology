@@ -16,4 +16,4 @@
 
 ## 4. Verification
 
-- [ ] 4.1 Run all tests and linters; archive this change before pushing
+- [x] 4.1 Run all tests and linters; archive this change before pushing
