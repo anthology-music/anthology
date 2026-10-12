@@ -19,8 +19,14 @@ async def test_health_reports_version(client: AsyncClient) -> None:
 async def test_ready_with_current_migrations(client: AsyncClient) -> None:
     response = await client.get("/api/v1/ready")
 
+    body = response.json()
     assert response.status_code == 200
-    assert response.json() == {"status": "ready", "database": "ok", "migrations": "current"}
+    assert {key: body[key] for key in ("status", "database", "migrations")} == {
+        "status": "ready",
+        "database": "ok",
+        "migrations": "current",
+    }
+    assert body["services"] in ({}, {"tagger": "unavailable"})  # monitor may not have run yet
 
 
 async def test_ready_does_not_log_migration_details(
@@ -46,4 +52,5 @@ async def test_not_ready_when_migrations_are_behind(
         "status": "not_ready",
         "database": "ok",
         "migrations": "behind",
+        "services": {},
     }

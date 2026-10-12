@@ -4,6 +4,7 @@
     <div class="settings">
       <MyDevices />
       <UserAdministration v-if="auth.isAdmin" />
+      <ServiceOverview v-if="auth.isAdmin" />
     </div>
   </q-page>
 </template>
@@ -12,6 +13,7 @@
 import { useI18n } from 'vue-i18n';
 
 import PageHeader from '@/components/PageHeader.vue';
+import ServiceOverview from '@/components/ServiceOverview.vue';
 import MyDevices from '@/features/users/components/MyDevices.vue';
 import UserAdministration from '@/features/users/components/UserAdministration.vue';
 import { useAuthStore } from '@/features/users/store';

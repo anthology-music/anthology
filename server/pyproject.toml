@@ -10,6 +10,7 @@ dependencies = [
     "argon2-cffi>=25.1.0",
     "asyncpg>=0.32.0",
     "fastapi>=0.143.0",
+    "httpx>=0.28.1",
     "pydantic-settings>=2.15.0",
     "pyjwt>=2.15.1",
     "sqlalchemy[asyncio]>=2.1.4",
@@ -21,7 +22,6 @@ anthology = "anthology.cli:main"
 
 [dependency-groups]
 dev = [
-    "httpx>=0.28.1",
     "httpx-ws>=0.9.0",
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
@@ -52,4 +52,7 @@ asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "session"
 asyncio_default_test_loop_scope = "session"
 testpaths = ["tests"]
-markers = ["performance: performance budget tests (PostgreSQL, large data)"]
+markers = [
+    "performance: performance budget tests (PostgreSQL, large data)",
+    "tagger_contract: contract tests against a running tagger (ANTHOLOGY_TEST_TAGGER_URL)",
+]

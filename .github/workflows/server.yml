@@ -5,10 +5,12 @@ on:
     branches: [main]
     paths:
       - "server/**"
+      - "services/tagger/**"
       - ".github/workflows/server.yml"
   pull_request:
     paths:
       - "server/**"
+      - "services/tagger/**"
       - ".github/workflows/server.yml"
 
 permissions:
@@ -67,3 +69,29 @@ jobs:
         env:
           ANTHOLOGY_TEST_DATABASE_URL: postgresql+asyncpg://anthology:anthology@localhost:5432/anthology-test
         run: uv run pytest
+
+      - name: Install FFmpeg (test media for the tagger contract tests)
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+
+      - name: Start the tagger
+        working-directory: services/tagger
+        env:
+          ANTHOLOGY_TAGGER_ROOTS: ${{ runner.temp }}/tagger
+          ANTHOLOGY_TAGGER_CACHE_ROOT: ${{ runner.temp }}/tagger/cache
+          ANTHOLOGY_TAGGER_JOURNAL_DIR: ${{ runner.temp }}/tagger/cache/journal
+        run: |
+          mkdir -p "$ANTHOLOGY_TAGGER_CACHE_ROOT"
+          uv sync --frozen --no-dev
+          nohup uv run --no-dev python -m tagger > "${{ runner.temp }}/tagger.log" 2>&1 &
+          for attempt in $(seq 1 30); do
+            curl -sf http://127.0.0.1:8410/v1/health && exit 0
+            sleep 1
+          done
+          cat "${{ runner.temp }}/tagger.log"
+          exit 1
+
+      - name: Tagger contract tests
+        env:
+          ANTHOLOGY_TEST_TAGGER_URL: http://127.0.0.1:8410
+          ANTHOLOGY_TEST_TAGGER_ROOT: ${{ runner.temp }}/tagger
+        run: uv run pytest -m tagger_contract

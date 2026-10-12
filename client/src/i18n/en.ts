@@ -108,6 +108,17 @@ const en: typeof de = {
       failed: 'That did not work. Please try again.',
     },
   },
+  services: {
+    title: 'Services',
+    names: { tagger: 'Tagger (reads and writes tags)' },
+    status: {
+      available: 'Available',
+      unavailable: 'Unreachable',
+      incompatible: 'Incompatible version',
+    },
+    versions: 'Version {version} · interface {api}',
+    none: 'No services checked yet.',
+  },
   user: { signedOut: 'Not signed in' },
   pages: {
     streaming: {

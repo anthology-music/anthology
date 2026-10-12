@@ -32,6 +32,10 @@ class Settings(BaseSettings):
     jobs_lease_seconds: float = 30.0
 
     tagger_url: str = "http://localhost:8410"
+    tagger_batch_size: int = 200
+    tagger_timeout_seconds: float = 30.0
+    service_check_interval_seconds: float = 30.0
+    service_retry_interval_seconds: float = 5.0
     omr_url: str = ""
     source_services: str = ""
 

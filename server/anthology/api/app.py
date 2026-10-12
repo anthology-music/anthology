@@ -11,6 +11,7 @@ from anthology.api import health
 from anthology.core.config import Settings, get_settings
 from anthology.core.media_urls import MediaKeys, MediaUrlSigner
 from anthology.core.security import load_or_create_key
+from anthology.core.services import ServiceMonitor
 from anthology.db import create_engine, create_sessionmaker
 from anthology.jobs import api as jobs_api
 from anthology.jobs.handlers import HandlerRegistry
@@ -20,7 +21,9 @@ from anthology.sync import api as sync_api
 from anthology.sync.background import ChangeBackground
 from anthology.sync.feed import ChangeFeed
 from anthology.sync.hub import Hub
+from anthology.sync.services_stream import ServicesStream
 from anthology.sync.streams import StreamRegistry
+from anthology.tagging.tagger_client import TaggerClient, check_tagger
 from anthology.users import api as users_api
 from anthology.users.service import SessionCache, TokenSettings
 from anthology.users.streams import MyDevicesStream, UsersStream
@@ -68,14 +71,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             lease_seconds=settings.jobs_lease_seconds,
         )
         app.state.job_runner = runner
+        tagger, tagger_monitor = _tagger(settings, sessionmaker)
+        app.state.tagger = tagger
+        app.state.tagger_monitor = tagger_monitor
         if settings.background_tasks:
             await background.start()
             await runner.start()
+            await tagger_monitor.start()
         try:
             yield
         finally:
+            await tagger_monitor.stop()
             await runner.stop()
             await background.stop()
+            await tagger.aclose()
             await engine.dispose()
 
     app = FastAPI(title="Anthology", version=__version__, lifespan=lifespan)
@@ -86,6 +95,26 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(sync_api.router, prefix=API_PREFIX)
     app.include_router(jobs_api.router, prefix=API_PREFIX)
     return app
+
+
+def _tagger(settings: Settings, sessionmaker) -> tuple[TaggerClient, ServiceMonitor]:
+    """The tagger client and its availability monitor (spec: tagging)."""
+    monitor: ServiceMonitor | None = None
+    client = TaggerClient(
+        settings.tagger_url,
+        batch_size=settings.tagger_batch_size,
+        timeout=settings.tagger_timeout_seconds,
+        state=lambda: monitor.state if monitor else None,
+        on_unavailable=lambda: monitor.request_check() if monitor else None,
+    )
+    monitor = ServiceMonitor(
+        "tagger",
+        lambda: check_tagger(client),
+        sessionmaker,
+        available_interval=settings.service_check_interval_seconds,
+        retry_interval=settings.service_retry_interval_seconds,
+    )
+    return client, monitor
 
 
 def _job_handlers(settings: Settings) -> HandlerRegistry:
@@ -103,6 +132,7 @@ def _streams(settings: Settings) -> StreamRegistry:
     registry.register(MyDevicesStream())
     registry.register(JobsStream())
     registry.register(JobItemsStream())
+    registry.register(ServicesStream())
     if settings.dev_demo:
         from anthology.sync.demo import DemoItemsStream
 

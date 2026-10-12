@@ -3,8 +3,8 @@
 Add the ``models`` module of every new domain here.
 """
 
-from anthology.core import changes
+from anthology.core import changes, services
 from anthology.jobs import models as jobs
 from anthology.users import models as users
 
-__all__ = ["changes", "jobs", "users"]
+__all__ = ["changes", "jobs", "services", "users"]
