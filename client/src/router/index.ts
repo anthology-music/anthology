@@ -6,6 +6,7 @@ import {
   createWebHistory,
 } from 'vue-router';
 
+import { installAuthGuard } from './guards';
 import routes from './routes';
 
 export default defineRouter(() => {
@@ -15,9 +16,11 @@ export default defineRouter(() => {
       ? createWebHistory
       : createWebHashHistory;
 
-  return createRouter({
+  const router = createRouter({
     scrollBehavior: () => ({ left: 0, top: 0 }),
     routes,
     history: createHistory(import.meta.env.QUASAR_VUE_ROUTER_BASE),
   });
+  installAuthGuard(router);
+  return router;
 });

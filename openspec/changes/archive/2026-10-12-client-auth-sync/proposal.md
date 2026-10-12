@@ -25,5 +25,5 @@ _None._ Client side of existing requirements. `skip_specs: true`.
 ## Impact
 
 - **Changes completed in part:** `signed-media-urls` 4.2.
-- **Dependencies:** dexie (Apache-2.0), @vueuse/core (MIT).
+- **Dependencies:** dexie (Apache-2.0), openapi-fetch (MIT); development: fake-indexeddb (Apache-2.0).
 - **Non-functional requirements:** first data from the local cache within 300 ms is prepared here and measured in `client-virtual-list`.
