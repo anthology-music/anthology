@@ -6,6 +6,7 @@ export default {
     local: 'Lokal',
     works: 'Werke',
     settings: 'Einstellungen',
+    demo: 'Demo-Liste',
     main: 'Hauptnavigation',
   },
   connection: {
@@ -60,6 +61,15 @@ export default {
   },
   roles: { admin: 'Administrator', editor: 'Redaktion', listener: 'Hören' },
   userMenu: 'Konto-Menü',
+  demo: {
+    title: 'Demo-Liste',
+    description:
+      'Generierte Liste zum Testen von virtuellem Scrollen und Sprüngen (nur Entwicklung).',
+    rows: 'Zeilen',
+    cached: 'aus dem Cache',
+    unavailable:
+      'Der Server bietet die Demo nicht an. Starte ihn mit ANTHOLOGY_DEV_DEMO=true und fülle die Tabelle mit "anthology dev seed-demo".',
+  },
   user: { signedOut: 'Nicht angemeldet' },
   pages: {
     streaming: {

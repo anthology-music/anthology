@@ -78,17 +78,19 @@ describe('SyncConnection', () => {
     conn.start();
     await goLive(sockets);
 
+    // Fake time also advances with real time (shouldAdvanceTime), so the checks keep a
+    // clear margin around the delays (500 ms, then 1000 ms with random = 1).
     sockets.latest().serverClose(1006);
     expect(states.at(-1)).toBe('reconnecting');
-    await vi.advanceTimersByTimeAsync(499);
+    await vi.advanceTimersByTimeAsync(300);
     expect(sockets.sockets).toHaveLength(1);
-    await vi.advanceTimersByTimeAsync(1);
+    await vi.advanceTimersByTimeAsync(300);
     expect(sockets.sockets).toHaveLength(2);
 
     sockets.latest().serverClose(1006);
-    await vi.advanceTimersByTimeAsync(999);
+    await vi.advanceTimersByTimeAsync(700);
     expect(sockets.sockets).toHaveLength(2);
-    await vi.advanceTimersByTimeAsync(1);
+    await vi.advanceTimersByTimeAsync(400);
     expect(sockets.sockets).toHaveLength(3);
 
     await goLive(sockets);

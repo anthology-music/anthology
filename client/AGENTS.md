@@ -8,7 +8,7 @@ Rules for the Vue client. The root `AGENTS.md` applies as well.
 - **Quasar** (UI, PWA, build modes), **Pinia** (state), **Vue Router**, **vue-i18n** (German default, English).
 - Desktop: **Tauri 2** (`src-tauri/`). Mobile: **Capacitor** (`src-capacitor/`). Native code in `src-tauri/` uses only permissively licensed crates (CD ripping: ADR 0018).
 - Sheet music: **Verovio** (LGPL-3.0) is loaded as a separate, unmodified, lazily loaded asset – never import it into application chunks (ADR 0014).
-- Lists: **@tanstack/vue-virtual** (or Quasar `QVirtualScroll`). WebSocket helpers: **@vueuse/core**.
+- Lists: the in-house `src/components/VirtualList.vue` on a subscription – never `QVirtualScroll` or other virtualizers for server lists: browsers cap element heights (Firefox ≈ 17.9 million px), so the list compresses its scroll area. Give its container a bounded height.
 - Local cache: **Dexie** (IndexedDB) on web, SQLite on Tauri/Capacitor.
 - Tests: **Vitest** + **Vue Test Utils**, E2E with **Playwright**. Lint: **ESLint** + **Prettier**. Package manager: **pnpm**.
 
@@ -34,6 +34,7 @@ API types come from `@anthology/api-types` (REST: `paths`/`components` from Open
 - i18n: `src/i18n/de.ts` is the reference, `en.ts` must have the same keys (tested). `src/i18n/setup.ts` creates the instance; boot files only call it, so tests can use it without Quasar CLI.
 - Tests mount the whole app (`test/mount.ts`: Quasar, i18n, routes); `test/setup.ts` stubs browser APIs missing in jsdom.
 - Install scripts of dependencies must be allowed explicitly in `pnpm-workspace.yaml` (`allowBuilds`).
+- End-to-end tests (Playwright, `e2e/`): `ANTHOLOGY_E2E_DATABASE_URL=postgresql+asyncpg://…/<test database> pnpm --filter client e2e`. They start the real server (via uv, ports 8490) on a fresh database with the demo list and the client dev server (port 9090); the database must be dedicated to tests. Once per machine: `pnpm --filter client exec playwright install --with-deps chromium`.
 
 ## UI rules (from the mockups in docs/design)
 
@@ -45,7 +46,7 @@ API types come from `@anthology/api-types` (REST: `paths`/`components` from Open
 
 ## Data loading
 
-- Every list is a subscription: show `snapshot_meta` counts immediately, render skeleton rows for unloaded ranges, request only the visible window (+ buffer).
+- Every list is a subscription (`useSubscription`) shown with `VirtualList`: counts immediately, skeleton rows for unloaded ranges, only the visible window (+ buffer) requested, rows far outside the window dropped.
 - Start from the local cache, then reconcile with deltas. Show a quiet connection state (live / reconnecting / offline).
 - Actions are optimistic and roll back on error. "Select all/folder" sends a rule, not thousands of IDs.
 - Never block the UI while waiting for the server.

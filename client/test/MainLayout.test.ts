@@ -14,14 +14,15 @@ describe('MainLayout', () => {
   it('shows the navigation in German by default', async () => {
     const wrapper = await mountWithApp(App);
 
-    expect(labels(wrapper)).toEqual(['Streaming', 'Lokal', 'Werke', 'Einstellungen']);
+    // Development builds (and tests) also show the demo list.
+    expect(labels(wrapper)).toEqual(['Streaming', 'Lokal', 'Werke', 'Einstellungen', 'Demo-Liste']);
     expect(wrapper.find('nav').attributes('aria-label')).toBe('Hauptnavigation');
   });
 
   it('shows the navigation in English', async () => {
     const wrapper = await mountWithApp(App, { locale: 'en' });
 
-    expect(labels(wrapper)).toEqual(['Streaming', 'Local', 'Works', 'Settings']);
+    expect(labels(wrapper)).toEqual(['Streaming', 'Local', 'Works', 'Settings', 'Demo list']);
   });
 
   it('marks the current page as active and shows its header', async () => {

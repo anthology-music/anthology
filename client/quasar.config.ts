@@ -29,7 +29,7 @@ export default defineConfig(() => ({
     open: false,
     // The Python server (uvicorn on port 8400) serves REST and the WebSocket.
     proxy: {
-      '/api': { target: 'http://localhost:8400', ws: true },
+      '/api': { target: process.env.ANTHOLOGY_API_URL ?? 'http://localhost:8400', ws: true },
     },
   },
   framework: {

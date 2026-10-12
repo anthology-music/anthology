@@ -8,6 +8,7 @@ const en: typeof de = {
     local: 'Local',
     works: 'Works',
     settings: 'Settings',
+    demo: 'Demo list',
     main: 'Main navigation',
   },
   connection: {
@@ -62,6 +63,14 @@ const en: typeof de = {
   },
   roles: { admin: 'Administrator', editor: 'Editor', listener: 'Listener' },
   userMenu: 'Account menu',
+  demo: {
+    title: 'Demo list',
+    description: 'Generated list to test virtual scrolling and jumps (development only).',
+    rows: 'rows',
+    cached: 'from cache',
+    unavailable:
+      'The server does not offer the demo. Start it with ANTHOLOGY_DEV_DEMO=true and fill the table with "anthology dev seed-demo".',
+  },
   user: { signedOut: 'Not signed in' },
   pages: {
     streaming: {

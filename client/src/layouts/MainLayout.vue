@@ -80,6 +80,7 @@ const navigation = [
   { name: 'local', icon: 'library_music' },
   { name: 'works', icon: 'queue_music' },
   { name: 'settings', icon: 'settings' },
+  ...(import.meta.env.DEV ? [{ name: 'demo', icon: 'science' } as const] : []),
 ] as const;
 </script>
 

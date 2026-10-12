@@ -10,7 +10,7 @@ on:
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
       - "docs/design/tokens.css"
-      - "server/anthology/**"
+      - "server/**"
       - ".github/workflows/client.yml"
   pull_request:
     paths:
@@ -20,7 +20,7 @@ on:
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
       - "docs/design/tokens.css"
-      - "server/anthology/**"
+      - "server/**"
       - ".github/workflows/client.yml"
 
 permissions:
@@ -84,3 +84,54 @@ jobs:
 
       - name: Check that the generated types are up to date
         run: git diff --exit-code -- packages/api-types/src
+
+  e2e:
+    # End-to-end tests: real server (uv) on PostgreSQL 18, client dev server, Chromium.
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: docker.io/library/postgres:18
+        env:
+          POSTGRES_USER: anthology
+          POSTGRES_PASSWORD: anthology
+          POSTGRES_DB: anthology-e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U anthology -d anthology-e2e"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.13.0"
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pnpm install --frozen-lockfile
+          uv sync --project server --frozen
+          pnpm --filter client exec playwright install --with-deps chromium
+
+      - name: End-to-end tests
+        env:
+          ANTHOLOGY_E2E_DATABASE_URL: postgresql+asyncpg://anthology:anthology@localhost:5432/anthology-e2e
+        run: pnpm --filter client e2e
+
+      - name: Keep traces of failed tests
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-traces
+          path: client/test-results
+          retention-days: 7
