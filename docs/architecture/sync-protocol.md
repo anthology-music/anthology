@@ -32,7 +32,7 @@ Clients and servers ignore unknown optional fields and unknown message types the
 | `snapshot_meta` | server → client | `total`, `counters`; envelope `seq` = feed position the snapshot is based on |
 | `chunk` | server → client | `chunk` (number), `start` (position of the first row), `rows` |
 | `ack` | client → server | `chunk` – chunk received (backpressure) |
-| `delta` | server → client | `op` (`upsert` or `remove`), `id`, `key` (sort key), `row`?, `total`; envelope `seq` |
+| `delta` | server → client | `op` (`upsert` or `remove`), `id`, `key` (sort key), `row`?, `total`, `counters`? (subscriptions with counters); envelope `seq` |
 | `resync` | server → client | – the client drops its cached rows; `snapshot_meta` and the window follow |
 | `error` | server → client | `code`, `message`; connection stays open |
 
@@ -53,7 +53,7 @@ Clients request rows by position (`start`, `end`, end exclusive, at most 1,000 r
 
 ## Counters
 
-`snapshot_meta.data` = `{ "total": n, "counters": { … } }`. The counter keys of each subscription type are defined by the owning domain's spec (e.g. jobs: `running`, `failed`; review: count per type and status). All values come from maintained counters, never from counting rows on request.
+`snapshot_meta.data` = `{ "total": n, "counters": { … } }`. The counter keys of each subscription type are defined by the owning domain's spec (e.g. jobs: `running`, `failed`; review: count per type and status). All values come from maintained counters, never from counting rows on request. Every `delta` of a subscription with counters carries the current `counters` along with `total`, so counter displays stay live without a new snapshot.
 
 ## Change sequence and visibility
 

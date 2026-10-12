@@ -70,6 +70,43 @@ export default {
     unavailable:
       'Der Server bietet die Demo nicht an. Starte ihn mit ANTHOLOGY_DEV_DEMO=true und fülle die Tabelle mit "anthology dev seed-demo".',
   },
+  jobs: {
+    title: 'Aufträge',
+    overview: 'Übersicht der Aufträge',
+    counters: {
+      total: 'Gesamt',
+      done: 'Fertig',
+      running: 'Laufen',
+      waiting: 'Wartend',
+      failed: 'Fehler',
+    },
+    status: {
+      queued: 'Wartet',
+      running: 'Läuft',
+      paused: 'Pausiert',
+      done: 'Fertig',
+      failed: 'Fehler',
+      cancelled: 'Abgebrochen',
+    },
+    by: 'von {name}',
+    progressOf: 'Fortschritt von {title}',
+    showItems: 'Einträge von {title} anzeigen',
+    hideItems: 'Einträge von {title} ausblenden',
+    itemsOf: 'Einträge von {title}',
+    actions: {
+      pause: '{title} pausieren',
+      resume: '{title} fortsetzen',
+      cancel: '{title} abbrechen',
+    },
+    empty: 'Noch keine Aufträge.',
+    startDemo: 'Demo-Auftrag starten',
+    errors: {
+      forbidden: 'Nur wer den Auftrag erstellt hat oder ein Administrator darf ihn steuern.',
+      invalid_transition: 'Der Auftrag hat seinen Status inzwischen geändert.',
+      demo_unavailable: 'Der Server bietet den Demo-Auftrag nicht an (ANTHOLOGY_DEV_DEMO=true).',
+      failed: 'Das hat nicht geklappt. Bitte versuche es noch einmal.',
+    },
+  },
   user: { signedOut: 'Nicht angemeldet' },
   pages: {
     streaming: {

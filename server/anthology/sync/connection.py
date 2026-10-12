@@ -342,7 +342,7 @@ class Connection:
         changes: list[RowChange] = await subscription.stream.changes(db, subscription.ctx, event)
         if not changes:
             return
-        total = (await subscription.stream.meta(db, subscription.ctx)).total
+        meta = await subscription.stream.meta(db, subscription.ctx)
         for change in changes:
             if change.key is not None:
                 subscription.anchors.invalidate_from(change.key)
@@ -354,7 +354,8 @@ class Connection:
                     id=change.id,
                     key=list(change.key) if change.key is not None else None,
                     row=change.row.payload() if change.row is not None else None,
-                    total=total,
+                    total=meta.total,
+                    counters=meta.counters or None,
                 ),
             )
             if not subscription.ready:

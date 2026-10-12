@@ -110,6 +110,9 @@ export interface DeltaData {
     [k: string]: unknown;
   } | null;
   total?: number | null;
+  counters?: {
+    [k: string]: number;
+  } | null;
 }
 export interface Resync {
   type: 'resync';

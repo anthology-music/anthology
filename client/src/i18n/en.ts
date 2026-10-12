@@ -71,6 +71,43 @@ const en: typeof de = {
     unavailable:
       'The server does not offer the demo. Start it with ANTHOLOGY_DEV_DEMO=true and fill the table with "anthology dev seed-demo".',
   },
+  jobs: {
+    title: 'Jobs',
+    overview: 'Job overview',
+    counters: {
+      total: 'Total',
+      done: 'Done',
+      running: 'Running',
+      waiting: 'Waiting',
+      failed: 'Failed',
+    },
+    status: {
+      queued: 'Queued',
+      running: 'Running',
+      paused: 'Paused',
+      done: 'Done',
+      failed: 'Failed',
+      cancelled: 'Cancelled',
+    },
+    by: 'by {name}',
+    progressOf: 'Progress of {title}',
+    showItems: 'Show items of {title}',
+    hideItems: 'Hide items of {title}',
+    itemsOf: 'Items of {title}',
+    actions: {
+      pause: 'Pause {title}',
+      resume: 'Resume {title}',
+      cancel: 'Cancel {title}',
+    },
+    empty: 'No jobs yet.',
+    startDemo: 'Start demo job',
+    errors: {
+      forbidden: 'Only the creator of a job or an administrator may control it.',
+      invalid_transition: 'The job has changed its status in the meantime.',
+      demo_unavailable: 'The server does not offer the demo job (ANTHOLOGY_DEV_DEMO=true).',
+      failed: 'That did not work. Please try again.',
+    },
+  },
   user: { signedOut: 'Not signed in' },
   pages: {
     streaming: {

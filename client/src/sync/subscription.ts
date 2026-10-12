@@ -169,11 +169,19 @@ export class Subscription {
   }
 
   private delta(message: Delta): void {
-    const { op, id, key, row, total } = message.data;
+    const { op, id, key, row, total, counters } = message.data;
     this.seq = Math.max(this.seq ?? 0, message.seq);
-    void this.cache?.putSeq(this.cacheKey, this.seq);
-    if (total !== null && total !== undefined && total !== this.total) {
-      this.total = total;
+    if (total !== null && total !== undefined) this.total = total;
+    if (counters) this.counters = counters;
+    if (this.total !== null) {
+      void this.cache?.putMeta({
+        subKey: this.cacheKey,
+        total: this.total,
+        counters: this.counters,
+        seq: this.seq,
+      });
+    } else {
+      void this.cache?.putSeq(this.cacheKey, this.seq);
     }
     const position = this.positionOf(id);
     const loaded = position !== undefined ? this.rows.get(position) : undefined;

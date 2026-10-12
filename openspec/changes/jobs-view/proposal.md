@@ -11,6 +11,7 @@ The job system (`jobs-core`) needs its view: the Streaming page of the mockups s
 - Pause, resume and cancel buttons for the creator and admins.
 - Developer button to start a demo job (dev builds with `ANTHOLOGY_DEV_DEMO=true`).
 - E2E test: start a demo job, watch progress, pause and resume.
+- Protocol gap found by the E2E test: deltas carried the new `total` but not the counters, so the counter tiles stayed at the snapshot values. Deltas of subscriptions with counters now carry the current `counters` (optional field, omitted for streams without counters).
 
 ## Capabilities
 
@@ -20,9 +21,10 @@ _None._
 
 ### Modified Capabilities
 
-_None._ Client side of `jobs`. `skip_specs: true`.
+- `sync-protocol`: deltas carry the current counters (requirement "Counts first"). Otherwise the client side of `jobs`.
 
 ## Impact
 
-- **Client:** `src/features/jobs/`; texts de/en.
+- **Client:** `src/features/jobs/`; texts de/en; `Subscription` applies counters from deltas.
+- **Server:** `sync/connection.py` and `sync/messages.py` (optional `counters` in `delta`); `packages/api-types` regenerated; `docs/architecture/sync-protocol.md`.
 - **Non-functional requirements:** progress updates within one second (spec: jobs, live progress), verified end to end.
