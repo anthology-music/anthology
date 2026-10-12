@@ -13,14 +13,14 @@ Editing tags is a core activity of the Local view, but no spec defines it: which
   - **Field provenance:** every field records whether it was set manually or by an automatic source. Automatic updates apply directly to fields that were not edited manually; a differing automatic value for a manually edited field becomes a **tag conflict** that a user must confirm.
   - **Conflict list:** a dedicated list of tag conflicts with multi-select, grouping/filtering (field, album, artist, origin) and bulk accept/reject.
   - **Undo** for single and bulk edits from the audit log, as a job; fields changed again since are skipped and reported.
-  - **Tagger interface v1:** read, write, copy, health; batched; atomic writes for managed files, in-place writes for referenced files (to keep hardlinks); queued file writes when the tagger is unavailable.
+  - **Tagger:** file writes go through the tagger service (interface and write safety specified by change `tagger-service`); queued file writes when the tagger is unavailable.
 - Review list: bulk decisions also by multi-select and groups (folded into change `review-list`).
 
 ## Capabilities
 
 ### New Capabilities
 
-- `tagging`: editing of metadata fields, propagation to files and caches, field provenance and tag conflicts, undo, and the tagger service interface.
+- `tagging`: editing of metadata fields, propagation to files and caches, field provenance and tag conflicts, and undo (the tagger service interface is added by change `tagger-service`).
 
 ### Modified Capabilities
 

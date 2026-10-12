@@ -86,14 +86,3 @@ Editors and admins SHALL be able to undo a single or bulk edit from its history 
 #### Scenario: Field changed again since
 - **WHEN** an undo covers a field that another editor changed after the original edit
 - **THEN** that field is left unchanged and listed in the undo report
-
-### Requirement: Tagger service interface
-The core SHALL read and write full tags only through the tagger service's versioned interface (read, write, copy, health) and SHALL batch requests; the tagger SHALL write managed files atomically and referenced files in place so that hardlinks are preserved.
-
-#### Scenario: Hardlinked referenced file
-- **WHEN** tags are written to a hardlinked referenced file with tag writing enabled
-- **THEN** the file is modified in place and the hardlink to the user's folder still exists
-
-#### Scenario: Interrupted write of a managed file
-- **WHEN** the tagger is stopped during a write to a managed original
-- **THEN** the original is either unchanged or completely updated, never partially written

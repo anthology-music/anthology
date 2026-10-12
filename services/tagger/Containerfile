@@ -1,0 +1,47 @@
+# anthology-tagger – GPL-2.0-or-later (mutagen)
+# Build from the repository root:
+#   podman build -t anthology-tagger -f services/tagger/Containerfile .
+
+FROM docker.io/library/python:3.12-slim AS builder
+
+COPY --from=ghcr.io/astral-sh/uv:0.13.0 /uv /usr/local/bin/uv
+
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    UV_PYTHON_DOWNLOADS=0 \
+    UV_PROJECT_ENVIRONMENT=/app/.venv
+
+WORKDIR /src
+
+# Dependencies first for layer caching
+COPY services/tagger/pyproject.toml services/tagger/uv.lock ./
+RUN uv sync --frozen --no-dev --no-install-project
+
+COPY services/tagger/tagger ./tagger
+RUN uv sync --frozen --no-dev --no-editable
+
+
+FROM docker.io/library/python:3.12-slim
+
+LABEL org.opencontainers.image.title="anthology-tagger" \
+      org.opencontainers.image.licenses="GPL-2.0-or-later" \
+      org.opencontainers.image.source="https://github.com/anthology-music/anthology"
+
+# Same user ID as anthology-server, so both can write the shared volumes.
+RUN groupadd --gid 1000 anthology \
+    && useradd --uid 1000 --gid anthology --home-dir /app --no-create-home anthology \
+    && mkdir -p /data/library /data/cache /data/imports \
+    && chown -R anthology:anthology /data
+
+WORKDIR /app
+
+COPY --from=builder /app/.venv /app/.venv
+COPY services/tagger/LICENSE ./LICENSE
+
+ENV PATH=/app/.venv/bin:$PATH \
+    PYTHONUNBUFFERED=1
+
+USER anthology
+EXPOSE 8410
+
+ENTRYPOINT ["python", "-m", "tagger"]
