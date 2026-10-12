@@ -42,3 +42,6 @@ client/src-capacitor/ios/
 # Local agent settings
 .claude/settings.local.json
 .claude/CLAUDE.md
+
+# Deployment secrets (database password etc.)
+deploy/secrets/

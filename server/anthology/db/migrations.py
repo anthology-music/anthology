@@ -12,7 +12,8 @@ from anthology.core.config import Settings
 def alembic_config(settings: Settings) -> Config:
     config = Config()
     config.set_main_option("script_location", str(settings.migrations_dir))
-    config.set_main_option("sqlalchemy.url", settings.database_url)
+    # ConfigParser interpolates "%"; URL-encoded passwords contain it (e.g. %40 for "@").
+    config.set_main_option("sqlalchemy.url", settings.database_url.replace("%", "%%"))
     return config
 
 

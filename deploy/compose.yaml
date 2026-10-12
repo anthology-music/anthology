@@ -1,6 +1,8 @@
-# Anthology – Compose file for `podman compose` or `docker compose`.
-# Podman users: the recommended setup is Quadlet (see deploy/quadlet/).
-# Status: placeholder – images do not exist yet.
+# Anthology – Compose file for `docker compose` or `podman compose`.
+# Installation: docs/install.md. Podman users: the recommended setup is Quadlet (deploy/quadlet/).
+#
+# Before the first start, create the database password (kept out of the repository):
+#   mkdir -p secrets && openssl rand -base64 32 > secrets/db_password
 
 name: anthology
 
@@ -10,18 +12,25 @@ services:
     ports:
       - "8400:8400"
     environment:
-      ANTHOLOGY_DATABASE_URL: postgresql+asyncpg://anthology:${ANTHOLOGY_DB_PASSWORD}@postgres:5432/anthology
+      ANTHOLOGY_DATABASE_URL: postgresql+asyncpg://anthology@postgres:5432/anthology
+      ANTHOLOGY_DATABASE_PASSWORD_FILE: /run/secrets/db_password
       ANTHOLOGY_TAGGER_URL: http://anthology-tagger:8410
       ANTHOLOGY_SOURCE_SERVICES: ""                              # optional source services (ADR 0017), comma-separated URLs
       ANTHOLOGY_OMR_URL: http://audiveris:8430                   # optional
+    secrets:
+      - db_password
     volumes:
+      - keys:/data/keys
       - library:/data/library
       - cache:/data/cache
       - imports:/data/imports
       - video:/data/video
     depends_on:
-      - postgres
-      - anthology-tagger
+      postgres:
+        condition: service_healthy
+      anthology-tagger:
+        condition: service_started
+    restart: unless-stopped
 
   anthology-tagger:            # GPL-2.0-or-later (mutagen)
     image: ghcr.io/anthology-music/anthology-tagger:latest
@@ -29,6 +38,7 @@ services:
       - library:/data/library
       - cache:/data/cache
       - imports:/data/imports
+    restart: unless-stopped
 
   # Optional source services (streamrip, yt-dlp, spotDL) live in the
   # anthology-sources organisation; merge their deploy/compose.snippet.yaml here.
@@ -43,12 +53,24 @@ services:
     image: docker.io/library/postgres:18
     environment:
       POSTGRES_USER: anthology
-      POSTGRES_PASSWORD: ${ANTHOLOGY_DB_PASSWORD}
       POSTGRES_DB: anthology
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    secrets:
+      - db_password
     volumes:
       - db:/var/lib/postgresql          # PostgreSQL 18+: data below /var/lib/postgresql/18/docker
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "anthology", "-d", "anthology"]
+      interval: 5s
+      retries: 20
+    restart: unless-stopped
+
+secrets:
+  db_password:
+    file: ./secrets/db_password
 
 volumes:
+  keys:
   library:
   cache:
   imports:
@@ -56,4 +78,4 @@ volumes:
   db:
 
 # Start with optional services:
-#   podman compose -f deploy/compose.yaml --profile omr up -d
+#   docker compose -f deploy/compose.yaml --profile omr up -d

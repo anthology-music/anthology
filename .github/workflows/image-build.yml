@@ -1,0 +1,69 @@
+name: image-build
+
+# Reusable: builds one image for one platform; pushes it by digest when asked.
+# Permissions come from the calling job (read-only for pull requests).
+
+on:
+  workflow_call:
+    inputs:
+      image:
+        type: string
+        required: true
+      containerfile:
+        type: string
+        required: true
+      platform:
+        type: string
+        required: true
+      runner:
+        type: string
+        required: true
+      push:
+        type: boolean
+        default: false
+
+jobs:
+  build:
+    runs-on: ${{ inputs.runner }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Log in to ghcr.io
+        if: inputs.push
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build
+        id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ${{ inputs.containerfile }}
+          platforms: linux/${{ inputs.platform }}
+          cache-from: type=gha,scope=${{ inputs.image }}-${{ inputs.platform }}
+          cache-to: type=gha,mode=max,scope=${{ inputs.image }}-${{ inputs.platform }}
+          outputs: >-
+            ${{ inputs.push
+              && format('type=image,name=ghcr.io/anthology-music/anthology-{0},push-by-digest=true,name-canonical=true,push=true', inputs.image)
+              || 'type=cacheonly' }}
+
+      - name: Export digest
+        if: inputs.push
+        run: |
+          mkdir -p "${{ runner.temp }}/digests"
+          digest="${{ steps.build.outputs.digest }}"
+          touch "${{ runner.temp }}/digests/${digest#sha256:}"
+
+      - name: Upload digest
+        if: inputs.push
+        uses: actions/upload-artifact@v7
+        with:
+          name: digests-${{ inputs.image }}-${{ inputs.platform }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1

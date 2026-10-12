@@ -6,6 +6,7 @@ from typing import Literal
 
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from sqlalchemy.engine import make_url
 
 SERVER_ROOT = Path(__file__).resolve().parents[2]
 
@@ -15,6 +16,10 @@ class Settings(BaseSettings):
 
     data_dir: Path = Path("data")
     database_url: str = ""
+    # File with the database password (Podman/Compose secret); replaces the URL's password.
+    database_password_file: Path | None = None
+    # Built web client (client/dist/spa); served next to the API when set.
+    web_dir: Path | None = None
     log_level: str = "INFO"
     migrations_dir: Path = SERVER_ROOT / "migrations"
 
@@ -43,6 +48,10 @@ class Settings(BaseSettings):
     def _default_database_url(self) -> "Settings":
         if not self.database_url:
             self.database_url = f"sqlite+aiosqlite:///{self.data_dir / 'anthology.db'}"
+        if self.database_password_file is not None:
+            password = self.database_password_file.read_text().strip()
+            url = make_url(self.database_url).set(password=password)
+            self.database_url = url.render_as_string(hide_password=False)
         return self
 
     @property

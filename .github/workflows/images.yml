@@ -1,0 +1,226 @@
+name: images
+
+# Builds the images for amd64 and arm64, smoke-tests the installation with Docker Compose
+# and with Quadlet/systemd, and publishes to ghcr.io on main (edge, sha-*) and on v* tags.
+# Pull requests build and test only, with read-only permissions.
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    paths:
+      - "server/**"
+      - "services/tagger/**"
+      - "client/**"
+      - "packages/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "docs/design/tokens.css"
+      - "deploy/**"
+      - ".containerignore"
+      - ".github/quadlet-host/**"
+      - ".github/workflows/images.yml"
+      - ".github/workflows/image-build.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: images-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # GitHub-hosted standard runners only (see AGENTS.md, CI): ubuntu-latest and ubuntu-24.04-arm.
+
+  build-pr:
+    # Pull requests: build only, read-only token.
+    if: github.event_name == 'pull_request'
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [server, tagger]
+        platform: [amd64, arm64]
+        include:
+          - image: server
+            containerfile: server/Containerfile
+          - image: tagger
+            containerfile: services/tagger/Containerfile
+          - platform: amd64
+            runner: ubuntu-latest
+          - platform: arm64
+            runner: ubuntu-24.04-arm
+    permissions:
+      contents: read
+    uses: ./.github/workflows/image-build.yml
+    with:
+      image: ${{ matrix.image }}
+      containerfile: ${{ matrix.containerfile }}
+      platform: ${{ matrix.platform }}
+      runner: ${{ matrix.runner }}
+      push: false
+
+  build:
+    # main and v* tags: push by digest; the manifests are created after the smoke tests.
+    if: github.event_name == 'push'
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [server, tagger]
+        platform: [amd64, arm64]
+        include:
+          - image: server
+            containerfile: server/Containerfile
+          - image: tagger
+            containerfile: services/tagger/Containerfile
+          - platform: amd64
+            runner: ubuntu-latest
+          - platform: arm64
+            runner: ubuntu-24.04-arm
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/image-build.yml
+    with:
+      image: ${{ matrix.image }}
+      containerfile: ${{ matrix.containerfile }}
+      platform: ${{ matrix.platform }}
+      runner: ${{ matrix.runner }}
+      push: true
+
+  smoke-compose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Build images under their published names
+        run: |
+          docker buildx build --load -f server/Containerfile \
+            --cache-from type=gha,scope=server-amd64 \
+            -t ghcr.io/anthology-music/anthology-server:latest .
+          docker buildx build --load -f services/tagger/Containerfile \
+            --cache-from type=gha,scope=tagger-amd64 \
+            -t ghcr.io/anthology-music/anthology-tagger:latest .
+
+      - name: Start with Docker Compose
+        working-directory: deploy
+        run: |
+          mkdir -p secrets
+          head -c 24 /dev/urandom | base64 > secrets/db_password
+          docker compose up -d
+
+      - name: Smoke test
+        run: deploy/smoke-test.sh http://localhost:8400
+
+      - name: Logs
+        if: failure()
+        working-directory: deploy
+        run: docker compose logs
+
+      - name: Stop
+        if: always()
+        working-directory: deploy
+        run: docker compose down -v
+
+  smoke-quadlet:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Build images under their published names
+        run: |
+          docker buildx build --load -f server/Containerfile \
+            --cache-from type=gha,scope=server-amd64 \
+            -t ghcr.io/anthology-music/anthology-server:latest .
+          docker buildx build --load -f services/tagger/Containerfile \
+            --cache-from type=gha,scope=tagger-amd64 \
+            -t ghcr.io/anthology-music/anthology-tagger:latest .
+          docker save -o "${{ runner.temp }}/images.tar" \
+            ghcr.io/anthology-music/anthology-server:latest \
+            ghcr.io/anthology-music/anthology-tagger:latest
+
+      - name: Start a Fedora host with systemd and Podman 5
+        run: |
+          docker build -t quadlet-host -f .github/quadlet-host/Containerfile .github/quadlet-host
+          docker run -d --name host --privileged --cgroupns=private \
+            --tmpfs /run --tmpfs /tmp -v quadlet-storage:/var/lib/containers quadlet-host
+          for attempt in $(seq 1 30); do
+            state=$(docker exec host systemctl is-system-running 2>/dev/null || true)
+            case "$state" in running|degraded) break ;; esac
+            sleep 1
+          done
+          docker exec host podman --version
+
+      - name: Install the Quadlet files as documented
+        run: |
+          docker cp "${{ runner.temp }}/images.tar" host:/var/tmp/images.tar
+          docker exec host podman load -i /var/tmp/images.tar
+          docker cp deploy/quadlet/. host:/etc/containers/systemd/
+          docker exec host sh -c 'head -c 24 /dev/urandom | base64 | podman secret create anthology-db-password -'
+          docker exec host /usr/libexec/podman/quadlet -dryrun > /dev/null
+          docker exec host systemctl daemon-reload
+          docker exec host systemctl start anthology-pod.service
+
+      - name: Smoke test
+        run: |
+          docker cp deploy/smoke-test.sh host:/var/tmp/smoke-test.sh
+          docker exec host sh /var/tmp/smoke-test.sh http://localhost:8400
+
+      - name: Logs
+        if: failure()
+        run: |
+          docker exec host /usr/libexec/podman/quadlet -dryrun || true
+          docker exec host podman ps -a || true
+          docker exec host journalctl --no-pager -n 300 -u 'anthology*' || true
+
+  publish:
+    if: github.event_name == 'push'
+    needs: [build, smoke-compose, smoke-quadlet]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        image: [server, tagger]
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: digests-${{ matrix.image }}-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/digests
+
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tags
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ghcr.io/anthology-music/anthology-${{ matrix.image }}
+          flavor: latest=false
+          tags: |
+            type=edge,branch=main
+            type=sha,prefix=sha-,format=short,enable=${{ github.ref == 'refs/heads/main' }}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+
+      - name: Create the multi-platform manifests
+        working-directory: ${{ runner.temp }}/digests
+        run: |
+          docker buildx imagetools create \
+            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf 'ghcr.io/anthology-music/anthology-${{ matrix.image }}@sha256:%s ' *)
+          docker buildx imagetools inspect \
+            "ghcr.io/anthology-music/anthology-${{ matrix.image }}:${{ steps.meta.outputs.version }}"

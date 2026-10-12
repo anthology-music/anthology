@@ -8,6 +8,7 @@ from fastapi import FastAPI
 
 from anthology import __version__
 from anthology.api import health
+from anthology.api.web import mount_web
 from anthology.core.config import Settings, get_settings
 from anthology.core.media_urls import MediaKeys, MediaUrlSigner
 from anthology.core.security import load_or_create_key
@@ -94,6 +95,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(users_api.router, prefix=API_PREFIX)
     app.include_router(sync_api.router, prefix=API_PREFIX)
     app.include_router(jobs_api.router, prefix=API_PREFIX)
+    if settings.web_dir is not None:
+        mount_web(app, settings.web_dir)  # last: its fallback must not shadow API routes
     return app
 
 

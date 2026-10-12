@@ -158,5 +158,5 @@ Check the license of every new dependency (see `docs/adr/0004-license.md`, `docs
 
 ## CI
 
-- Use only GitHub-hosted **standard** runners (`ubuntu-latest`, `windows-latest`, `macos-latest`/`macos-14`); they are free for this public repository. Never use larger runners (`*-large`, `*-xlarge`).
+- Use only GitHub-hosted **standard** runners (`ubuntu-latest`, `ubuntu-24.04-arm` for arm64 images, `windows-latest`, `macos-latest`/`macos-14`); they are free for this public repository. Never use larger runners (`*-large`, `*-xlarge`).
 - Never run pull-request-triggered workflows on self-hosted runners.

@@ -1,18 +1,24 @@
 # anthology-server – MIT
 [Unit]
 Description=Anthology server
-Requires=anthology-postgres.service anthology-tagger.service
+Requires=anthology-postgres.service
+Wants=anthology-tagger.service
 After=anthology-postgres.service anthology-tagger.service
 
 [Container]
 ContainerName=anthology-server
 Pod=anthology.pod
 Image=ghcr.io/anthology-music/anthology-server:latest
-Environment=ANTHOLOGY_DATABASE_URL=postgresql+asyncpg://anthology:CHANGE_ME@localhost:5432/anthology
+# The password comes from the Podman secret, not from the URL.
+Environment=ANTHOLOGY_DATABASE_URL=postgresql+asyncpg://anthology@localhost:5432/anthology
+Secret=anthology-db-password,type=mount,target=/run/secrets/anthology-db-password
+Environment=ANTHOLOGY_DATABASE_PASSWORD_FILE=/run/secrets/anthology-db-password
 Environment=ANTHOLOGY_TAGGER_URL=http://localhost:8410
 # Optional source services (ADR 0017), comma-separated, e.g. http://localhost:8420,http://localhost:8421
 Environment=ANTHOLOGY_SOURCE_SERVICES=
+# Optional sheet-music recognition (anthology-audiveris.container)
 Environment=ANTHOLOGY_OMR_URL=http://localhost:8430
+Volume=anthology-keys.volume:/data/keys:U
 Volume=anthology-library.volume:/data/library:U
 Volume=anthology-cache.volume:/data/cache:U
 Volume=anthology-imports.volume:/data/imports:U

@@ -1,5 +1,5 @@
 # audiveris – AGPL-3.0 (upstream, unmodified) – OPTIONAL
-# Install only if you want sheet-music recognition from PDFs. Delete this file to disable it.
+# Copy to ~/.config/containers/systemd/ only if you want sheet-music recognition from PDFs.
 [Unit]
 Description=Anthology optical music recognition (optional)
 
