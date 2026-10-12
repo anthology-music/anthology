@@ -50,13 +50,17 @@ Anthology runs as one pod of OCI containers. **Podman is the primary platform** 
 | `audiveris` | AGPL-3.0 | optional |
 
 ```
-# Podman with Quadlet (recommended)
+# Podman 5+ with Quadlet (recommended)
 cp deploy/quadlet/* ~/.config/containers/systemd/
+openssl rand -base64 32 | podman secret create anthology-db-password -
 systemctl --user daemon-reload && systemctl --user start anthology-pod
 
-# Podman or Docker with Compose
-podman compose -f deploy/compose.yaml up -d
+# Docker (or Podman) with Compose
+cd deploy && mkdir -p secrets && openssl rand -base64 32 > secrets/db_password
+docker compose up -d
 ```
+
+Then open `http://<host>:8400`. Details (volumes, backups, HTTPS, updates): [`docs/install.md`](docs/install.md).
 
 ## Sheet music and your responsibility
 

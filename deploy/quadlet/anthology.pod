@@ -1,7 +1,8 @@
-# Anthology pod – Podman Quadlet
-# Copy deploy/quadlet/* to ~/.config/containers/systemd/ (rootless), then:
+# Anthology pod – Podman Quadlet (Podman 5.0 or later). Installation: docs/install.md
+# Copy deploy/quadlet/* to ~/.config/containers/systemd/ (rootless), create the secret
+#   openssl rand -base64 32 | podman secret create anthology-db-password -
+# then:
 #   systemctl --user daemon-reload && systemctl --user start anthology-pod
-# Status: placeholder – images do not exist yet.
 
 [Pod]
 PodName=anthology

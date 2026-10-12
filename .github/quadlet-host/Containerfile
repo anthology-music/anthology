@@ -1,0 +1,10 @@
+# CI only: a Fedora host with systemd and Podman 5 to run the Quadlet files as users do.
+# The runner's Ubuntu ships Podman 4.9, which cannot read .pod units.
+FROM quay.io/fedora/fedora:44
+
+RUN dnf -y install podman systemd curl \
+    && dnf clean all \
+    && systemctl mask systemd-logind.service getty.target console-getty.service
+
+STOPSIGNAL SIGRTMIN+3
+CMD ["/sbin/init"]
