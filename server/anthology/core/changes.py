@@ -9,10 +9,11 @@ also write an audit log entry.
 import enum
 import json
 import uuid
+from collections.abc import Iterable
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import BigInteger, Identity, Integer, String, Text, Uuid, text
+from sqlalchemy import BigInteger, Identity, Integer, String, Text, Uuid, insert, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -87,6 +88,37 @@ async def record_change(
     if session.bind.dialect.name == "postgresql":
         # Delivered on commit; wakes the sequencer immediately.
         await session.execute(text("SELECT pg_notify('anthology_changes', '')"))
+
+
+async def record_changes(
+    session: AsyncSession,
+    *,
+    entity_type: str,
+    entity_ids: Iterable[uuid.UUID],
+    operation: ChangeOperation,
+    scope: ChangeScope,
+) -> int:
+    """Bulk variant of ``record_change`` for many rows (one insert, one notification).
+
+    Returns the number of entries written.
+    """
+    now = utcnow()
+    rows = [
+        {
+            "entity_type": entity_type,
+            "entity_id": entity_id,
+            "operation": operation,
+            "scope": scope,
+            "changed_at": now,
+        }
+        for entity_id in dict.fromkeys(entity_ids)
+    ]
+    if not rows:
+        return 0
+    await session.execute(insert(ChangeLog), rows)
+    if session.bind.dialect.name == "postgresql":
+        await session.execute(text("SELECT pg_notify('anthology_changes', '')"))
+    return len(rows)
 
 
 async def record_audit(

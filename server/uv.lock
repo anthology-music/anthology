@@ -66,6 +66,7 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "anthology-library-generator" },
     { name = "httpx-ws" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
@@ -88,9 +89,23 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "anthology-library-generator", editable = "../tools/library-generator" },
     { name = "httpx-ws", specifier = ">=0.9.0" },
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "pytest-asyncio", specifier = ">=1.4.0" },
+    { name = "ruff", specifier = ">=0.17.0" },
+]
+
+[[package]]
+name = "anthology-library-generator"
+version = "0.1.0"
+source = { editable = "../tools/library-generator" }
+
+[package.metadata]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest", specifier = ">=9.1.1" },
     { name = "ruff", specifier = ">=0.17.0" },
 ]
 

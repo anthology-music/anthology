@@ -103,6 +103,15 @@ client_message = TypeAdapter(ClientMessage)
 # --- server → client ------------------------------------------------------
 
 
+class StreamRow(BaseModel):
+    """Base of typed stream rows: every row carries its ID and sort key."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    key: list[Any]
+
+
 class WelcomeData(_Data):
     protocol: int
     current_seq: int
@@ -188,6 +197,12 @@ def json_schema() -> dict[str, Any]:
     definitions = {**client.pop("$defs"), **server.pop("$defs")}
     definitions["ClientMessage"] = {**client, "title": "ClientMessage"}
     definitions["ServerMessage"] = {**server, "title": "ServerMessage"}
+    rows = {}
+    for stream, model in _row_schemas().items():
+        schema = model.model_json_schema(mode="serialization")
+        definitions.update(schema.pop("$defs", {}))
+        definitions[model.__name__] = schema
+        rows[stream] = {"$ref": f"#/$defs/{model.__name__}"}
     return {
         "title": "SyncProtocol",
         "protocol": PROTOCOL_VERSION,
@@ -195,9 +210,22 @@ def json_schema() -> dict[str, Any]:
         "properties": {
             "client": {"$ref": "#/$defs/ClientMessage"},
             "server": {"$ref": "#/$defs/ServerMessage"},
+            "rows": {
+                "title": "StreamRows",
+                "type": "object",
+                "description": "Row schema per stream (streams without one send untyped rows).",
+                "properties": rows,
+            },
         },
         "$defs": definitions,
     }
+
+
+def _row_schemas() -> dict[str, type[BaseModel]]:
+    # Imported here: the registry imports domain modules, which import this module.
+    from anthology.stream_rows import ROW_SCHEMAS
+
+    return ROW_SCHEMAS
 
 
 if __name__ == "__main__":

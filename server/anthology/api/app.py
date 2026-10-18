@@ -18,6 +18,7 @@ from anthology.jobs import api as jobs_api
 from anthology.jobs.handlers import HandlerRegistry
 from anthology.jobs.runner import JobRunner
 from anthology.jobs.streams import JobItemsStream, JobsStream
+from anthology.library.streams import STREAMS as LIBRARY_STREAMS
 from anthology.sync import api as sync_api
 from anthology.sync.background import ChangeBackground
 from anthology.sync.feed import ChangeFeed
@@ -136,6 +137,8 @@ def _streams(settings: Settings) -> StreamRegistry:
     registry.register(JobsStream())
     registry.register(JobItemsStream())
     registry.register(ServicesStream())
+    for stream in LIBRARY_STREAMS:
+        registry.register(stream())
     if settings.dev_demo:
         from anthology.sync.demo import DemoItemsStream
 

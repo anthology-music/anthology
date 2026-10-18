@@ -13,7 +13,7 @@ Anthology is an open-source, self-hosted music application built as one integrat
 - Multi-room playback (Teufel Raumfeld first) through exchangeable output adapters.
 - Works, arrangements and medleys for wind bands, with publishers and sheet music.
 
-Background and rationale: `docs/concept/anthology-six-pager.md`. Decisions: `docs/adr/`. Data model: `docs/architecture/data-model.puml`. UI reference: `docs/design/`. Order of work and deferred topics: `docs/roadmap.md`.
+Background and rationale: `docs/concept/anthology-six-pager.md`. Decisions: `docs/adr/`. Data model: `docs/architecture/data-model.puml`. UI reference: `docs/design/`. Order of work and deferred topics: `docs/roadmap.md`. Current state and next steps: `docs/agent-notes.md`.
 
 ## Language
 
@@ -35,6 +35,12 @@ The source of truth for behavior is `openspec/specs/<domain>/spec.md`.
 5. Pure refactorings and bug fixes that restore specified behavior need no change proposal.
 
 Requirements use **SHALL/MUST**; every requirement has at least one `#### Scenario:` with **WHEN/THEN**.
+
+## Shared agent notes
+
+`docs/agent-notes.md` is the shared working memory for all agents (Claude Code, opencode and others):
+current state, next steps, working conventions and pitfalls. Read it at the start of a session and
+update it when the state changes. Do not use a tool-specific memory for this repository.
 
 ## Domains – one name everywhere
 

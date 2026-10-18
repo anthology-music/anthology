@@ -59,6 +59,20 @@ Clients request rows by position (`start`, `end`, end exclusive, at most 1,000 r
 
 The stream `services` (all signed-in users, no parameters) lists the services the installation uses – currently the tagger – with `status` (`available`, `unavailable`, `incompatible`), `version`, `interface` and `message`; counters per status. Every server process checks the services and stores status changes with a change-log entry, so all connections receive the same deltas. Clients use it to hide features of unavailable services.
 
+## Library lists
+
+Five streams for all signed-in users serve the library (`openspec/specs/library/spec.md`). Each is one index range scan; the sort keys are normalized (no case, no diacritics) and stored on the listed rows, and they compare bytewise on both engines (collation `"C"` on PostgreSQL). Row types are published with the message schema (`LibraryArtistRow`, `LibraryReleaseRow`, `LibraryTrackRow` in `packages/api-types`).
+
+| Stream | Params | Sort key | Total | Counters |
+|---|---|---|---|---|
+| `library.artists` | – | sort name, id | artists | all four |
+| `library.releases` | – | album artist sort name, title, id | releases | all four |
+| `library.artist.releases` | `artist_id` | title, id | the artist's release count | – |
+| `library.release.tracks` | `release_id` | disc number, track number, id | the release's track count | – |
+| `library.tracks` | – | artist sort name, title, album title, id | tracks | all four |
+
+The four library counters are `artists`, `releases`, `tracks` and `recordings`; all are maintained in the writing transaction. A change that alters what other rows show or sort by (e.g. an artist rename) writes one change entry per affected row, so each of them receives a delta. The filtered lists ignore changes of rows outside their filter; when a row leaves a filtered list, the library writes an extra entry of type `release.moved` or `track.moved`, which the list of the former parent answers with `remove`.
+
 ## Change sequence and visibility
 
 - One global, monotonically increasing change sequence covers shared data, personal data, jobs and devices.

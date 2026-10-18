@@ -8,7 +8,13 @@ import pytest
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from anthology.core.changes import ChangeLog, ChangeOperation, ChangeScope, record_change
+from anthology.core.changes import (
+    ChangeLog,
+    ChangeOperation,
+    ChangeScope,
+    record_change,
+    record_changes,
+)
 from anthology.core.config import Settings
 from anthology.db import create_engine, create_sessionmaker
 from anthology.db.types import utcnow
@@ -62,6 +68,31 @@ async def test_entries_are_numbered_by_the_sequencer(engine: AsyncEngine, sequen
 
     assert numbered == 2
     assert await _seq_of(engine, first) < await _seq_of(engine, second)
+
+
+async def test_bulk_entries_are_numbered_in_one_commit(engine: AsyncEngine, sequencers) -> None:
+    ids = [uuid.uuid4() for _ in range(1500)]
+    async with create_sessionmaker(engine)() as session, session.begin():
+        written = await record_changes(
+            session,
+            entity_type="test",
+            entity_ids=[*ids, ids[0]],  # duplicates are written once
+            operation=ChangeOperation.UPDATE,
+            scope=ChangeScope.SHARED,
+        )
+
+    numbered = await sequencers().run_once()
+
+    async with engine.connect() as connection:
+        seqs = list(
+            await connection.scalars(
+                select(ChangeLog.change_seq)
+                .where(ChangeLog.entity_type == "test")
+                .order_by(ChangeLog.change_seq)
+            )
+        )
+    assert written == numbered == len(ids)
+    assert seqs == list(range(seqs[0], seqs[0] + len(ids)))
 
 
 async def test_overlapping_transactions_are_numbered_in_commit_order(

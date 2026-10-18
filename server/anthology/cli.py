@@ -20,10 +20,19 @@ def main(argv: list[str] | None = None) -> int:
     seed.add_argument("--rows", type=int, default=500_000)
     seed.add_argument("--reset", action="store_true", help="drop and recreate the table")
 
+    library = dev_commands.add_parser(
+        "seed-library",
+        help="fill the library with a generated test library (requires ANTHOLOGY_DEV_DEMO=true)",
+    )
+    library.add_argument("--tracks", type=int, default=500_000)
+    library.add_argument("--reset", action="store_true", help="replace an existing library")
+
     args = parser.parse_args(argv)
     settings = get_settings()
     if args.command == "dev" and args.dev_command == "seed-demo":
         return seed_demo(settings, args.rows, args.reset)
+    if args.command == "dev" and args.dev_command == "seed-library":
+        return seed_library(settings, args.tracks, args.reset)
     return 2  # pragma: no cover - argparse rejects unknown commands
 
 
@@ -45,6 +54,36 @@ def seed_demo(settings: Settings, rows: int, reset: bool) -> int:
 
     inserted = asyncio.run(run())
     print(f"demo table ready: {rows} rows ({inserted} inserted)")
+    return 0
+
+
+def seed_library(settings: Settings, tracks: int, reset: bool) -> int:
+    if not settings.dev_demo:
+        print(
+            "refusing to seed: set ANTHOLOGY_DEV_DEMO=true (developer installations only)",
+            file=sys.stderr,
+        )
+        return 1
+    try:
+        from anthology.library.seed import LibraryNotEmptyError, seed_library
+    except ImportError:  # pragma: no cover - production images have no generator
+        print("the library generator is missing: run uv sync (dev dependencies)", file=sys.stderr)
+        return 1
+
+    async def run() -> dict[str, int]:
+        engine = create_engine(settings)
+        try:
+            return await seed_library(engine, tracks, reset)
+        finally:
+            await engine.dispose()
+
+    try:
+        counters = asyncio.run(run())
+    except LibraryNotEmptyError as error:
+        print(f"refusing to seed: {error}", file=sys.stderr)
+        return 1
+    summary = ", ".join(f"{value} {name}" for name, value in counters.items())
+    print(f"library ready: {summary}; reconnect clients to see it")
     return 0
 
 

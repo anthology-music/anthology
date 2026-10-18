@@ -4,10 +4,21 @@ export const PROTOCOL_VERSION = 1;
 
 export type ClientMessage = Hello | Auth | Subscribe | SetWindow | Ack | Unsubscribe;
 export type ServerMessage = Welcome | SnapshotMeta | Chunk | Delta | Resync | ErrorMessage;
+export type AudioFormat = 'flac' | 'wav' | 'aiff' | 'alac' | 'mp3' | 'aac' | 'opus' | 'vorbis';
 
 export interface SyncProtocol {
   client?: ClientMessage;
   server?: ServerMessage;
+  /**
+   * Row schema per stream (streams without one send untyped rows).
+   */
+  rows?: {
+    'library.artists'?: LibraryArtistRow;
+    'library.releases'?: LibraryReleaseRow;
+    'library.artist.releases'?: LibraryReleaseRow;
+    'library.release.tracks'?: LibraryTrackRow;
+    'library.tracks'?: LibraryTrackRow;
+  };
 }
 export interface Hello {
   type: 'hello';
@@ -127,4 +138,39 @@ export interface ErrorMessage {
 export interface ErrorData {
   code: string;
   message?: string;
+}
+export interface LibraryArtistRow {
+  id: string;
+  key: unknown[];
+  name: string;
+  release_count: number;
+  track_count: number;
+}
+export interface LibraryReleaseRow {
+  id: string;
+  key: unknown[];
+  title: string;
+  album_artist: string;
+  album_artist_id: string;
+  edition: string | null;
+  year: number | null;
+  disc_count: number;
+  track_count: number;
+}
+export interface LibraryTrackRow {
+  id: string;
+  key: unknown[];
+  title: string;
+  artist: string;
+  album: string;
+  album_artist: string;
+  release_id: string;
+  recording_id: string;
+  disc_number: number;
+  track_number: number;
+  duration_ms: number;
+  format: AudioFormat | null;
+  sample_rate_hz: number | null;
+  bit_depth: number | null;
+  bitrate_kbps: number | null;
 }
