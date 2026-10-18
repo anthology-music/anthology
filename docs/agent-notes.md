@@ -33,10 +33,10 @@ _Last updated: 2026-10-18_
   - `media-delivery-wording` – only the audio extraction from videos (2.1) is open (video, milestone 4).
 - **Library:** `library-core` is merged (PR #15). Decided with the maintainer: one artist per
   recording and one album artist per release, with the credited text kept as display text.
-- **In progress:** change `library-views` on branch `feat/library-views`: Local view with the
-  sections Albums, Artists and Tracks, artist and album pages, entry streams `library.artist` and
-  `library.release`. The format label (`FLAC 24/96`) is deliberately not a quality badge until
-  effective quality exists.
+- **In review:** change `library-views` is implemented and archived on branch
+  `feat/library-views` (PR #16, CI green): Local view with the sections Albums, Artists and
+  Tracks, artist and album pages, entry streams `library.artist` and `library.release`. The
+  format label (`FLAC 24/96`) is deliberately not a quality badge until effective quality exists.
 - **Next:** `managed-and-referenced-originals` (builds on `audio_files`: replaces its unique
   `recording_id` index with the partial index), `metadata-lookup`,
   `effective-quality-duplicate-checks`, `review-list`, `tag-editing` and `search`

@@ -19,7 +19,7 @@
 ## 3. End to end
 
 - [x] 3.1 Seed a generated library in `client/e2e/start-server.sh` (`ANTHOLOGY_E2E_LIBRARY_TRACKS`, default 20,000) and document it in `client/AGENTS.md`
-- [ ] 3.2 E2E test: open Local, see the counts, open an artist, open a release, reload the album page, go back and find the previous scroll position; passes locally and in CI (live deltas are covered by 1.1 and 2.4–2.6, since no library editing API exists yet)
+- [x] 3.2 E2E test: open Local, see the counts, open an artist, open a release, reload the album page, go back and find the previous scroll position; passes locally and in CI (live deltas are covered by 1.1 and 2.4–2.6, since no library editing API exists yet)
 
 ## 4. Documentation
 
