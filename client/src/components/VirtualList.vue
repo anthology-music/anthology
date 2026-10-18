@@ -34,7 +34,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 import type { Row, Subscription } from '@/sync/subscription';
 
@@ -55,6 +55,8 @@ const props = withDefaults(
     debounceMs?: number;
     /** Safety cap for rendered rows (protects against an unbounded container height). */
     maxRendered?: number;
+    /** Position shown at the top once the total is known (e.g. a restored scroll position). */
+    initialPosition?: number;
   }>(),
   {
     rowHeight: 52,
@@ -63,6 +65,7 @@ const props = withDefaults(
     fallbackHeight: 600,
     debounceMs: 60,
     maxRendered: 200,
+    initialPosition: 0,
   },
 );
 
@@ -141,9 +144,28 @@ function onKeydown(event: KeyboardEvent): void {
 
 watch(total, scheduleRequest);
 
+// Scroll to the initial position once, as soon as the total gives the list its height.
+let initialApplied = props.initialPosition <= 0;
+watch(
+  loading,
+  async (isLoading) => {
+    if (isLoading || initialApplied) return;
+    initialApplied = true;
+    await nextTick();
+    scrollToPosition(Math.min(props.initialPosition, Math.max(0, total.value - 1)));
+  },
+  { immediate: true },
+);
+
+/** The position of the first visible row (to restore the scroll position later). */
+function firstVisible(): number {
+  return visible.value.first;
+}
+
 onMounted(() => {
   const element = viewport.value;
   if (!element) return;
+  if (scrollTop.value > 0) element.scrollTop = scrollTop.value;
   const measure = () => {
     if (element.clientHeight <= 0) return;
     viewportHeight.value = element.clientHeight;
@@ -165,7 +187,7 @@ onBeforeUnmount(() => {
   resizeObserver?.disconnect();
 });
 
-defineExpose({ scrollToPosition });
+defineExpose({ scrollToPosition, firstVisible });
 </script>
 
 <style scoped>

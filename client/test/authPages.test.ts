@@ -65,7 +65,7 @@ describe('authentication pages', () => {
     await fill(wrapper, ['Lukas', 'lukas', 'correct horse']);
 
     expect(body).toMatchObject({ username: 'lukas', display_name: 'Lukas' });
-    await vi.waitFor(() => expect(wrapper.router.currentRoute.value.name).toBe('local'));
+    await vi.waitFor(() => expect(wrapper.router.currentRoute.value.path).toBe('/local/albums'));
   });
 
   it('restores a stored session without showing the sign-in page', async () => {

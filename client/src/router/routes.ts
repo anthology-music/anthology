@@ -11,7 +11,42 @@ const routes: RouteRecordRaw[] = [
         name: 'streaming',
         component: () => import('@/pages/StreamingPage.vue'),
       },
-      { path: 'local', name: 'local', component: () => import('@/pages/LocalPage.vue') },
+      {
+        // Local view: the library (spec: library, Local library view and following).
+        path: 'local',
+        name: 'local',
+        component: () => import('@/pages/LocalPage.vue'),
+        redirect: { name: 'library-albums' },
+        children: [
+          {
+            path: 'albums',
+            name: 'library-albums',
+            component: () => import('@/features/library/pages/AlbumsPage.vue'),
+          },
+          {
+            path: 'artists',
+            name: 'library-artists',
+            component: () => import('@/features/library/pages/ArtistsPage.vue'),
+          },
+          {
+            path: 'artists/:artistId',
+            name: 'library-artist',
+            props: true,
+            component: () => import('@/features/library/pages/ArtistPage.vue'),
+          },
+          {
+            path: 'releases/:releaseId',
+            name: 'library-release',
+            props: true,
+            component: () => import('@/features/library/pages/ReleasePage.vue'),
+          },
+          {
+            path: 'tracks',
+            name: 'library-tracks',
+            component: () => import('@/features/library/pages/TracksPage.vue'),
+          },
+        ],
+      },
       { path: 'works', name: 'works', component: () => import('@/pages/WorksPage.vue') },
       { path: 'settings', name: 'settings', component: () => import('@/pages/SettingsPage.vue') },
       // Developer demo of a large list (server needs ANTHOLOGY_DEV_DEMO=true); dev builds only.

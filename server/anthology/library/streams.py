@@ -71,15 +71,16 @@ async def _library_meta(db: AsyncSession, counter: str) -> Meta:
 # --- artists ------------------------------------------------------------------------------
 
 
-def _artist_row(artist: Artist) -> Row:
+def _artist_row(artist: Artist, key: SortKey | None = None) -> Row:
+    key = key or (artist.sort_name, artist.id)
     model = LibraryArtistRow(
         id=str(artist.id),
-        key=[artist.sort_name, artist.id],
+        key=list(key),
         name=artist.name,
         release_count=artist.release_count,
         track_count=artist.track_count,
     )
-    return Row(id=model.id, key=(artist.sort_name, artist.id), data=_data(model))
+    return Row(id=model.id, key=key, data=_data(model))
 
 
 class ArtistsStream:
@@ -112,6 +113,46 @@ class ArtistsStream:
     ) -> list[RowChange]:
         artist = await db.get(Artist, event.entity_id, populate_existing=True)
         return _remove(event.entity_id) if artist is None else _upsert(_artist_row(artist))
+
+
+class ArtistStream:
+    """One artist by ID (0 or 1 rows), for the artist page header."""
+
+    name = "library.artist"
+    entity_types = frozenset({"artist"})
+
+    def allowed(self, session: SessionInfo) -> bool:
+        return True
+
+    def validate(self, params: dict[str, Any]) -> dict[str, Any]:
+        return _id_param(params, "artist_id")
+
+    async def meta(self, db: AsyncSession, ctx: StreamContext) -> Meta:
+        artist = await db.get(Artist, ctx.params["artist_id"], populate_existing=True)
+        return Meta(total=0 if artist is None else 1)
+
+    def key_query(self, ctx: StreamContext) -> KeyQuery:
+        return KeyQuery(
+            query=select(Artist).where(Artist.id == ctx.params["artist_id"]),
+            columns=(Artist.id,),
+        )
+
+    async def rows(
+        self, db: AsyncSession, ctx: StreamContext, after: SortKey | None, limit: int
+    ) -> list[Row]:
+        key_query = self.key_query(ctx)
+        result = await _page(db, key_query, key_query.query, after, limit)
+        return [_artist_row(artist, (artist.id,)) for (artist,) in result]
+
+    async def changes(
+        self, db: AsyncSession, ctx: StreamContext, event: ChangeEvent
+    ) -> list[RowChange]:
+        if event.entity_id != ctx.params["artist_id"]:
+            return []
+        artist = await db.get(Artist, event.entity_id, populate_existing=True)
+        if artist is None:
+            return _remove(event.entity_id)
+        return _upsert(_artist_row(artist, (artist.id,)))
 
 
 # --- releases -----------------------------------------------------------------------------
@@ -167,6 +208,46 @@ class ReleasesStream:
 
 def _release_key(release: Release) -> SortKey:
     return (release.sort_album_artist, release.sort_title, release.id)
+
+
+class ReleaseStream:
+    """One release by ID (0 or 1 rows), for the album page header."""
+
+    name = "library.release"
+    entity_types = frozenset({"release"})
+
+    def allowed(self, session: SessionInfo) -> bool:
+        return True
+
+    def validate(self, params: dict[str, Any]) -> dict[str, Any]:
+        return _id_param(params, "release_id")
+
+    async def meta(self, db: AsyncSession, ctx: StreamContext) -> Meta:
+        release = await db.get(Release, ctx.params["release_id"], populate_existing=True)
+        return Meta(total=0 if release is None else 1)
+
+    def key_query(self, ctx: StreamContext) -> KeyQuery:
+        return KeyQuery(
+            query=select(Release).where(Release.id == ctx.params["release_id"]),
+            columns=(Release.id,),
+        )
+
+    async def rows(
+        self, db: AsyncSession, ctx: StreamContext, after: SortKey | None, limit: int
+    ) -> list[Row]:
+        key_query = self.key_query(ctx)
+        result = await _page(db, key_query, key_query.query, after, limit)
+        return [_release_row(release, (release.id,)) for (release,) in result]
+
+    async def changes(
+        self, db: AsyncSession, ctx: StreamContext, event: ChangeEvent
+    ) -> list[RowChange]:
+        if event.entity_id != ctx.params["release_id"]:
+            return []
+        release = await db.get(Release, event.entity_id, populate_existing=True)
+        if release is None:
+            return _remove(event.entity_id)
+        return _upsert(_release_row(release, (release.id,)))
 
 
 class ArtistReleasesStream:
@@ -348,7 +429,9 @@ def _data(model) -> dict[str, Any]:
 
 STREAMS = (
     ArtistsStream,
+    ArtistStream,
     ReleasesStream,
+    ReleaseStream,
     ArtistReleasesStream,
     ReleaseTracksStream,
     TracksStream,

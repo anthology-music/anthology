@@ -241,3 +241,94 @@ async def test_release_tracks_show_their_context(app: FastAPI, client: AsyncClie
     assert (on_compilation["sample_rate_hz"], on_compilation["bit_depth"]) == (44_100, 16)
     assert at_home["title"] == "Polarnacht"
     assert at_home["album"] == "Polarnacht"
+
+
+async def test_entries_deliver_one_row_or_none(app: FastAPI, client: AsyncClient) -> None:
+    admin = await setup_admin(client)
+    data = await _library(app)
+    artist_id = str(data["nordlicht"].album_artist_id)
+
+    async with ws_connect(app) as ws:
+        await ws.hello(admin.access_token)
+        artist_meta = await ws.subscribe("a", "library.artist", artist_id=artist_id)
+        [artist] = await ws.rows("a", 1)
+        release_meta = await ws.subscribe(
+            "r", "library.release", release_id=str(data["nordlicht"].id)
+        )
+        [release] = await ws.rows("r", 1)
+        unknown = await ws.subscribe("u", "library.artist", artist_id=str(uuid.uuid4()))
+        await ws.send("subscribe", "x", stream="library.release", start=0, end=1)
+        error = await ws.recv_type("error")
+
+    assert artist_meta["data"] == {"total": 1, "counters": {}}
+    assert artist == {
+        "id": artist_id,
+        "key": [artist_id],
+        "name": "Nordlicht",
+        "release_count": 1,
+        "track_count": 3,
+    }
+    assert release_meta["data"]["total"] == 1
+    assert release["title"] == "Polarnacht"
+    assert release["album_artist_id"] == artist_id
+    assert release["track_count"] == 3
+    assert unknown["data"]["total"] == 0
+    assert error["data"]["code"] == "invalid_params"
+
+
+async def test_entries_follow_changes_of_their_entity_only(
+    app: FastAPI, client: AsyncClient
+) -> None:
+    admin = await setup_admin(client)
+    data = await _library(app)
+    release_id = str(data["nordlicht"].id)
+
+    async with ws_connect(app) as ws:
+        await ws.hello(admin.access_token)
+        await ws.subscribe("a", "library.artist", artist_id=str(data["nordlicht"].album_artist_id))
+        await ws.rows("a", 1)
+        await ws.subscribe("r", "library.release", release_id=release_id)
+        await ws.rows("r", 1)
+        async with app.state.sessionmaker() as session, session.begin():
+            # A change of another release first: it must not reach "r".
+            oberli = await session.get_one(Release, data["oberli"].id)
+            await service.update_release(session, oberli, title="Alpenglühen")
+            artist = await session.get_one(Artist, data["nordlicht"].album_artist_id)
+            await service.update_artist(session, artist, name="Zwielicht")
+            release = await session.get_one(Release, data["nordlicht"].id)
+            await service.update_release(session, release, title="Polarnacht (Deluxe)")
+        renamed = await _delta(ws, "a", lambda d: d["row"]["name"] == "Zwielicht")
+        seen_by_r = []
+        async with asyncio.timeout(10):
+            while not seen_by_r or seen_by_r[-1]["row"]["title"] != "Polarnacht (Deluxe)":
+                seen_by_r.append((await ws.recv_type("delta", "r"))["data"])
+
+    assert renamed["op"] == "upsert"
+    assert renamed["total"] == 1
+    assert {delta["id"] for delta in seen_by_r} == {release_id}
+    assert seen_by_r[-1]["row"]["album_artist"] == "Zwielicht"
+    assert seen_by_r[-1]["key"] == [release_id]
+
+
+async def test_removed_artist_entry_sends_a_removal(app: FastAPI, client: AsyncClient) -> None:
+    admin = await setup_admin(client)
+    data = await _library(app)
+
+    async with ws_connect(app) as ws:
+        await ws.hello(admin.access_token)
+        async with app.state.sessionmaker() as session:
+            oberli_id = (await session.get_one(Release, data["oberli"].id)).album_artist_id
+        await ws.subscribe("a", "library.artist", artist_id=str(oberli_id))
+        await ws.rows("a", 1)
+        async with app.state.sessionmaker() as session, session.begin():
+            oberli_release = await session.get_one(Release, data["oberli"].id)
+            nordlicht = await session.get_one(Artist, data["nordlicht"].album_artist_id)
+            recording = await session.scalar(
+                select(Recording).where(Recording.artist_id == oberli_id)
+            )
+            await service.update_recording(session, recording, artist=nordlicht)
+            await service.update_release(session, oberli_release, album_artist=nordlicht)
+        removed = await _delta(ws, "a", lambda d: d["op"] == "remove")
+
+    assert removed["id"] == str(oberli_id)
+    assert removed["total"] == 0
