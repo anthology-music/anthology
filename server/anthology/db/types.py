@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime
 
-from sqlalchemy import DateTime
+from sqlalchemy import DateTime, String
 from sqlalchemy.types import TypeDecorator
 
 
@@ -29,3 +29,8 @@ class UTCDateTime(TypeDecorator[datetime]):
         if value.tzinfo is None:
             return value.replace(tzinfo=UTC)
         return value.astimezone(UTC)
+
+
+def sort_text(length: int) -> String:
+    """Normalized sort keys: byte order on PostgreSQL ("C"), like SQLite's BINARY and Python."""
+    return String(length).with_variant(String(length, collation="C"), "postgresql")

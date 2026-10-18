@@ -70,3 +70,13 @@ def test_json_schema_covers_both_directions() -> None:
     }
     assert server_types == {"welcome", "snapshot_meta", "chunk", "delta", "resync", "error"}
     assert "type" in definitions["Delta"]["required"]
+
+
+def test_json_schema_publishes_stream_row_schemas() -> None:
+    schema = json_schema()
+    rows = schema["properties"]["rows"]["properties"]
+
+    assert rows["library.tracks"] == {"$ref": "#/$defs/LibraryTrackRow"}
+    assert rows["library.artist.releases"] == {"$ref": "#/$defs/LibraryReleaseRow"}
+    track = schema["$defs"]["LibraryTrackRow"]
+    assert {"id", "key", "title", "artist", "album", "duration_ms"} <= set(track["required"])

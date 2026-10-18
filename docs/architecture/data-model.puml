@@ -24,13 +24,26 @@ hide empty methods
 ' =====================================================================
 package "Library" {
 
+  class Artist {
+    +id : UUID
+    +mbArtistId : UUID [0..1]
+    +name : String
+    +sortName : String
+  }
+  note right of Artist
+    One artist per recording and one
+    album artist per release; the credit
+    as shown ("A feat. B") is display text.
+    Removed when nothing references it.
+  end note
+
   class Recording {
     +id : UUID
     +mbRecordingId : UUID [0..1]
     +isrc : String [0..1]
     +acoustId : UUID [0..1]
     +title : String
-    +artist : String
+    +artistDisplay : String
     +durationMs : Integer
     +changeSeq : Long
   }
@@ -88,13 +101,13 @@ package "Library" {
     +mbReleaseGroupId : UUID [0..1]
     +title : String
     +type : ReleaseGroupType
-    +albumArtist : String
   }
 
   class Release {
     +id : UUID
     +mbReleaseId : UUID [0..1]
     +title : String
+    +albumArtistDisplay : String
     +edition : String [0..1]
     +country : String [0..1]
     +releaseDate : Date [0..1]
@@ -964,6 +977,8 @@ AudioFile "0..*" -- "1" Source : retrieved from >
 ReleaseGroup "1" *-- "1..*" Release
 Release "1" *-- "1..*" Track
 Track "0..*" -- "1" Recording : plays >
+Recording "0..*" -- "1" Artist : artist >
+Release "0..*" -- "1" Artist : album artist >
 Release "0..*" -- "0..1" Image : front cover >
 Recording "0..*" -- "0..1" Image : own front cover >
 Release "1" *-- "0..*" ReleaseImage : gallery >

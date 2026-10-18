@@ -70,10 +70,20 @@ ANTHOLOGY_DEV_DEMO=true uv run uvicorn anthology.api.app:create_app --factory --
 
 Subscribe to the stream `demo.items`. `seed-demo` refuses to run without `ANTHOLOGY_DEV_DEMO=true`; `--reset` recreates the table.
 
+## Test library
+
+The test library generator lives in `tools/library-generator/` (development dependency, not in production images). To fill a development database with a generated library (fictional names, no media files):
+
+```
+ANTHOLOGY_DEV_DEMO=true uv run anthology dev seed-library --tracks 500000
+```
+
+The command refuses to run without `ANTHOLOGY_DEV_DEMO=true` and on a non-empty library unless `--reset` is given (which replaces the library). It writes no change log entries; reconnect clients afterwards. Library writes in code always go through `anthology/library/service.py`, which keeps sort keys, counters and change entries consistent.
+
 ## Tests
 
 - Tests run on SQLite by default. Set `ANTHOLOGY_TEST_DATABASE_URL` to run them on PostgreSQL as well (CI does both), e.g. `ANTHOLOGY_TEST_DATABASE_URL=postgresql+asyncpg://anthology:anthology@localhost:5432/anthology-test uv run pytest`. The PostgreSQL test database must be **dedicated to tests**: every test session migrates it down to base and up to head, which drops all tables.
 - Code that differs between engines must be tested on both; never assume SQLite behavior matches PostgreSQL.
 - Unit tests per service; API tests with the httpx test client; WebSocket protocol tests for every stream.
 - Media fixtures are generated (sine tones, silence, synthetic MusicXML) – never copyrighted material.
-- Performance tests are marked `@pytest.mark.performance` and run on PostgreSQL only; the protocol budget test uses the demo stream with 500,000 rows. Library performance tests will use the 500,000-track generator in `tools/` (milestone 2). All must meet the budgets in the root `AGENTS.md`.
+- Performance tests are marked `@pytest.mark.performance` and run on PostgreSQL only; the protocol budget test uses the demo stream with 500,000 rows. The library performance tests use the 500,000-track generator in `tools/library-generator/`. All must meet the budgets in the root `AGENTS.md`.

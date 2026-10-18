@@ -17,7 +17,7 @@ across sessions goes here, so every agent and every maintainer sees the same sta
 
 ## Current state
 
-_Last updated: 2026-10-17_
+_Last updated: 2026-10-18_
 
 - **Milestone 1 (Foundation)** is implemented: server skeleton, sync protocol with progressive
   loading, users and devices, jobs (core and view), client foundation with sign-in, sync layer and
@@ -31,9 +31,16 @@ _Last updated: 2026-10-17_
   - `external-source-services` – documentation done; the generic service source adapter (3.1)
     and the duplicate check before download (3.2) belong to milestone 3.
   - `media-delivery-wording` – only the audio extraction from videos (2.1) is open (video, milestone 4).
-- **Next:** milestone 2 (Core library), starting with `managed-and-referenced-originals`,
-  then `metadata-lookup`, `effective-quality-duplicate-checks`, `review-list`, `tag-editing`
-  and `search` (see `docs/roadmap.md`).
+- **In progress:** change `library-core` on branch `feat/library-core` (based on
+  `docs/agent-notes`): implemented, 16/17 tasks done. Open: task 6.2 is verified locally
+  (500,000 tracks, p95 jump on `library.tracks` about 0.5 s) but not yet in CI; then review,
+  archive and PR. Decided with the maintainer: one artist per recording and one album artist
+  per release, with the credited text kept as display text.
+- **Next:** `library-views` (client views on the new streams and generated row types), then
+  `managed-and-referenced-originals` (builds on `audio_files`: replaces its unique
+  `recording_id` index with the partial index), `metadata-lookup`,
+  `effective-quality-duplicate-checks`, `review-list`, `tag-editing` and `search`
+  (see `docs/roadmap.md`).
 
 ## Working conventions
 
@@ -45,3 +52,12 @@ _Last updated: 2026-10-17_
 ## Notes and pitfalls
 
 - `.claude/CLAUDE.md` and `*.local.md` are git-ignored and private; never reference them.
+- If `openspec` is not on the `PATH`, run it as `npx -y @fission-ai/openspec@latest …`.
+- On PostgreSQL a change committed just before a subscription is numbered after it, so the
+  first delta may repeat the snapshot state. Protocol tests must wait for the delta with the
+  expected content, not take the first one.
+- Foreign keys with `ON DELETE SET NULL`/`CASCADE` need an index on the referencing column;
+  without it, deleting many rows scans the referencing table once per row.
+- Right after a bulk load PostgreSQL has no statistics; avoid correlated `UPDATE`s over large
+  fresh tables (compute values while loading instead).
+- `pkill -f <pattern>` also matches the shell running it when the pattern is in the command.

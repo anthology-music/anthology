@@ -177,7 +177,10 @@ async def test_services_stream_shows_status_and_sends_deltas(
             "tagger",
             Observation(ServiceState.AVAILABLE, version="0.1.0", interface="1.0"),
         )
+        # A delta may first repeat the snapshot state (numbered after the subscription).
         delta = await ws.recv_type("delta")
+        while delta["data"]["row"]["status"] != "available":
+            delta = await ws.recv_type("delta")
 
     assert meta["data"]["total"] == 1
     assert meta["data"]["counters"] == {"available": 0, "unavailable": 1, "incompatible": 0}
