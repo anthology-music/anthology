@@ -37,7 +37,7 @@
 ## 6. Seeding and performance
 
 - [x] 6.1 Add `anthology dev seed-library --tracks N [--reset]`: requires `ANTHOLOGY_DEV_DEMO=true`, refuses a non-empty library without `--reset`, uses `COPY` on PostgreSQL and batched inserts on SQLite, and sets all counters; verify with tests for refusal without the flag, refusal on a non-empty library, and counters matching a recount after seeding 1,000 tracks
-- [ ] 6.2 Add `@pytest.mark.performance` tests on PostgreSQL with 500,000 generated tracks: for `library.artists`, `library.releases` and `library.tracks`, totals and first rows within 2 s, the window at the middle position within 2 s, and no `OFFSET` in the executed SQL; verify the tests pass locally and in the CI performance job
+- [x] 6.2 Add `@pytest.mark.performance` tests on PostgreSQL with 500,000 generated tracks: for `library.artists`, `library.releases` and `library.tracks`, totals and first rows within 2 s, the window at the middle position within 2 s, and no `OFFSET` in the executed SQL; verify the tests pass locally and in the CI performance job
 
 ## 7. Verification
 
