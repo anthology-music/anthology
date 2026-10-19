@@ -119,6 +119,36 @@ const en: typeof de = {
     versions: 'Version {version} · interface {api}',
     none: 'No services checked yet.',
   },
+  library: {
+    title: 'Library',
+    path: 'Path',
+    sections: { releases: 'Albums', artists: 'Artists', tracks: 'Tracks' },
+    artist: 'Artist',
+    album: 'Album',
+    releasesOf: 'Albums by {name}',
+    tracksOf: 'Tracks of {title}',
+    count: {
+      releases: '{n} album | {n} albums',
+      tracks: '{n} track | {n} tracks',
+      discs: '{n} disc | {n} discs',
+    },
+    empty: {
+      releases: 'The library has no albums yet.',
+      artists: 'The library has no artists yet.',
+      tracks: 'The library has no tracks yet.',
+      artistReleases: 'This artist has no albums.',
+      releaseTracks: 'This album has no tracks.',
+    },
+    missing: {
+      artist: 'This artist does not exist.',
+      release: 'This album does not exist.',
+    },
+    removed: {
+      artist: 'This artist no longer exists.',
+      release: 'This album no longer exists.',
+    },
+    back: 'Back to the library',
+  },
   user: { signedOut: 'Not signed in' },
   pages: {
     streaming: {

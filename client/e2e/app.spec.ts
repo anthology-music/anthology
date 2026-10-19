@@ -3,6 +3,7 @@ import { expect, test, type Page } from '@playwright/test';
 const ADMIN = { name: 'Lukas', username: 'lukas', password: 'correct horse battery' };
 const BUDGET_MS = 2_000;
 const DEMO_ROWS = Number(process.env.ANTHOLOGY_E2E_DEMO_ROWS ?? 500_000);
+const LIBRARY_TRACKS = Number(process.env.ANTHOLOGY_E2E_LIBRARY_TRACKS ?? 20_000);
 
 test.describe.configure({ mode: 'serial' });
 
@@ -11,7 +12,7 @@ async function signIn(page: Page) {
   await page.getByLabel('Benutzername').fill(ADMIN.username);
   await page.getByLabel('Passwort').fill(ADMIN.password);
   await page.getByRole('button', { name: 'Anmelden' }).click();
-  await expect(page).toHaveURL(/\/local$/);
+  await expect(page).toHaveURL(/\/local\/albums$/);
 }
 
 test('a fresh installation starts with the setup and creates the admin', async ({ page }) => {
@@ -23,7 +24,7 @@ test('a fresh installation starts with the setup and creates the admin', async (
   await page.getByLabel('Passwort').fill(ADMIN.password);
   await page.getByRole('button', { name: 'Konto anlegen' }).click();
 
-  await expect(page).toHaveURL(/\/local$/);
+  await expect(page).toHaveURL(/\/local\/albums$/);
   await expect(page.getByRole('status')).toHaveText('Verbunden · live');
 });
 
@@ -103,4 +104,55 @@ test('a demo job shows live progress and can be paused and resumed', async ({ pa
   await job.getByTestId('job-cancel').click();
   await expect(status).toHaveText('Abgebrochen');
   await expect(page.getByTestId('job-counter-total')).toHaveText('1');
+});
+
+test('browsing the library from an artist to an album, with reload and scroll restore', async ({
+  page,
+}) => {
+  await signIn(page);
+  const count = (section: string) =>
+    page.getByTestId(`library-nav-${section}`).locator('.library-nav__count');
+  await expect(count('tracks')).toHaveText(new Intl.NumberFormat('de').format(LIBRARY_TRACKS));
+  await expect(count('releases')).toHaveText(/^[\d.]+$/);
+
+  // Artist → album; the generated names are not fixed, so follow the links on the page.
+  await page.getByTestId('library-nav-artists').click();
+  await expect(page).toHaveURL(/\/local\/artists$/);
+  const firstArtist = page.locator('[role="listitem"][aria-posinset="1"] [data-testid^="artist-"]');
+  const artistName = (await firstArtist.locator('.library-row__title').textContent())!.trim();
+  await firstArtist.click();
+  await expect(page.getByTestId('artist-name')).toHaveText(artistName);
+
+  await page.locator('[role="listitem"][aria-posinset="1"] [data-testid^="release-"]').click();
+  await expect(page).toHaveURL(/\/local\/releases\/[0-9a-f-]+$/);
+  const title = page.getByTestId('release-title');
+  await expect(title).not.toHaveText('…');
+  const albumTitle = await title.textContent();
+  await expect(page.locator('[data-testid^="track-"]').first()).toBeVisible();
+  await expect(page.locator('.breadcrumb')).toContainText(artistName);
+
+  await page.reload();
+  await expect(title).toHaveText(albumTitle!);
+  await expect(page.locator('[data-testid^="track-"]').first()).toBeVisible();
+
+  // Scroll the album section to position 1,000, open an album there and come back.
+  await page.getByTestId('library-nav-releases').click();
+  await expect(page).toHaveURL(/\/local\/albums$/);
+  const list = page.getByRole('list', { name: 'Alben' });
+  await expect(page.locator('[role="listitem"][aria-posinset="1"] a')).toBeVisible();
+  await list.evaluate((element) => {
+    const rows = Number(element.querySelector('[role="listitem"]')!.getAttribute('aria-setsize'));
+    const full = rows * 52;
+    const ratio = Math.max(
+      1,
+      (full - element.clientHeight) / (element.scrollHeight - element.clientHeight),
+    );
+    element.scrollTop = (1_000 * 52) / ratio;
+  });
+  const far = page.locator('[role="listitem"][aria-posinset="1001"] a');
+  await expect(far).toBeVisible();
+  await far.click();
+  await expect(page).toHaveURL(/\/local\/releases\//);
+  await page.goBack();
+  await expect(page.locator('[role="listitem"][aria-posinset="1001"] a')).toBeVisible();
 });

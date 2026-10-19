@@ -35,7 +35,9 @@ describe('MainLayout', () => {
   it('redirects the start page to the library', async () => {
     const wrapper = await mountWithApp(App, { path: '/' });
 
-    expect(wrapper.find('h1').text()).toBe('Lokal');
+    expect(wrapper.router.currentRoute.value.path).toBe('/local/albums');
+    expect(wrapper.find('.sidebar__link--active .sidebar__label').text()).toBe('Lokal');
+    expect(wrapper.find('h1').text()).toBe('Alben');
   });
 
   it('shows the connection state as text, not only as colour', async () => {

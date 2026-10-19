@@ -9,7 +9,9 @@ from anthology.library.schemas import LibraryArtistRow, LibraryReleaseRow, Libra
 
 ROW_SCHEMAS: dict[str, type[BaseModel]] = {
     "library.artists": LibraryArtistRow,
+    "library.artist": LibraryArtistRow,
     "library.releases": LibraryReleaseRow,
+    "library.release": LibraryReleaseRow,
     "library.artist.releases": LibraryReleaseRow,
     "library.release.tracks": LibraryTrackRow,
     "library.tracks": LibraryTrackRow,

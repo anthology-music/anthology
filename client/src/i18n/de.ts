@@ -118,6 +118,36 @@ export default {
     versions: 'Version {version} · Schnittstelle {api}',
     none: 'Noch keine Dienste geprüft.',
   },
+  library: {
+    title: 'Bibliothek',
+    path: 'Pfad',
+    sections: { releases: 'Alben', artists: 'Künstler', tracks: 'Titel' },
+    artist: 'Künstler',
+    album: 'Album',
+    releasesOf: 'Alben von {name}',
+    tracksOf: 'Titel von {title}',
+    count: {
+      releases: '{n} Album | {n} Alben',
+      tracks: '{n} Titel | {n} Titel',
+      discs: '{n} CD | {n} CDs',
+    },
+    empty: {
+      releases: 'Die Bibliothek enthält noch keine Alben.',
+      artists: 'Die Bibliothek enthält noch keine Künstler.',
+      tracks: 'Die Bibliothek enthält noch keine Titel.',
+      artistReleases: 'Zu diesem Künstler gibt es keine Alben.',
+      releaseTracks: 'Dieses Album enthält keine Titel.',
+    },
+    missing: {
+      artist: 'Diesen Künstler gibt es nicht.',
+      release: 'Dieses Album gibt es nicht.',
+    },
+    removed: {
+      artist: 'Diesen Künstler gibt es nicht mehr.',
+      release: 'Dieses Album gibt es nicht mehr.',
+    },
+    back: 'Zur Bibliothek',
+  },
   user: { signedOut: 'Nicht angemeldet' },
   pages: {
     streaming: {

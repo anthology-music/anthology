@@ -31,12 +31,13 @@ _Last updated: 2026-10-18_
   - `external-source-services` – documentation done; the generic service source adapter (3.1)
     and the duplicate check before download (3.2) belong to milestone 3.
   - `media-delivery-wording` – only the audio extraction from videos (2.1) is open (video, milestone 4).
-- **In review:** change `library-core` is implemented and archived on branch
-  `feat/library-core` (PR #15, CI green including the 500,000-track performance test; p95 jump
-  on `library.tracks` about 0.5 s). Decided with the maintainer: one artist per recording and
-  one album artist per release, with the credited text kept as display text.
-- **Next:** `library-views` (client views on the new streams and generated row types), then
-  `managed-and-referenced-originals` (builds on `audio_files`: replaces its unique
+- **Library:** `library-core` is merged (PR #15). Decided with the maintainer: one artist per
+  recording and one album artist per release, with the credited text kept as display text.
+- **In review:** change `library-views` is implemented and archived on branch
+  `feat/library-views` (PR #16, CI green): Local view with the sections Albums, Artists and
+  Tracks, artist and album pages, entry streams `library.artist` and `library.release`. The
+  format label (`FLAC 24/96`) is deliberately not a quality badge until effective quality exists.
+- **Next:** `managed-and-referenced-originals` (builds on `audio_files`: replaces its unique
   `recording_id` index with the partial index), `metadata-lookup`,
   `effective-quality-duplicate-checks`, `review-list`, `tag-editing` and `search`
   (see `docs/roadmap.md`).
@@ -55,6 +56,12 @@ _Last updated: 2026-10-18_
 - On PostgreSQL a change committed just before a subscription is numbered after it, so the
   first delta may repeat the snapshot state. Protocol tests must wait for the delta with the
   expected content, not take the first one.
+- Playwright's Chromium needs system libraries that a dev container may lack. Without
+  installing them, run the browser in a container and connect to it:
+  `podman run -d --rm --network host --init mcr.microsoft.com/playwright:v<version>-noble
+  npx -y playwright@<version> run-server --port 3333 --host 127.0.0.1`, then run the E2E tests
+  with `PW_TEST_CONNECT_WS_ENDPOINT=ws://127.0.0.1:3333/` (version = `@playwright/test`).
+- The E2E demo-list test jumps to row 250,000; keep `ANTHOLOGY_E2E_DEMO_ROWS` at its default.
 - Foreign keys with `ON DELETE SET NULL`/`CASCADE` need an index on the referencing column;
   without it, deleting many rows scans the referencing table once per row.
 - Right after a bulk load PostgreSQL has no statistics; avoid correlated `UPDATE`s over large

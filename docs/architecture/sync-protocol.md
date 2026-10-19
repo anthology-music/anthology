@@ -61,12 +61,14 @@ The stream `services` (all signed-in users, no parameters) lists the services th
 
 ## Library lists
 
-Five streams for all signed-in users serve the library (`openspec/specs/library/spec.md`). Each is one index range scan; the sort keys are normalized (no case, no diacritics) and stored on the listed rows, and they compare bytewise on both engines (collation `"C"` on PostgreSQL). Row types are published with the message schema (`LibraryArtistRow`, `LibraryReleaseRow`, `LibraryTrackRow` in `packages/api-types`).
+Seven streams for all signed-in users serve the library (`openspec/specs/library/spec.md`). The two entry streams deliver the one row of an artist or release (for page headers and deep links); the lists are one index range scan each; the sort keys are normalized (no case, no diacritics) and stored on the listed rows, and they compare bytewise on both engines (collation `"C"` on PostgreSQL). Row types are published with the message schema (`LibraryArtistRow`, `LibraryReleaseRow`, `LibraryTrackRow` in `packages/api-types`).
 
 | Stream | Params | Sort key | Total | Counters |
 |---|---|---|---|---|
 | `library.artists` | – | sort name, id | artists | all four |
 | `library.releases` | – | album artist sort name, title, id | releases | all four |
+| `library.artist` | `artist_id` | id (one entry) | 1, or 0 if unknown | – |
+| `library.release` | `release_id` | id (one entry) | 1, or 0 if unknown | – |
 | `library.artist.releases` | `artist_id` | title, id | the artist's release count | – |
 | `library.release.tracks` | `release_id` | disc number, track number, id | the release's track count | – |
 | `library.tracks` | – | artist sort name, title, album title, id | tracks | all four |

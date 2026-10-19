@@ -14,7 +14,9 @@ export interface SyncProtocol {
    */
   rows?: {
     'library.artists'?: LibraryArtistRow;
+    'library.artist'?: LibraryArtistRow;
     'library.releases'?: LibraryReleaseRow;
+    'library.release'?: LibraryReleaseRow;
     'library.artist.releases'?: LibraryReleaseRow;
     'library.release.tracks'?: LibraryTrackRow;
     'library.tracks'?: LibraryTrackRow;

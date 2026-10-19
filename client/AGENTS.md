@@ -34,7 +34,7 @@ API types come from `@anthology/api-types` (REST: `paths`/`components` from Open
 - i18n: `src/i18n/de.ts` is the reference, `en.ts` must have the same keys (tested). `src/i18n/setup.ts` creates the instance; boot files only call it, so tests can use it without Quasar CLI.
 - Tests mount the whole app (`test/mount.ts`: Quasar, i18n, routes); `test/setup.ts` stubs browser APIs missing in jsdom.
 - Install scripts of dependencies must be allowed explicitly in `pnpm-workspace.yaml` (`allowBuilds`).
-- End-to-end tests (Playwright, `e2e/`): `ANTHOLOGY_E2E_DATABASE_URL=postgresql+asyncpg://…/<test database> pnpm --filter client e2e`. They start the real server (via uv, ports 8490) on a fresh database with the demo list and the client dev server (port 9090); the database must be dedicated to tests. Once per machine: `pnpm --filter client exec playwright install --with-deps chromium`.
+- End-to-end tests (Playwright, `e2e/`): `ANTHOLOGY_E2E_DATABASE_URL=postgresql+asyncpg://…/<test database> pnpm --filter client e2e`. They start the real server (via uv, ports 8490) on a fresh database with the demo list (`ANTHOLOGY_E2E_DEMO_ROWS`, default 500,000) and a generated library (`ANTHOLOGY_E2E_LIBRARY_TRACKS`, default 20,000), and the client dev server (port 9090); the database must be dedicated to tests. Once per machine: `pnpm --filter client exec playwright install --with-deps chromium`.
 
 ## UI rules (from the mockups in docs/design)
 
