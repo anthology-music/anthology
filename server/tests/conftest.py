@@ -4,6 +4,7 @@ The PostgreSQL test database must be dedicated to tests: every test session migr
 down to base and up to head, so all existing tables are dropped.
 """
 
+import gc
 import os
 from collections.abc import AsyncIterator
 
@@ -42,6 +43,11 @@ async def engine(settings: Settings) -> AsyncIterator[AsyncEngine]:
 @pytest.fixture
 async def clean_db(engine: AsyncEngine) -> None:
     """Delete all rows so that a test starts from an empty installation."""
+    # A task cancelled during a write (e.g. a job item when the previous test's app shut down)
+    # can leave its SQLite connection checked out with the transaction open; the pool closes
+    # it only when the connection is garbage-collected. Until then the database stays locked,
+    # so collect first.
+    gc.collect()
     async with engine.begin() as connection:
         for table in reversed(Base.metadata.sorted_tables):
             await connection.execute(table.delete())
