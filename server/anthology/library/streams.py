@@ -10,10 +10,24 @@ from typing import Any
 
 from sqlalchemy import Select, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
 
 from anthology.library import service
-from anthology.library.models import Artist, AudioFile, Recording, Release, Track
-from anthology.library.schemas import LibraryArtistRow, LibraryReleaseRow, LibraryTrackRow
+from anthology.library.models import (
+    SUPERSEDED_COUNTERS,
+    Artist,
+    AudioFile,
+    OriginalStatus,
+    Recording,
+    Release,
+    Track,
+)
+from anthology.library.schemas import (
+    LibraryArtistRow,
+    LibraryReleaseRow,
+    LibrarySupersededRow,
+    LibraryTrackRow,
+)
 from anthology.sync.feed import ChangeEvent
 from anthology.sync.streams import (
     KeyQuery,
@@ -24,6 +38,7 @@ from anthology.sync.streams import (
     StreamContext,
     StreamError,
 )
+from anthology.users.models import Role
 from anthology.users.service import SessionInfo
 
 ARTIST_KEY = (Artist.sort_name, Artist.id)
@@ -305,7 +320,11 @@ _TRACK_ROW = (
     )
     .join(Recording, Recording.id == Track.recording_id)
     .join(Release, Release.id == Track.release_id)
-    .outerjoin(AudioFile, AudioFile.recording_id == Track.recording_id)
+    .outerjoin(
+        AudioFile,
+        (AudioFile.recording_id == Track.recording_id)
+        & (AudioFile.original_status == OriginalStatus.ACTIVE),
+    )
 )
 
 
@@ -422,6 +441,78 @@ class ReleaseTracksStream:
         return _upsert(_track_row(row, _release_track_key(row[0])))
 
 
+# --- superseded files ---------------------------------------------------------------------
+
+SUPERSEDED_KEY = (AudioFile.path, AudioFile.id)
+_REPLACEMENT = aliased(AudioFile)
+_SUPERSEDED_ROW = (
+    select(AudioFile, Recording, _REPLACEMENT.path)
+    .join(Recording, Recording.id == AudioFile.recording_id)
+    .outerjoin(_REPLACEMENT, _REPLACEMENT.id == AudioFile.superseded_by_id)
+    .where(AudioFile.original_status == OriginalStatus.SUPERSEDED)
+)
+
+
+def _superseded_row(result_row) -> Row:
+    audio_file, recording, replaced_by_path = result_row
+    key = (audio_file.path, audio_file.id)
+    model = LibrarySupersededRow(
+        id=str(audio_file.id),
+        key=list(key),
+        path=audio_file.path,
+        size_bytes=audio_file.size_bytes,
+        format=audio_file.format,
+        recording_id=str(recording.id),
+        title=recording.title,
+        artist=recording.artist_display,
+        superseded_at=audio_file.superseded_at.isoformat() if audio_file.superseded_at else None,
+        replaced_by_id=str(audio_file.superseded_by_id) if audio_file.superseded_by_id else None,
+        replaced_by_path=replaced_by_path,
+    )
+    return Row(id=model.id, key=key, data=_data(model))
+
+
+class SupersededFilesStream:
+    """Report of superseded referenced originals by path (admins only), with count and size."""
+
+    name = "library.superseded"
+    entity_types = frozenset({service.SUPERSEDED_FILE})
+
+    def allowed(self, session: SessionInfo) -> bool:
+        return session.role == Role.ADMIN
+
+    def validate(self, params: dict[str, Any]) -> dict[str, Any]:
+        return _no_params(params)
+
+    async def meta(self, db: AsyncSession, ctx: StreamContext) -> Meta:
+        counters = await service.counters(db, SUPERSEDED_COUNTERS)
+        return Meta(total=counters["superseded_files"], counters=counters)
+
+    def key_query(self, ctx: StreamContext) -> KeyQuery:
+        return KeyQuery(
+            query=select(AudioFile).where(AudioFile.original_status == OriginalStatus.SUPERSEDED),
+            columns=SUPERSEDED_KEY,
+        )
+
+    async def rows(
+        self, db: AsyncSession, ctx: StreamContext, after: SortKey | None, limit: int
+    ) -> list[Row]:
+        result = await _page(db, self.key_query(ctx), _SUPERSEDED_ROW, after, limit)
+        return [_superseded_row(row) for row in result]
+
+    async def changes(
+        self, db: AsyncSession, ctx: StreamContext, event: ChangeEvent
+    ) -> list[RowChange]:
+        row = (
+            await db.execute(
+                _SUPERSEDED_ROW.where(AudioFile.id == event.entity_id).execution_options(
+                    populate_existing=True
+                )
+            )
+        ).first()
+        return _remove(event.entity_id) if row is None else _upsert(_superseded_row(row))
+
+
 def _data(model) -> dict[str, Any]:
     """Row fields without ``id`` and ``key`` (the protocol adds those from the row)."""
     return model.model_dump(mode="json", exclude={"id", "key"})
@@ -435,4 +526,5 @@ STREAMS = (
     ArtistReleasesStream,
     ReleaseTracksStream,
     TracksStream,
+    SupersededFilesStream,
 )

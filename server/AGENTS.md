@@ -80,6 +80,8 @@ ANTHOLOGY_DEV_DEMO=true uv run anthology dev seed-library --tracks 500000
 
 The command refuses to run without `ANTHOLOGY_DEV_DEMO=true` and on a non-empty library unless `--reset` is given (which replaces the library). It writes no change log entries; reconnect clients afterwards. Library writes in code always go through `anthology/library/service.py`, which keeps sort keys, counters and change entries consistent.
 
+Originals are managed (Anthology owns the bytes) or referenced (a foreign folder or a hardlink). Before any move, rename, delete or tag write of an original, call `service.check_file_operation`; it refuses what the storage mode forbids (referenced: never moved, renamed or deleted, written only with `tag_writes_allowed`; superseded: never touched). Resolve the file for playback, transcoding and downloads with `service.active_original`, never by `recording_id` alone: a recording may also have superseded files.
+
 ## Tests
 
 - Tests run on SQLite by default. Set `ANTHOLOGY_TEST_DATABASE_URL` to run them on PostgreSQL as well (CI does both), e.g. `ANTHOLOGY_TEST_DATABASE_URL=postgresql+asyncpg://anthology:anthology@localhost:5432/anthology-test uv run pytest`. The PostgreSQL test database must be **dedicated to tests**: every test session migrates it down to base and up to head, which drops all tables.

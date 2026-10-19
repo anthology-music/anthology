@@ -6,6 +6,7 @@ alters what other list rows show or sort by writes a change entry for each of th
 (spec: Deltas for derived values).
 """
 
+import enum
 import unicodedata
 import uuid
 from collections.abc import Iterable
@@ -23,17 +24,21 @@ from anthology.core.changes import (
     record_change,
     record_changes,
 )
+from anthology.db.types import utcnow
 from anthology.library.models import (
+    LIBRARY_COUNTERS,
     Artist,
     AudioFile,
     AudioFormat,
     Counter,
     LibraryCounter,
+    OriginalStatus,
     QualityTier,
     Recording,
     Release,
     ReleaseGroup,
     ReleaseGroupType,
+    StorageMode,
     Track,
 )
 
@@ -41,6 +46,8 @@ from anthology.library.models import (
 RELEASE_MOVED = "release.moved"
 # Change entry written when a track moves to another release (written by tag editing).
 TRACK_MOVED = "track.moved"
+# Change entries of the report of superseded files (one per file entering or leaving it).
+SUPERSEDED_FILE = "superseded_file"
 
 
 def sort_key(text: str) -> str:
@@ -64,6 +71,33 @@ class AudioFileInfo:
     declared_quality: QualityTier
     bitrate_kbps: int | None = None
     bit_depth: int | None = None
+    storage_mode: StorageMode = StorageMode.MANAGED
+    # Opt-in of the import for referenced files (spec: library, Managed and referenced originals).
+    tag_writes_allowed: bool = False
+
+
+def _audio_file(
+    recording_id: uuid.UUID, audio: AudioFileInfo, home_track_id: uuid.UUID | None
+) -> AudioFile:
+    return AudioFile(
+        id=uuid.uuid4(),
+        recording_id=recording_id,
+        path=audio.path,
+        format=audio.format,
+        codec=audio.codec,
+        bitrate_kbps=audio.bitrate_kbps,
+        sample_rate_hz=audio.sample_rate_hz,
+        bit_depth=audio.bit_depth,
+        channels=audio.channels,
+        size_bytes=audio.size_bytes,
+        audio_hash=audio.audio_hash,
+        declared_quality=audio.declared_quality,
+        storage_mode=audio.storage_mode,
+        original_status=OriginalStatus.ACTIVE,
+        tag_writes_allowed=audio.storage_mode == StorageMode.REFERENCED
+        and audio.tag_writes_allowed,
+        home_track_id=home_track_id,
+    )
 
 
 # --- counters and change entries ----------------------------------------------------------
@@ -80,10 +114,12 @@ async def adjust_counter(session: AsyncSession, counter: Counter, delta: int) ->
         await session.flush()
 
 
-async def counters(session: AsyncSession) -> dict[str, int]:
-    """The maintained library counters (missing rows count as 0)."""
-    values = {counter.value: 0 for counter in Counter}
-    for row in await session.scalars(select(LibraryCounter)):
+async def counters(
+    session: AsyncSession, names: tuple[Counter, ...] = LIBRARY_COUNTERS
+) -> dict[str, int]:
+    """Maintained counters, by default the four library counters (missing rows count as 0)."""
+    values = {counter.value: 0 for counter in names}
+    for row in await session.scalars(select(LibraryCounter).where(LibraryCounter.name.in_(names))):
         values[row.name.value] = row.value
     return values
 
@@ -273,21 +309,7 @@ async def add_recording(
         user_id=user_id,
         artist=artist,
     )
-    audio_file = AudioFile(
-        id=uuid.uuid4(),
-        recording_id=recording.id,
-        path=audio.path,
-        format=audio.format,
-        codec=audio.codec,
-        bitrate_kbps=audio.bitrate_kbps,
-        sample_rate_hz=audio.sample_rate_hz,
-        bit_depth=audio.bit_depth,
-        channels=audio.channels,
-        size_bytes=audio.size_bytes,
-        audio_hash=audio.audio_hash,
-        declared_quality=audio.declared_quality,
-        home_track_id=track.id,
-    )
+    audio_file = _audio_file(recording.id, audio, track.id)
     session.add(audio_file)
     await session.flush()
     await _changed(session, "audio_file", audio_file.id, ChangeOperation.INSERT)
@@ -614,3 +636,105 @@ async def remove_if_orphaned(
 def _public(diff: dict[str, list[Any]]) -> dict[str, list[Any]]:
     """Audit diff without the derived sort columns."""
     return {key: value for key, value in diff.items() if not key.startswith("sort_")}
+
+
+# --- managed and referenced originals -----------------------------------------------------
+
+
+class FileOperation(enum.StrEnum):
+    MOVE = "move"
+    RENAME = "rename"
+    DELETE = "delete"
+    WRITE_TAGS = "write_tags"
+
+
+class FileOperationRefused(Exception):
+    """A file operation that the storage mode of the original does not allow."""
+
+    def __init__(self, audio_file: AudioFile, operation: FileOperation) -> None:
+        super().__init__(f"{operation} refused for {audio_file.path}")
+        self.audio_file = audio_file
+        self.operation = operation
+
+
+def check_file_operation(audio_file: AudioFile, operation: FileOperation) -> None:
+    """Refuse what Anthology must not do to a file (spec: library, Managed and referenced
+    originals; Superseded referenced originals). Every file operation calls this first.
+
+    Managed originals allow everything. Referenced files are never moved, renamed or deleted
+    and written only with the opt-in; superseded files are never touched at all.
+    """
+    if audio_file.original_status == OriginalStatus.SUPERSEDED:
+        raise FileOperationRefused(audio_file, operation)
+    if audio_file.storage_mode == StorageMode.MANAGED:
+        return
+    if operation == FileOperation.WRITE_TAGS and audio_file.tag_writes_allowed:
+        return
+    raise FileOperationRefused(audio_file, operation)
+
+
+async def active_original(session: AsyncSession, recording_id: uuid.UUID) -> AudioFile | None:
+    """The one file used for playback, transcoding and downloads of a recording."""
+    return await session.scalar(
+        select(AudioFile).where(
+            AudioFile.recording_id == recording_id,
+            AudioFile.original_status == OriginalStatus.ACTIVE,
+        )
+    )
+
+
+class ReplacementNotSupported(Exception):
+    pass
+
+
+async def replace_original(
+    session: AsyncSession,
+    recording: Recording,
+    audio: AudioFileInfo,
+    *,
+    user_id: uuid.UUID | None = None,
+) -> AudioFile:
+    """Make ``audio`` (a managed file) the active original of ``recording``.
+
+    A referenced active original is kept unchanged at its location, marked superseded and
+    listed in the report of superseded files (spec: library, Quality-based replacement).
+    Whether the new file is better is decided by the caller (effective quality); track
+    contexts stay as they are.
+    """
+    if audio.storage_mode != StorageMode.MANAGED:
+        raise ReplacementNotSupported("a replacing original is always managed")
+    current = await active_original(session, recording.id)
+    if current is not None and current.storage_mode == StorageMode.MANAGED:
+        # Deleting the old file needs the checksum-verified file handling of acquisition.
+        raise ReplacementNotSupported("replacing a managed original is not supported yet")
+
+    replacement = _audio_file(
+        recording.id, audio, current.home_track_id if current is not None else None
+    )
+    if current is not None:
+        # The partial unique index allows one active file: supersede first, then insert.
+        current.original_status = OriginalStatus.SUPERSEDED
+        current.superseded_at = utcnow()
+        await session.flush()
+    session.add(replacement)
+    await session.flush()
+    await _changed(session, "audio_file", replacement.id, ChangeOperation.INSERT)
+    if current is not None:
+        current.superseded_by_id = replacement.id
+        await session.flush()
+        await adjust_counter(session, Counter.SUPERSEDED_FILES, +1)
+        await adjust_counter(session, Counter.SUPERSEDED_BYTES, current.size_bytes)
+        await _changed(session, "audio_file", current.id)
+        await _changed(session, SUPERSEDED_FILE, current.id, ChangeOperation.INSERT)
+    await _audit(
+        session,
+        "recording",
+        recording.id,
+        "replace_original",
+        user_id,
+        {"original": [current.path if current else None, replacement.path]},
+    )
+    # Every context of the recording shows the new file's format.
+    track_ids = await session.scalars(select(Track.id).where(Track.recording_id == recording.id))
+    await _rows_changed(session, "track", list(track_ids))
+    return replacement

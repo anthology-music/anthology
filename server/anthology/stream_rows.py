@@ -5,7 +5,12 @@ Add the row schema of every stream that has one here; client types are generated
 
 from pydantic import BaseModel
 
-from anthology.library.schemas import LibraryArtistRow, LibraryReleaseRow, LibraryTrackRow
+from anthology.library.schemas import (
+    LibraryArtistRow,
+    LibraryReleaseRow,
+    LibrarySupersededRow,
+    LibraryTrackRow,
+)
 
 ROW_SCHEMAS: dict[str, type[BaseModel]] = {
     "library.artists": LibraryArtistRow,
@@ -15,4 +20,5 @@ ROW_SCHEMAS: dict[str, type[BaseModel]] = {
     "library.artist.releases": LibraryReleaseRow,
     "library.release.tracks": LibraryTrackRow,
     "library.tracks": LibraryTrackRow,
+    "library.superseded": LibrarySupersededRow,
 }

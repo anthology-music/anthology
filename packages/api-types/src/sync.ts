@@ -20,6 +20,7 @@ export interface SyncProtocol {
     'library.artist.releases'?: LibraryReleaseRow;
     'library.release.tracks'?: LibraryTrackRow;
     'library.tracks'?: LibraryTrackRow;
+    'library.superseded'?: LibrarySupersededRow;
   };
 }
 export interface Hello {
@@ -175,4 +176,20 @@ export interface LibraryTrackRow {
   sample_rate_hz: number | null;
   bit_depth: number | null;
   bitrate_kbps: number | null;
+}
+/**
+ * A superseded referenced original (spec: library, Superseded referenced originals).
+ */
+export interface LibrarySupersededRow {
+  id: string;
+  key: unknown[];
+  path: string;
+  size_bytes: number;
+  format: AudioFormat;
+  recording_id: string;
+  title: string;
+  artist: string;
+  superseded_at: string | null;
+  replaced_by_id: string | null;
+  replaced_by_path: string | null;
 }

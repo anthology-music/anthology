@@ -8,7 +8,18 @@ import enum
 import uuid
 from datetime import date, datetime
 
-from sqlalchemy import BigInteger, Date, ForeignKey, Index, Integer, String, Text, Uuid
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    Date,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    Uuid,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from anthology.db import Base
@@ -47,11 +58,29 @@ class QualityTier(enum.StrEnum):
     LOSSY_LOW = "lossy_low"
 
 
+class StorageMode(enum.StrEnum):
+    """Who owns the bytes (spec: library, Managed and referenced originals)."""
+
+    MANAGED = "managed"  # written, moved, copied or reflinked into Anthology's storage
+    REFERENCED = "referenced"  # left in place or hardlinked: never moved, renamed or deleted
+
+
+class OriginalStatus(enum.StrEnum):
+    ACTIVE = "active"
+    SUPERSEDED = "superseded"  # a replaced referenced original, kept and reported
+
+
 class Counter(enum.StrEnum):
     ARTISTS = "artists"
     RELEASES = "releases"
     TRACKS = "tracks"
     RECORDINGS = "recordings"
+    SUPERSEDED_FILES = "superseded_files"
+    SUPERSEDED_BYTES = "superseded_bytes"
+
+
+LIBRARY_COUNTERS = (Counter.ARTISTS, Counter.RELEASES, Counter.TRACKS, Counter.RECORDINGS)
+SUPERSEDED_COUNTERS = (Counter.SUPERSEDED_FILES, Counter.SUPERSEDED_BYTES)
 
 
 class Artist(Base):
@@ -140,14 +169,32 @@ class Track(Base):
 
 
 class AudioFile(Base):
-    """The technical description of a recording's original."""
+    """The technical description of an original file of a recording."""
 
     __tablename__ = "audio_files"
+    __table_args__ = (
+        # Exactly one active original per recording (spec: library, Single original per
+        # recording); superseded files are kept beside it.
+        Index(
+            "uq_audio_files_active_recording",
+            "recording_id",
+            unique=True,
+            postgresql_where=text("original_status = 'active'"),
+            sqlite_where=text("original_status = 'active'"),
+        ),
+        # The report of superseded files: a small partial index instead of a filtered scan.
+        Index(
+            "ix_audio_files_superseded",
+            "path",
+            "id",
+            postgresql_where=text("original_status = 'superseded'"),
+            sqlite_where=text("original_status = 'superseded'"),
+        ),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    # At most one original per recording (spec: library).
     recording_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("recordings.id", ondelete="RESTRICT"), unique=True
+        ForeignKey("recordings.id", ondelete="RESTRICT"), index=True
     )
     path: Mapped[str] = mapped_column(Text, unique=True)
     format: Mapped[AudioFormat] = mapped_column(str_enum(AudioFormat, "format"))
@@ -162,6 +209,18 @@ class AudioFile(Base):
     effective_quality: Mapped[QualityTier | None] = mapped_column(
         str_enum(QualityTier, "effective_quality")
     )
+    storage_mode: Mapped[StorageMode] = mapped_column(
+        str_enum(StorageMode, "storage_mode"), default=StorageMode.MANAGED
+    )
+    original_status: Mapped[OriginalStatus] = mapped_column(
+        str_enum(OriginalStatus, "original_status"), default=OriginalStatus.ACTIVE
+    )
+    # Opt-in per referenced file (from its import); never applies to superseded files.
+    tag_writes_allowed: Mapped[bool] = mapped_column(Boolean, default=False)
+    superseded_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("audio_files.id", ondelete="SET NULL"), index=True
+    )
+    superseded_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
     home_track_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("tracks.id", ondelete="SET NULL"), index=True
     )

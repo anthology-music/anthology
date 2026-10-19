@@ -34,3 +34,17 @@ class LibraryTrackRow(StreamRow):
     sample_rate_hz: int | None
     bit_depth: int | None
     bitrate_kbps: int | None
+
+
+class LibrarySupersededRow(StreamRow):
+    """A superseded referenced original (spec: library, Superseded referenced originals)."""
+
+    path: str
+    size_bytes: int
+    format: AudioFormat
+    recording_id: str
+    title: str
+    artist: str
+    superseded_at: str | None
+    replaced_by_id: str | None
+    replaced_by_path: str | None
