@@ -33,14 +33,17 @@ _Last updated: 2026-10-18_
   - `media-delivery-wording` – only the audio extraction from videos (2.1) is open (video, milestone 4).
 - **Library:** `library-core` is merged (PR #15). Decided with the maintainer: one artist per
   recording and one album artist per release, with the credited text kept as display text.
-- **In review:** change `library-views` is implemented and archived on branch
-  `feat/library-views` (PR #16, CI green): Local view with the sections Albums, Artists and
-  Tracks, artist and album pages, entry streams `library.artist` and `library.release`. The
-  format label (`FLAC 24/96`) is deliberately not a quality badge until effective quality exists.
-- **Next:** `managed-and-referenced-originals` (builds on `audio_files`: replaces its unique
-  `recording_id` index with the partial index), `metadata-lookup`,
-  `effective-quality-duplicate-checks`, `review-list`, `tag-editing` and `search`
-  (see `docs/roadmap.md`).
+- **Library views:** `library-views` is merged (PR #16).
+- **In progress:** change `managed-and-referenced-originals` on branch
+  `feat/managed-and-referenced-originals`, implemented in part (decided with the maintainer):
+  storage mode and original status (migration 0007), file operation guard, replacement of a
+  referenced original, active-original resolver and the `library.superseded` report are done.
+  Open until their features exist: 2.3 (tag writes, with `tag-editing`), 4.1, 4.2 and 5.1
+  (import modes and adoption, with `library-import`). The change stays open after merging, like
+  `signed-media-urls`. Replacing a managed original is refused until acquisition has
+  checksum-verified file handling (`effective-quality-duplicate-checks`).
+- **Next:** `metadata-lookup`, `effective-quality-duplicate-checks`, `review-list`,
+  `tag-editing` and `search` (see `docs/roadmap.md`).
 
 ## Working conventions
 

@@ -14,13 +14,16 @@ from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
 from anthology.db.types import utcnow
 from anthology.library.models import (
+    LIBRARY_COUNTERS,
     Artist,
     AudioFile,
     Counter,
     LibraryCounter,
+    OriginalStatus,
     Recording,
     Release,
     ReleaseGroup,
+    StorageMode,
     Track,
 )
 from anthology.library.service import sort_key
@@ -69,7 +72,7 @@ class _Loader:
         # Artist ID -> [release count, track count]
         self.counts: dict[uuid.UUID, list[int]] = {}
         self.homes: set[uuid.UUID] = set()
-        self.totals = dict.fromkeys(Counter, 0)
+        self.totals = dict.fromkeys(LIBRARY_COUNTERS, 0)
         self.now = utcnow()
 
     def add(self, batch) -> None:
@@ -167,6 +170,11 @@ class _Loader:
                     audio_hash=audio.audio_hash,
                     declared_quality=audio.declared_quality,
                     effective_quality=None,
+                    storage_mode=StorageMode.MANAGED,
+                    original_status=OriginalStatus.ACTIVE,
+                    tag_writes_allowed=False,
+                    superseded_by_id=None,
+                    superseded_at=None,
                     home_track_id=track.id,
                     added_at=self.now,
                 )
