@@ -18,7 +18,13 @@ ADR 0009 makes MusicBrainz IDs the identity backbone (resolution ISRC → Acoust
 
 ### Lookup clients
 
-`metadata_lookup` exposes `musicbrainz`, `coverart`, `acoustid` clients with a shared token-bucket limiter per target and a two-level priority queue (interactive, background). Requests are keyed (`service + normalised URL`) and cached in `LookupCache` with TTLs (entities 30 days, searches 7 days, not-found 1 day).
+`metadata_lookup` exposes `musicbrainz`, `coverart`, `acoustid` clients with a shared limiter per target and a two-level priority queue (interactive, background). Requests are keyed (`service + normalised URL`) and cached in `LookupCache` with TTLs (entities 30 days, searches 7 days, not-found 1 day).
+
+The limiter must hold across server processes (several processes on PostgreSQL), so it cannot be an in-memory token bucket. `LookupSchedule` keeps the next free slot per target; a request reserves the slot with a compare-and-swap update (`next_slot_at = max(now, next_slot_at) + 1/rate`), which works on PostgreSQL and SQLite without row locks, and sleeps until its slot. Overload answers (429, 503) move the shared slot forward (Retry-After, otherwise 2 s doubling up to 60 s), so every process waits; requests are retried, never failed. The priority queue is per process: a background turn takes a slot only when it is next, so an interactive lookup waits at most for slots already reserved.
+
+Alternative considered: a single lookup worker process. Rejected: it needs leader election and makes interactive lookups depend on another process.
+
+Alternative considered: a message broker (e.g. RabbitMQ, MPL-2.0) with durable priority queues and one consumer per service as the limiter. Rejected for now: the job system already provides a persistent, prioritized queue with leases in PostgreSQL, so a broker would add a second queueing technology and a mandatory container (memory, updates, backups, credentials) to every installation for at most one request per second; the results would still be written to the database. A broker becomes worth an ADR once work has to be distributed across machines.
 
 ### Mirror
 
@@ -32,7 +38,7 @@ Alternative considered: importing MusicBrainz dumps into Anthology's own databas
 
 ### Estimates
 
-Queue length × average requests per item ÷ rate limit gives the estimate shown to admins; the recommendation appears above 24 hours.
+Queued requests ÷ rate limit gives the estimate shown to admins; the recommendation appears above 24 hours. Domains with queued MusicBrainz work (library import) report their request count through `LookupService.register_backlog`; the lookups waiting in the process are added. Admins read the estimate, the recommendation and the mirror status at `GET /api/v1/metadata-lookup/status`; the mirror's availability also appears in the `services` stream (`musicbrainz-mirror`), so the client can show it without polling.
 
 ### Progressive loading
 

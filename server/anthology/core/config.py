@@ -41,6 +41,14 @@ class Settings(BaseSettings):
     tagger_timeout_seconds: float = 30.0
     service_check_interval_seconds: float = 30.0
     service_retry_interval_seconds: float = 5.0
+    # Metadata lookup (spec: metadata-lookup). The contact goes into the User-Agent that
+    # MusicBrainz requires; without one, the project's address is sent.
+    musicbrainz_contact: str = ""
+    # Base URL of an optional local MusicBrainz mirror (docs/architecture/musicbrainz-mirror.md).
+    musicbrainz_url: str = ""
+    musicbrainz_mirror_check_interval_seconds: float = 60.0
+    # AcoustID application key of this installation; without it, fingerprint lookups are skipped.
+    acoustid_api_key: str = ""
     omr_url: str = ""
     source_services: str = ""
 

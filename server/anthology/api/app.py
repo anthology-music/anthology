@@ -19,6 +19,8 @@ from anthology.jobs.handlers import HandlerRegistry
 from anthology.jobs.runner import JobRunner
 from anthology.jobs.streams import JobItemsStream, JobsStream
 from anthology.library.streams import STREAMS as LIBRARY_STREAMS
+from anthology.metadata_lookup import api as metadata_lookup_api
+from anthology.metadata_lookup.service import LookupService, check_mirror
 from anthology.sync import api as sync_api
 from anthology.sync.background import ChangeBackground
 from anthology.sync.feed import ChangeFeed
@@ -76,13 +78,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         tagger, tagger_monitor = _tagger(settings, sessionmaker)
         app.state.tagger = tagger
         app.state.tagger_monitor = tagger_monitor
+        lookups, mirror_monitor = _lookups(settings, sessionmaker)
+        app.state.lookups = lookups
+        app.state.mirror_monitor = mirror_monitor
         if settings.background_tasks:
             await background.start()
             await runner.start()
             await tagger_monitor.start()
+            if mirror_monitor is not None:
+                await mirror_monitor.start()
         try:
             yield
         finally:
+            if mirror_monitor is not None:
+                await mirror_monitor.stop()
+            await lookups.aclose()
             await tagger_monitor.stop()
             await runner.stop()
             await background.stop()
@@ -96,6 +106,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(users_api.router, prefix=API_PREFIX)
     app.include_router(sync_api.router, prefix=API_PREFIX)
     app.include_router(jobs_api.router, prefix=API_PREFIX)
+    app.include_router(metadata_lookup_api.router, prefix=API_PREFIX)
     if settings.web_dir is not None:
         mount_web(app, settings.web_dir)  # last: its fallback must not shadow API routes
     return app
@@ -119,6 +130,27 @@ def _tagger(settings: Settings, sessionmaker) -> tuple[TaggerClient, ServiceMoni
         retry_interval=settings.service_retry_interval_seconds,
     )
     return client, monitor
+
+
+def _lookups(settings: Settings, sessionmaker) -> tuple[LookupService, ServiceMonitor | None]:
+    """The lookup clients and, with a configured mirror, its monitor (spec: metadata-lookup)."""
+    monitor: ServiceMonitor | None = None
+    lookups = LookupService(
+        settings,
+        sessionmaker,
+        mirror_state=lambda: monitor.state if monitor else None,
+        on_mirror_failure=lambda: monitor.request_check() if monitor else None,
+    )
+    if lookups.mirror_http is not None:
+        mirror_http = lookups.mirror_http
+        monitor = ServiceMonitor(
+            "musicbrainz-mirror",
+            lambda: check_mirror(mirror_http),
+            sessionmaker,
+            available_interval=settings.musicbrainz_mirror_check_interval_seconds,
+            retry_interval=settings.musicbrainz_mirror_check_interval_seconds,
+        )
+    return lookups, monitor
 
 
 def _job_handlers(settings: Settings) -> HandlerRegistry:

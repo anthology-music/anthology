@@ -245,6 +245,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/metadata-lookup/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lookup Status */
+        get: operations["lookup_status_api_v1_metadata_lookup_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ready": {
         parameters: {
             query?: never;
@@ -497,6 +514,21 @@ export interface components {
             /** Username */
             username: string;
         };
+        /**
+         * LookupStatusOut
+         * @description Queued MusicBrainz work and the mirror (spec: Mirror recommendation).
+         */
+        LookupStatusOut: {
+            /** Estimated Seconds */
+            estimated_seconds: number;
+            /** Mirror Configured */
+            mirror_configured: boolean;
+            /** Mirror Recommended */
+            mirror_recommended: boolean;
+            mirror_status: components["schemas"]["ServiceState"] | null;
+            /** Queued Requests */
+            queued_requests: number;
+        };
         /** MeUpdate */
         MeUpdate: {
             /** Current Password */
@@ -556,6 +588,11 @@ export interface components {
          * @enum {string}
          */
         Role: "admin" | "editor" | "listener";
+        /**
+         * ServiceState
+         * @enum {string}
+         */
+        ServiceState: "available" | "unavailable" | "incompatible";
         /** SetupRequest */
         SetupRequest: {
             device: components["schemas"]["DeviceIn"];
@@ -1148,6 +1185,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    lookup_status_api_v1_metadata_lookup_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LookupStatusOut"];
                 };
             };
         };

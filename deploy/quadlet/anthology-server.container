@@ -18,6 +18,11 @@ Environment=ANTHOLOGY_TAGGER_URL=http://localhost:8410
 Environment=ANTHOLOGY_SOURCE_SERVICES=
 # Optional sheet-music recognition (anthology-audiveris.container)
 Environment=ANTHOLOGY_OMR_URL=http://localhost:8430
+# Metadata lookups: contact for the MusicBrainz User-Agent (your e-mail or URL), optional
+# AcoustID key and optional local MusicBrainz mirror (docs/architecture/musicbrainz-mirror.md)
+Environment=ANTHOLOGY_MUSICBRAINZ_CONTACT=
+Environment=ANTHOLOGY_ACOUSTID_API_KEY=
+Environment=ANTHOLOGY_MUSICBRAINZ_URL=
 Volume=anthology-keys.volume:/data/keys:U
 Volume=anthology-library.volume:/data/library:U
 Volume=anthology-cache.volume:/data/cache:U
