@@ -2,7 +2,7 @@
 
 Anthology uses the public MusicBrainz API by default (at most 1 request per second, cached). For large collections a local mirror removes the rate limit (`openspec/specs/metadata-lookup/spec.md`, ADR 0009). The UI recommends it when queued lookups would take longer than 24 hours.
 
-Status: draft – nothing built yet.
+Status: the lookup clients with mirror support are built (`server/anthology/metadata_lookup/`); identification and refresh follow.
 
 ## What to run
 
@@ -24,6 +24,10 @@ Replication needs a MetaBrainz access token (`admin/set-replication-token`) and 
 
 Set `ANTHOLOGY_MUSICBRAINZ_URL` to the mirror's base URL (e.g. `http://musicbrainz:5000`). Anthology checks its health every minute and falls back to the public API when it is unavailable or cannot answer a request.
 
-## Licenses (to be checked)
+## Licenses
 
-The MusicBrainz server is GPL and runs in its own containers, which matches Anthology's separation rules (ADR 0004). The replicated data is partly CC0 (core data) and partly CC BY-NC-SA (supplementary data). The license of the `musicbrainz-docker` repository and the terms of the replication token are checked before the mirror is recommended in user documentation (see change `metadata-lookup`).
+Checked on 2026-10-19; details in `THIRD_PARTY_LICENSES.md`.
+
+- The MusicBrainz server is GPL-2.0-or-later and runs in its own containers, which matches Anthology's separation rules (ADR 0004); Anthology only uses its HTTP API.
+- `musicbrainz-docker` declares no license. Anthology does not copy or ship any of its files and only links to it.
+- Core data is CC0; supplementary data and the replication packets of the Live Data Feed are CC BY-NC-SA 3.0. The replication token is free for non-commercial use; commercial users license the data from the MetaBrainz Foundation. Whether a use is commercial is defined by MetaBrainz; admins check this for their installation.

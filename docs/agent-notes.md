@@ -34,15 +34,18 @@ _Last updated: 2026-10-18_
 - **Library:** `library-core` is merged (PR #15). Decided with the maintainer: one artist per
   recording and one album artist per release, with the credited text kept as display text.
 - **Library views:** `library-views` is merged (PR #16).
-- **In progress:** change `managed-and-referenced-originals` on branch
-  `feat/managed-and-referenced-originals`, implemented in part (decided with the maintainer):
-  storage mode and original status (migration 0007), file operation guard, replacement of a
-  referenced original, active-original resolver and the `library.superseded` report are done.
-  Open until their features exist: 2.3 (tag writes, with `tag-editing`), 4.1, 4.2 and 5.1
-  (import modes and adoption, with `library-import`). The change stays open after merging, like
-  `signed-media-urls`. Replacing a managed original is refused until acquisition has
-  checksum-verified file handling (`effective-quality-duplicate-checks`).
-- **Next:** `metadata-lookup`, `effective-quality-duplicate-checks`, `review-list`,
+- **Open, implemented in part:** `managed-and-referenced-originals` (PR #17 merged): storage
+  mode and original status, file operation guard, replacement of a referenced original,
+  active-original resolver and the `library.superseded` report are done. Open until their
+  features exist: 2.3 (tag writes, with `tag-editing`), 4.1, 4.2 and 5.1 (import modes and
+  adoption, with `library-import`). Replacing a managed original is refused until acquisition
+  has checksum-verified file handling (`effective-quality-duplicate-checks`).
+- **In progress:** change `metadata-lookup` on branch `feat/metadata-lookup`, implemented in
+  part like the change above: license check, lookup clients with cache, cross-process rate
+  limit, priorities, mirror with fallback and the status/estimate endpoint are done. Open: 2.4
+  (the refresh job applies changes through tagging, so it waits for `tag-editing`).
+- **Next:** recording identification on top of the lookups (ISRC → AcoustID → fuzzy
+  suggestion), `library-import`, `effective-quality-duplicate-checks`, `review-list`,
   `tag-editing` and `search` (see `docs/roadmap.md`).
 
 ## Working conventions
@@ -65,6 +68,8 @@ _Last updated: 2026-10-18_
   npx -y playwright@<version> run-server --port 3333 --host 127.0.0.1`, then run the E2E tests
   with `PW_TEST_CONNECT_WS_ENDPOINT=ws://127.0.0.1:3333/` (version = `@playwright/test`).
 - The E2E demo-list test jumps to row 250,000; keep `ANTHOLOGY_E2E_DEMO_ROWS` at its default.
+- Known flake: on SQLite, `clean_db` sometimes fails with "database is locked" (about 1 in
+  6 full runs, also on `main`, in varying tests); rerun. Not yet investigated.
 - Foreign keys with `ON DELETE SET NULL`/`CASCADE` need an index on the referencing column;
   without it, deleting many rows scans the referencing table once per row.
 - Right after a bulk load PostgreSQL has no statistics; avoid correlated `UPDATE`s over large

@@ -604,6 +604,16 @@ package "Users & Devices" {
     +expiresAt : DateTime
   }
 
+  class LookupSchedule {
+    +target : String
+    +nextSlotAt : DateTime
+  }
+  note right of LookupSchedule
+    Next free request slot per
+    rate-limited service, shared by
+    all server processes.
+  end note
+
   class ExternalRef {
     +entityType : String
     +entityId : UUID

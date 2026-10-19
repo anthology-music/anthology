@@ -17,6 +17,9 @@ services:
       ANTHOLOGY_TAGGER_URL: http://anthology-tagger:8410
       ANTHOLOGY_SOURCE_SERVICES: ""                              # optional source services (ADR 0017), comma-separated URLs
       ANTHOLOGY_OMR_URL: http://audiveris:8430                   # optional
+      ANTHOLOGY_MUSICBRAINZ_CONTACT: ""                          # your e-mail or URL for the MusicBrainz User-Agent
+      ANTHOLOGY_ACOUSTID_API_KEY: ""                             # optional, enables fingerprint lookups
+      ANTHOLOGY_MUSICBRAINZ_URL: ""                              # optional local mirror (docs/architecture/musicbrainz-mirror.md)
     secrets:
       - db_password
     volumes:

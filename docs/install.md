@@ -52,6 +52,10 @@ An existing collection on the host can be used instead of the library volume: re
 
 The password is a secret, never part of a unit file or environment variable: PostgreSQL reads it from `POSTGRES_PASSWORD_FILE`, the server from `ANTHOLOGY_DATABASE_PASSWORD_FILE` (it replaces the password in `ANTHOLOGY_DATABASE_URL`). PostgreSQL uses the secret only when it creates the database; to change it later, change it in PostgreSQL (`ALTER USER anthology PASSWORD …`) and in the secret.
 
+## Metadata lookups
+
+Anthology identifies music with MusicBrainz (at most one request per second, cached). Set `ANTHOLOGY_MUSICBRAINZ_CONTACT` to your e-mail address or a URL; MusicBrainz asks every application to name a contact in its User-Agent. For fingerprint lookups, register an application at [AcoustID](https://acoustid.org/new-application) and set `ANTHOLOGY_ACOUSTID_API_KEY`. For large collections, a local MusicBrainz mirror removes the rate limit: `docs/architecture/musicbrainz-mirror.md`.
+
 ## HTTPS and remote access
 
 The server speaks plain HTTP on port 8400. For access beyond the local network, put a reverse proxy with TLS in front (e.g. Caddy, Traefik, nginx) and forward WebSocket upgrades for `/api/v1/ws`. The server trusts `X-Forwarded-*` headers from `127.0.0.1` only; if the proxy reaches it from another address, set `FORWARDED_ALLOW_IPS` to that address in the server unit.

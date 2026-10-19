@@ -56,6 +56,19 @@ Components that are **not linked** into Anthology's code but are shipped alongsi
 |---|---|---|---|---|
 | `[TOOL]` | `[VERSION]` | `[LICENSE]` | `[separate process / sidecar / container / data]` | `[URL]` |
 
+### Optional local MusicBrainz mirror (not shipped)
+
+Checked on 2026-10-19 (change `metadata-lookup`). The mirror is never part of Anthology's images
+or pod; admins run the upstream deployment themselves, and Anthology only talks to its HTTP API.
+
+| Component | License | How it is used | Source |
+|---|---|---|---|
+| `musicbrainz-docker` | none declared (no license file in the repository) | not copied, shipped or modified; documentation links to it only | <https://github.com/metabrainz/musicbrainz-docker> |
+| MusicBrainz Server | GPL-2.0-or-later (a few files BSD-2-Clause) | separate deployment, HTTP API only (`/ws/2`) | <https://github.com/metabrainz/musicbrainz-server/blob/master/COPYING.md> |
+| MusicBrainz core data | CC0-1.0 | looked up over the API and stored as metadata | <https://musicbrainz.org/doc/About/Data_License> |
+| MusicBrainz supplementary data | CC BY-NC-SA 3.0 | in the mirror's database; Anthology uses core data | <https://musicbrainz.org/doc/About/Data_License> |
+| Live Data Feed (replication packets) | CC BY-NC-SA 3.0; access token free for non-commercial use, commercial users license the data from the MetaBrainz Foundation | replication of the admin's own mirror | <https://musicbrainz.org/doc/Live_Data_Feed> |
+
 ---
 
 ## 6. Pre-check of planned dependencies (as of 2026-10-09)
