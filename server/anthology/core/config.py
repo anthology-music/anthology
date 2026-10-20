@@ -49,6 +49,9 @@ class Settings(BaseSettings):
     musicbrainz_mirror_check_interval_seconds: float = 60.0
     # AcoustID application key of this installation; without it, fingerprint lookups are skipped.
     acoustid_api_key: str = ""
+    # FFmpeg with Chromaprint (ADR 0020); the server image contains it on the PATH.
+    ffmpeg_path: str = "ffmpeg"
+    ffprobe_path: str = "ffprobe"
     omr_url: str = ""
     source_services: str = ""
 

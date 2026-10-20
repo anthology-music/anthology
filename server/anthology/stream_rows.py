@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 from anthology.library.schemas import (
     LibraryArtistRow,
+    LibraryIdentificationRow,
     LibraryReleaseRow,
     LibrarySupersededRow,
     LibraryTrackRow,
@@ -21,4 +22,5 @@ ROW_SCHEMAS: dict[str, type[BaseModel]] = {
     "library.release.tracks": LibraryTrackRow,
     "library.tracks": LibraryTrackRow,
     "library.superseded": LibrarySupersededRow,
+    "library.identification": LibraryIdentificationRow,
 }

@@ -18,6 +18,7 @@ from anthology.library.models import (
     Artist,
     AudioFile,
     Counter,
+    IdentificationStatus,
     LibraryCounter,
     OriginalStatus,
     Recording,
@@ -57,7 +58,10 @@ async def seed_library(engine: AsyncEngine, tracks: int, reset: bool = False) ->
                 await loader.flush()
         await loader.flush()
         await _set_counts(connection, loader.counts)
-        return await _set_counters(connection, loader.totals)
+        # Generated recordings are not identified yet.
+        unchecked = {Counter.IDENTIFICATION_UNCHECKED: loader.totals[Counter.RECORDINGS]}
+        await _set_counters(connection, {**loader.totals, **unchecked})
+        return {name.value: value for name, value in loader.totals.items()}
 
 
 class _Loader:
@@ -132,6 +136,10 @@ class _Loader:
                 isrc=None,
                 mb_recording_id=None,
                 acoust_id=None,
+                identification_status=IdentificationStatus.UNCHECKED,
+                identification_checked_at=None,
+                identification_note=None,
+                identification_duplicate_of_id=None,
             )
             audio_rows[recording.id] = recording.audio
         self.totals[Counter.RECORDINGS] += len(batch.recordings)
@@ -175,6 +183,8 @@ class _Loader:
                     tag_writes_allowed=False,
                     superseded_by_id=None,
                     superseded_at=None,
+                    fingerprint=None,
+                    fingerprint_duration_s=None,
                     home_track_id=track.id,
                     added_at=self.now,
                 )
@@ -220,9 +230,8 @@ async def _set_counts(connection: AsyncConnection, counts: dict[uuid.UUID, list[
         await connection.execute(statement, rows[start : start + SQLITE_BATCH])
 
 
-async def _set_counters(connection: AsyncConnection, totals: dict[Counter, int]) -> dict[str, int]:
+async def _set_counters(connection: AsyncConnection, totals: dict[Counter, int]) -> None:
     await connection.execute(delete(LibraryCounter))
     await connection.execute(
         insert(LibraryCounter), [{"name": name, "value": value} for name, value in totals.items()]
     )
-    return {name.value: value for name, value in totals.items()}

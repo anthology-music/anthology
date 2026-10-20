@@ -18,6 +18,8 @@ from anthology.jobs import api as jobs_api
 from anthology.jobs.handlers import HandlerRegistry
 from anthology.jobs.runner import JobRunner
 from anthology.jobs.streams import JobItemsStream, JobsStream
+from anthology.library import api as library_api
+from anthology.library import identification
 from anthology.library.streams import STREAMS as LIBRARY_STREAMS
 from anthology.metadata_lookup import api as metadata_lookup_api
 from anthology.metadata_lookup.service import LookupService, check_mirror
@@ -80,6 +82,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.tagger_monitor = tagger_monitor
         lookups, mirror_monitor = _lookups(settings, sessionmaker)
         app.state.lookups = lookups
+        identify = app.state.job_handlers.get(identification.JOB_TYPE)
+        identify.bind(identification.Identifier(sessionmaker, lookups, settings))
+        lookups.register_backlog(
+            identification.JOB_TYPE, lambda: identification.backlog(sessionmaker)
+        )
         app.state.mirror_monitor = mirror_monitor
         if settings.background_tasks:
             await background.start()
@@ -107,6 +114,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(sync_api.router, prefix=API_PREFIX)
     app.include_router(jobs_api.router, prefix=API_PREFIX)
     app.include_router(metadata_lookup_api.router, prefix=API_PREFIX)
+    app.include_router(library_api.router, prefix=API_PREFIX)
     if settings.web_dir is not None:
         mount_web(app, settings.web_dir)  # last: its fallback must not shadow API routes
     return app
@@ -155,6 +163,7 @@ def _lookups(settings: Settings, sessionmaker) -> tuple[LookupService, ServiceMo
 
 def _job_handlers(settings: Settings) -> HandlerRegistry:
     registry = HandlerRegistry()
+    registry.register(identification.IdentifyRecordingsHandler())
     if settings.dev_demo:
         from anthology.jobs.demo import DemoJobHandler
 

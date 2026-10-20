@@ -15,6 +15,7 @@ import heapq
 import itertools
 import json
 import logging
+import uuid
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -22,16 +23,16 @@ from typing import Any
 from urllib.parse import urlencode
 
 import httpx
-from sqlalchemy import delete, update
+from sqlalchemy import delete, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
-from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from anthology import __version__
 from anthology.core.config import Settings
 from anthology.core.services import Observation, ServiceState
 from anthology.db.types import utcnow
-from anthology.metadata_lookup.models import LookupCache, LookupSchedule
+from anthology.metadata_lookup.models import ExternalRef, LookupCache, LookupSchedule
 
 logger = logging.getLogger(__name__)
 
@@ -574,3 +575,28 @@ async def check_mirror(http: httpx.AsyncClient) -> Observation:
     if response.status_code != 200:
         return Observation(ServiceState.UNAVAILABLE, message=f"HTTP {response.status_code}")
     return Observation(ServiceState.AVAILABLE)
+
+
+async def register_external_ref(
+    session: AsyncSession,
+    *,
+    entity_type: str,
+    entity_id: uuid.UUID,
+    mbid: uuid.UUID,
+    checked_at: datetime,
+) -> None:
+    """Register an identified entity for the periodic refresh (in the caller's transaction)."""
+    ref = await session.scalar(
+        select(ExternalRef).where(
+            ExternalRef.entity_type == entity_type, ExternalRef.entity_id == entity_id
+        )
+    )
+    if ref is None:
+        session.add(
+            ExternalRef(
+                entity_type=entity_type, entity_id=entity_id, mbid=mbid, last_checked_at=checked_at
+            )
+        )
+    else:
+        ref.mbid = mbid
+        ref.last_checked_at = checked_at

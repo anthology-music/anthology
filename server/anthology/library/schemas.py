@@ -48,3 +48,14 @@ class LibrarySupersededRow(StreamRow):
     superseded_at: str | None
     replaced_by_id: str | None
     replaced_by_path: str | None
+
+
+class LibraryIdentificationRow(StreamRow):
+    """Recordings per identification outcome (spec: library, Identification outcome)."""
+
+    unchecked: int
+    isrc: int
+    fingerprint: int
+    no_match: int
+    duplicate: int
+    not_possible: int

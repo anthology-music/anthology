@@ -4,7 +4,7 @@ import json
 import uuid
 from typing import Any
 
-from sqlalchemy import insert, select, text, update
+from sqlalchemy import func, insert, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from anthology.core.changes import ChangeOperation, ChangeScope, record_change
@@ -189,3 +189,26 @@ async def cancel_open_items(session: AsyncSession, job_id: uuid.UUID) -> None:
     )
     for item_id in open_items:
         await record_item_change(session, item_id)
+
+
+async def has_unfinished_job(session: AsyncSession, type_: str) -> bool:
+    """True if a job of ``type_`` is queued, running or paused."""
+    job_id = await session.scalar(
+        select(Job.id).where(Job.type == type_, Job.status.not_in(list(FINISHED))).limit(1)
+    )
+    return job_id is not None
+
+
+async def open_item_count(session: AsyncSession, type_: str) -> int:
+    """Items not yet finished in unfinished jobs of ``type_`` (e.g. for queue estimates)."""
+    count = await session.scalar(
+        select(func.count())
+        .select_from(JobItem)
+        .join(Job, Job.id == JobItem.job_id)
+        .where(
+            Job.type == type_,
+            Job.status.not_in(list(FINISHED)),
+            JobItem.status.not_in(list(FINISHED)),
+        )
+    )
+    return count or 0

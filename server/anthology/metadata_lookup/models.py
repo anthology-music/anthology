@@ -1,8 +1,9 @@
 """Lookup cache and the shared request schedule per external service (spec: metadata-lookup)."""
 
+import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, String, Text
+from sqlalchemy import Boolean, String, Text, UniqueConstraint, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
 from anthology.db import Base
@@ -30,3 +31,16 @@ class LookupSchedule(Base):
 
     target: Mapped[str] = mapped_column(String(32), primary_key=True)
     next_slot_at: Mapped[datetime] = mapped_column(UTCDateTime)
+
+
+class ExternalRef(Base):
+    """An entity identified at MusicBrainz; drives the periodic refresh (spec: Periodic refresh)."""
+
+    __tablename__ = "external_refs"
+    __table_args__ = (UniqueConstraint("entity_type", "entity_id"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    entity_type: Mapped[str] = mapped_column(String(32))
+    entity_id: Mapped[uuid.UUID] = mapped_column(Uuid)
+    mbid: Mapped[uuid.UUID] = mapped_column(Uuid)
+    last_checked_at: Mapped[datetime | None] = mapped_column(UTCDateTime, index=True)

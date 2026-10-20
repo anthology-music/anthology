@@ -17,6 +17,57 @@ COPY docs/design/tokens.css ./docs/design/tokens.css
 RUN pnpm install --frozen-lockfile && pnpm build
 
 
+# FFmpeg with Chromaprint: an own minimal LGPL build (ADR 0020). Chromaprint uses its bundled
+# KissFFT (BSD-3-Clause); FFTW3 (GPL) is never used, and FFmpeg is built without --enable-gpl
+# and --enable-nonfree. Only the parts Anthology needs are enabled.
+FROM docker.io/library/python:3.12-slim AS ffmpeg
+
+ARG FFMPEG_VERSION=8.1.3
+ARG FFMPEG_SHA256=7138d28c96d9d3e3af4ee3d8cad72741f8ffb40da90c1112235dea3ecd3178a3
+ARG CHROMAPRINT_VERSION=1.6.2
+ARG CHROMAPRINT_SHA256=d54ada62c16b2db396d3251ec54fc7a58909c163131a1cfcf7fa6407dbc14360
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        build-essential ca-certificates cmake curl nasm pkg-config xz-utils \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+RUN curl -fsSLo chromaprint.tar.gz \
+        "https://github.com/acoustid/chromaprint/releases/download/v${CHROMAPRINT_VERSION}/chromaprint-${CHROMAPRINT_VERSION}.tar.gz" \
+    && echo "${CHROMAPRINT_SHA256}  chromaprint.tar.gz" | sha256sum -c - \
+    && tar xzf chromaprint.tar.gz \
+    && cmake -S "chromaprint-${CHROMAPRINT_VERSION}" -B chromaprint-build \
+        -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/ffmpeg \
+        -DBUILD_SHARED_LIBS=OFF -DBUILD_TOOLS=OFF -DBUILD_TESTS=OFF -DFFT_LIB=kissfft \
+    && cmake --build chromaprint-build -j"$(nproc)" \
+    && cmake --install chromaprint-build
+
+RUN curl -fsSLo ffmpeg.tar.xz "https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.xz" \
+    && echo "${FFMPEG_SHA256}  ffmpeg.tar.xz" | sha256sum -c - \
+    && tar xJf ffmpeg.tar.xz \
+    && cd "ffmpeg-${FFMPEG_VERSION}" \
+    && PKG_CONFIG_PATH=/opt/ffmpeg/lib/pkgconfig ./configure \
+        --prefix=/opt/ffmpeg \
+        --pkg-config-flags=--static \
+        --extra-libs="-lstdc++ -lm" \
+        --extra-ldflags="-static-libstdc++ -static-libgcc" \
+        --disable-everything --disable-autodetect --disable-doc --disable-network \
+        --disable-ffplay --enable-ffmpeg --enable-ffprobe \
+        --enable-swresample --enable-chromaprint \
+        --enable-protocol=file,pipe \
+        --enable-demuxer=flac,wav,aiff,mov,mp3,aac,ogg,matroska \
+        --enable-parser=flac,mpegaudio,aac,opus,vorbis \
+        --enable-decoder=flac,alac,mp3,mp3float,aac,opus,vorbis,pcm_s16le,pcm_s24le,pcm_s32le,pcm_s16be,pcm_s24be,pcm_s32be,pcm_f32le,pcm_f32be,pcm_u8 \
+        --enable-encoder=aac,alac,flac,pcm_s16le,pcm_s24le \
+        --enable-muxer=chromaprint,ipod,mp4,flac,wav,null \
+        --enable-filter=aresample,aformat,anull,atrim \
+    && make -j"$(nproc)" \
+    && make install \
+    && /opt/ffmpeg/bin/ffmpeg -hide_banner -buildconf | grep -q -- --enable-chromaprint \
+    && ! /opt/ffmpeg/bin/ffmpeg -hide_banner -buildconf | grep -E -- "--enable-(gpl|nonfree)"
+
+
 FROM docker.io/library/python:3.12-slim AS builder
 
 COPY --from=ghcr.io/astral-sh/uv:0.13.0 /uv /usr/local/bin/uv
@@ -50,6 +101,8 @@ RUN groupadd --gid 1000 anthology \
 WORKDIR /app
 
 COPY --from=builder /app/.venv /app/.venv
+COPY --from=ffmpeg /opt/ffmpeg/bin/ffmpeg /opt/ffmpeg/bin/ffprobe /usr/local/bin/
+RUN ffmpeg -hide_banner -version > /dev/null && ffprobe -hide_banner -version > /dev/null
 COPY server/alembic.ini ./alembic.ini
 COPY server/migrations ./migrations
 COPY server/entrypoint.sh ./entrypoint.sh

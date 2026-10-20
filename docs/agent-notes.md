@@ -44,8 +44,12 @@ _Last updated: 2026-10-18_
   with cache, cross-process rate limit, priorities, mirror with fallback and the status/estimate
   endpoint are done. Open: 2.4 (the refresh job applies changes through tagging, so it waits for
   `tag-editing`). A message broker was considered for the limiter and rejected (see its design).
-- **Next:** recording identification on top of the lookups (ISRC → AcoustID → fuzzy
-  suggestion), `library-import`, `effective-quality-duplicate-checks`, `review-list`,
+- **In progress:** change `recording-identification` on branch `feat/recording-identification`:
+  identification job (ISRC, then fingerprint at AcoustID), outcome per recording with counters,
+  `external_refs`, admin view in the settings, own LGPL FFmpeg with Chromaprint/KissFFT in the
+  server image (ADR 0020). Open: 1.2 and 1.4 wait for CI (multi-arch image, FFmpeg tests), 5.1
+  (fuzzy suggestions) waits for `review-list`.
+- **Next:** `library-import`, `effective-quality-duplicate-checks`, `review-list`,
   `tag-editing` and `search` (see `docs/roadmap.md`).
 
 ## Working conventions
@@ -71,6 +75,10 @@ _Last updated: 2026-10-18_
 - SQLite "database is locked" in tests: a task cancelled during a write leaves its connection
   checked out with an open transaction until it is garbage-collected. `clean_db` runs
   `gc.collect()` first; tests that shut down an app and then write must do the same.
+- Killing a PostgreSQL test run leaves its backend running (e.g. a `COPY` of the 500,000-track
+  seed); the next run then blocks or crawls. Terminate leftover sessions first:
+  `select pg_terminate_backend(pid) from pg_stat_activity where datname='anthology-test'`.
+  The performance test also slows down several times under parallel load (e.g. client tests).
 - Foreign keys with `ON DELETE SET NULL`/`CASCADE` need an index on the referencing column;
   without it, deleting many rows scans the referencing table once per row.
 - Right after a bulk load PostgreSQL has no statistics; avoid correlated `UPDATE`s over large

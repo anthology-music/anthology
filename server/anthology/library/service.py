@@ -11,7 +11,7 @@ import unicodedata
 import uuid
 from collections.abc import Iterable
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from typing import Any
 
 from sqlalchemy import exists, func, or_, select, update
@@ -26,11 +26,13 @@ from anthology.core.changes import (
 )
 from anthology.db.types import utcnow
 from anthology.library.models import (
+    IDENTIFICATION_COUNTERS,
     LIBRARY_COUNTERS,
     Artist,
     AudioFile,
     AudioFormat,
     Counter,
+    IdentificationStatus,
     LibraryCounter,
     OriginalStatus,
     QualityTier,
@@ -41,6 +43,7 @@ from anthology.library.models import (
     StorageMode,
     Track,
 )
+from anthology.metadata_lookup.service import register_external_ref
 
 # Change entry written when a release leaves the list of its former album artist.
 RELEASE_MOVED = "release.moved"
@@ -295,6 +298,7 @@ async def add_recording(
     session.add(recording)
     await session.flush()
     await adjust_counter(session, Counter.RECORDINGS, +1)
+    await adjust_counter(session, Counter.IDENTIFICATION_UNCHECKED, +1)
     await _changed(session, "recording", recording.id, ChangeOperation.INSERT)
     await _audit(session, "recording", recording.id, "create", user_id, {"title": [None, title]})
 
@@ -738,3 +742,62 @@ async def replace_original(
     track_ids = await session.scalars(select(Track.id).where(Track.recording_id == recording.id))
     await _rows_changed(session, "track", list(track_ids))
     return replacement
+
+
+# --- identification -------------------------------------------------------------------------
+
+# Change entries of the identification summary (stream library.identification).
+IDENTIFICATION = "identification"
+IDENTIFICATION_SUMMARY_ID = uuid.UUID("2b0d3f4e-8c71-4f0e-9d55-6a7c1e3b9f20")
+
+
+async def record_identification(
+    session: AsyncSession,
+    recording: Recording,
+    status: IdentificationStatus,
+    *,
+    checked_at: datetime,
+    mb_recording_id: uuid.UUID | None = None,
+    acoust_id: uuid.UUID | None = None,
+    note: str | None = None,
+    duplicate_of_id: uuid.UUID | None = None,
+    user_id: uuid.UUID | None = None,
+) -> None:
+    """Store the outcome of an identification check (spec: library, Identification outcome).
+
+    Only identifiers are set (spec: Identifiers only); identified recordings are registered
+    for the periodic refresh of metadata-lookup.
+    """
+    previous = recording.identification_status
+    if previous != status:
+        await adjust_counter(session, IDENTIFICATION_COUNTERS[previous], -1)
+        await adjust_counter(session, IDENTIFICATION_COUNTERS[status], +1)
+    recording.identification_status = status
+    recording.identification_checked_at = checked_at
+    recording.identification_note = note
+    recording.identification_duplicate_of_id = duplicate_of_id
+    diff: dict[str, list[Any]] = {}
+    if mb_recording_id is not None:
+        diff |= _apply(recording, {"mb_recording_id": mb_recording_id})
+        await register_external_ref(
+            session,
+            entity_type="recording",
+            entity_id=recording.id,
+            mbid=mb_recording_id,
+            checked_at=checked_at,
+        )
+    if acoust_id is not None:
+        diff |= _apply(recording, {"acoust_id": acoust_id})
+    await session.flush()
+    await _changed(session, "recording", recording.id)
+    await _changed(session, IDENTIFICATION, IDENTIFICATION_SUMMARY_ID)
+    if diff:
+        await _audit(session, "recording", recording.id, "identify", user_id, _public(diff))
+
+
+async def store_fingerprint(
+    session: AsyncSession, audio_file: AudioFile, fingerprint: str, duration_s: int
+) -> None:
+    audio_file.fingerprint = fingerprint
+    audio_file.fingerprint_duration_s = duration_s
+    await session.flush()

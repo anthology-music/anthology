@@ -110,7 +110,10 @@ const en: typeof de = {
   },
   services: {
     title: 'Services',
-    names: { tagger: 'Tagger (reads and writes tags)' },
+    names: {
+      tagger: 'Tagger (reads and writes tags)',
+      'musicbrainz-mirror': 'Local MusicBrainz mirror',
+    },
     status: {
       available: 'Available',
       unavailable: 'Unreachable',
@@ -118,6 +121,35 @@ const en: typeof de = {
     },
     versions: 'Version {version} · interface {api}',
     none: 'No services checked yet.',
+  },
+  identification: {
+    title: 'Identification (MusicBrainz)',
+    hint: 'Assigns recordings without MusicBrainz ID by ISRC and acoustic fingerprint. Titles and artists stay unchanged.',
+    outcomes: {
+      isrc: 'Identified by ISRC',
+      fingerprint: 'Identified by fingerprint',
+      no_match: 'No match',
+      duplicate: 'Duplicate of another recording',
+      not_possible: 'Not possible',
+      unchecked: 'Not checked yet',
+    },
+    full: 'Check all again',
+    start: 'Start identification',
+    messages: {
+      started: 'Identification runs as a job (see Streaming).',
+      running: 'An identification is already running.',
+      nothing: 'There is nothing to check.',
+      failed: 'That did not work. Please try again.',
+    },
+    estimate: 'Estimated duration of queued lookups: {duration}',
+    mirror: {
+      none: 'no local MusicBrainz mirror',
+      available: 'local MusicBrainz mirror available',
+      unavailable: 'local MusicBrainz mirror unreachable',
+      incompatible: 'local MusicBrainz mirror incompatible',
+    },
+    recommendation:
+      'With the public MusicBrainz API this takes longer than a day. A local mirror removes the limit (see the installation guide).',
   },
   library: {
     title: 'Library',
