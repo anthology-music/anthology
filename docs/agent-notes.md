@@ -78,7 +78,10 @@ _Last updated: 2026-10-18_
 - Killing a PostgreSQL test run leaves its backend running (e.g. a `COPY` of the 500,000-track
   seed); the next run then blocks or crawls. Terminate leftover sessions first:
   `select pg_terminate_backend(pid) from pg_stat_activity where datname='anthology-test'`.
-  The performance test also slows down several times under parallel load (e.g. client tests).
+- Bulk loads on PostgreSQL after a small load: the planner keeps sequential-scan plans for the
+  foreign key checks from the small tables' statistics, so the load becomes quadratic (the
+  500,000-track seed took over 16 minutes in CI). `seed_library` runs ANALYZE after its first
+  batch; do the same in any other bulk load.
 - Foreign keys with `ON DELETE SET NULL`/`CASCADE` need an index on the referencing column;
   without it, deleting many rows scans the referencing table once per row.
 - Right after a bulk load PostgreSQL has no statistics; avoid correlated `UPDATE`s over large
