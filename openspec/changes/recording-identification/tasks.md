@@ -3,9 +3,9 @@
 ## 1. FFmpeg with Chromaprint
 
 - [x] 1.1 Write ADR 0020 (own LGPL build of FFmpeg with Chromaprint/KissFFT, alternatives and their licenses) and reference it from ADR 0004; verify both files
-- [ ] 1.2 Add the `ffmpeg` build stage to `server/Containerfile` (pinned Chromaprint and FFmpeg sources with checksums, configuration from design.md) and copy `ffmpeg`/`ffprobe` into the final image; verify the image builds for amd64 and arm64 in CI and `ffmpeg -buildconf` shows `--enable-chromaprint` and neither `--enable-gpl` nor `--enable-nonfree`
+- [x] 1.2 Add the `ffmpeg` build stage to `server/Containerfile` (pinned Chromaprint and FFmpeg sources with checksums, configuration from design.md) and copy `ffmpeg`/`ffprobe` into the final image; verify the image builds for amd64 and arm64 in CI and `ffmpeg -buildconf` shows `--enable-chromaprint` and neither `--enable-gpl` nor `--enable-nonfree`
 - [x] 1.3 List FFmpeg and Chromaprint with version, license and build configuration in `THIRD_PARTY_LICENSES.md`; verify the entries
-- [ ] 1.4 Install FFmpeg in the CI server test job; verify a fingerprint test runs (not skipped) in CI
+- [x] 1.4 Install FFmpeg in the CI server test job; verify a fingerprint test runs (not skipped) in CI
 
 ## 2. Data model
 

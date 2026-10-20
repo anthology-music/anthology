@@ -47,8 +47,8 @@ _Last updated: 2026-10-18_
 - **In progress:** change `recording-identification` on branch `feat/recording-identification`:
   identification job (ISRC, then fingerprint at AcoustID), outcome per recording with counters,
   `external_refs`, admin view in the settings, own LGPL FFmpeg with Chromaprint/KissFFT in the
-  server image (ADR 0020). Open: 1.2 and 1.4 wait for CI (multi-arch image, FFmpeg tests), 5.1
-  (fuzzy suggestions) waits for `review-list`.
+  server image (ADR 0020); PR #20, CI green. Open: 5.1 (fuzzy suggestions) waits for
+  `review-list`, so the change stays open after merging.
 - **Next:** `library-import`, `effective-quality-duplicate-checks`, `review-list`,
   `tag-editing` and `search` (see `docs/roadmap.md`).
 
