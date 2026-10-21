@@ -14,6 +14,7 @@ from sqlalchemy.orm import aliased
 
 from anthology.library import service
 from anthology.library.models import (
+    IDENTIFICATION_COUNTERS,
     SUPERSEDED_COUNTERS,
     Artist,
     AudioFile,
@@ -24,6 +25,7 @@ from anthology.library.models import (
 )
 from anthology.library.schemas import (
     LibraryArtistRow,
+    LibraryIdentificationRow,
     LibraryReleaseRow,
     LibrarySupersededRow,
     LibraryTrackRow,
@@ -441,6 +443,60 @@ class ReleaseTracksStream:
         return _upsert(_track_row(row, _release_track_key(row[0])))
 
 
+# --- identification summary ------------------------------------------------------------------
+
+
+class IdentificationStream:
+    """One row with the recordings per identification outcome, live through deltas."""
+
+    name = "library.identification"
+    entity_types = frozenset({service.IDENTIFICATION})
+
+    def allowed(self, session: SessionInfo) -> bool:
+        return session.role in (Role.ADMIN, Role.EDITOR)
+
+    def validate(self, params: dict[str, Any]) -> dict[str, Any]:
+        return _no_params(params)
+
+    async def meta(self, db: AsyncSession, ctx: StreamContext) -> Meta:
+        return Meta(total=1, counters=await _identification_counts(db))
+
+    def key_query(self, ctx: StreamContext) -> KeyQuery:
+        # The single row has no table of its own; anchors are never needed for one row.
+        return KeyQuery(
+            query=select(Recording).where(Recording.id == service.IDENTIFICATION_SUMMARY_ID),
+            columns=(Recording.id,),
+        )
+
+    async def rows(
+        self, db: AsyncSession, ctx: StreamContext, after: SortKey | None, limit: int
+    ) -> list[Row]:
+        if after is not None or limit < 1:
+            return []
+        return [await _identification_row(db)]
+
+    async def changes(
+        self, db: AsyncSession, ctx: StreamContext, event: ChangeEvent
+    ) -> list[RowChange]:
+        return _upsert(await _identification_row(db))
+
+
+async def _identification_counts(db: AsyncSession) -> dict[str, int]:
+    counts = await service.counters(db, tuple(IDENTIFICATION_COUNTERS.values()))
+    return {
+        status.value: counts[IDENTIFICATION_COUNTERS[status].value]
+        for status in IDENTIFICATION_COUNTERS
+    }
+
+
+async def _identification_row(db: AsyncSession) -> Row:
+    summary_id = service.IDENTIFICATION_SUMMARY_ID
+    model = LibraryIdentificationRow(
+        id=str(summary_id), key=[str(summary_id)], **await _identification_counts(db)
+    )
+    return Row(id=model.id, key=(summary_id,), data=_data(model))
+
+
 # --- superseded files ---------------------------------------------------------------------
 
 SUPERSEDED_KEY = (AudioFile.path, AudioFile.id)
@@ -527,4 +583,5 @@ STREAMS = (
     ReleaseTracksStream,
     TracksStream,
     SupersededFilesStream,
+    IdentificationStream,
 )

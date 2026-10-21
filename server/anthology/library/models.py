@@ -77,10 +77,32 @@ class Counter(enum.StrEnum):
     RECORDINGS = "recordings"
     SUPERSEDED_FILES = "superseded_files"
     SUPERSEDED_BYTES = "superseded_bytes"
+    IDENTIFICATION_UNCHECKED = "identification_unchecked"
+    IDENTIFICATION_ISRC = "identification_isrc"
+    IDENTIFICATION_FINGERPRINT = "identification_fingerprint"
+    IDENTIFICATION_NO_MATCH = "identification_no_match"
+    IDENTIFICATION_DUPLICATE = "identification_duplicate"
+    IDENTIFICATION_NOT_POSSIBLE = "identification_not_possible"
 
 
 LIBRARY_COUNTERS = (Counter.ARTISTS, Counter.RELEASES, Counter.TRACKS, Counter.RECORDINGS)
 SUPERSEDED_COUNTERS = (Counter.SUPERSEDED_FILES, Counter.SUPERSEDED_BYTES)
+
+
+class IdentificationStatus(enum.StrEnum):
+    """Outcome of the last identification check (spec: library, Identification outcome)."""
+
+    UNCHECKED = "unchecked"
+    ISRC = "isrc"
+    FINGERPRINT = "fingerprint"
+    NO_MATCH = "no_match"
+    DUPLICATE = "duplicate"
+    NOT_POSSIBLE = "not_possible"
+
+
+IDENTIFICATION_COUNTERS = {
+    status: Counter(f"identification_{status.value}") for status in IdentificationStatus
+}
 
 
 class Artist(Base):
@@ -132,6 +154,15 @@ class Release(Base):
 
 class Recording(Base):
     __tablename__ = "recordings"
+    __table_args__ = (
+        # The identification job reads the recordings still without MusicBrainz ID by ID.
+        Index(
+            "ix_recordings_unidentified",
+            "id",
+            postgresql_where=text("mb_recording_id IS NULL"),
+            sqlite_where=text("mb_recording_id IS NULL"),
+        ),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     title: Mapped[str] = mapped_column(String(NAME))
@@ -143,6 +174,17 @@ class Recording(Base):
     isrc: Mapped[str | None] = mapped_column(String(12), index=True)
     mb_recording_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, unique=True)
     acoust_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, index=True)
+    identification_status: Mapped[IdentificationStatus] = mapped_column(
+        str_enum(IdentificationStatus, "identification_status"),
+        default=IdentificationStatus.UNCHECKED,
+    )
+    identification_checked_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
+    # Why identification was not possible (e.g. "file_missing", "no_acoustid_key").
+    identification_note: Mapped[str | None] = mapped_column(String(64))
+    # The recording that already has the identified MusicBrainz ID (outcome "duplicate").
+    identification_duplicate_of_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("recordings.id", ondelete="SET NULL"), index=True
+    )
 
 
 class Track(Base):
@@ -221,6 +263,9 @@ class AudioFile(Base):
         ForeignKey("audio_files.id", ondelete="SET NULL"), index=True
     )
     superseded_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
+    # Chromaprint fingerprint (compressed, base64) of the first 120 seconds, computed once.
+    fingerprint: Mapped[str | None] = mapped_column(Text)
+    fingerprint_duration_s: Mapped[int | None] = mapped_column(Integer)
     home_track_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("tracks.id", ondelete="SET NULL"), index=True
     )

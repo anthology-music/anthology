@@ -20,7 +20,7 @@ Copyleft components are kept out of the MIT code:
 | PyMuPDF | AGPL-3.0 | not used; replaced by pypdfium2 (BSD-3-Clause / Apache-2.0) |
 | Audiveris | AGPL-3.0 | optional, unmodified, own container |
 | Verovio | LGPL-3.0 | used unmodified as libraries; modifications published under LGPL |
-| FFmpeg | LGPL/GPL | LGPL build, called as a separate process, no non-free encoders |
+| FFmpeg | LGPL/GPL | LGPL build, called as a separate process, no non-free encoders; built in the server image with Chromaprint/KissFFT (ADR 0020) |
 
 Container layout and deployment: see ADR 0005.
 

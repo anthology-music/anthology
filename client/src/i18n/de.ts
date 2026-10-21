@@ -109,7 +109,10 @@ export default {
   },
   services: {
     title: 'Dienste',
-    names: { tagger: 'Tagger (Tags lesen und schreiben)' },
+    names: {
+      tagger: 'Tagger (Tags lesen und schreiben)',
+      'musicbrainz-mirror': 'Lokaler MusicBrainz-Spiegel',
+    },
     status: {
       available: 'Verfügbar',
       unavailable: 'Nicht erreichbar',
@@ -117,6 +120,35 @@ export default {
     },
     versions: 'Version {version} · Schnittstelle {api}',
     none: 'Noch keine Dienste geprüft.',
+  },
+  identification: {
+    title: 'Erkennung (MusicBrainz)',
+    hint: 'Ordnet Aufnahmen ohne MusicBrainz-ID über die ISRC und den akustischen Fingerabdruck zu. Titel und Künstler bleiben unverändert.',
+    outcomes: {
+      isrc: 'Erkannt über ISRC',
+      fingerprint: 'Erkannt über Fingerabdruck',
+      no_match: 'Kein Treffer',
+      duplicate: 'Duplikat einer anderen Aufnahme',
+      not_possible: 'Nicht möglich',
+      unchecked: 'Noch nicht geprüft',
+    },
+    full: 'Alle erneut prüfen',
+    start: 'Erkennung starten',
+    messages: {
+      started: 'Die Erkennung läuft als Auftrag (siehe Streaming).',
+      running: 'Eine Erkennung läuft bereits.',
+      nothing: 'Es ist nichts zu prüfen.',
+      failed: 'Das hat nicht geklappt. Bitte versuche es noch einmal.',
+    },
+    estimate: 'Geschätzte Dauer der wartenden Abfragen: {duration}',
+    mirror: {
+      none: 'kein lokaler MusicBrainz-Spiegel',
+      available: 'lokaler MusicBrainz-Spiegel verfügbar',
+      unavailable: 'lokaler MusicBrainz-Spiegel nicht erreichbar',
+      incompatible: 'lokaler MusicBrainz-Spiegel inkompatibel',
+    },
+    recommendation:
+      'Mit der öffentlichen MusicBrainz-API dauert das länger als einen Tag. Ein lokaler Spiegel hebt die Begrenzung auf (siehe Installationsanleitung).',
   },
   library: {
     title: 'Bibliothek',

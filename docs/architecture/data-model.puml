@@ -42,6 +42,9 @@ package "Library" {
     +mbRecordingId : UUID [0..1]
     +isrc : String [0..1]
     +acoustId : UUID [0..1]
+    +identificationStatus : IdentificationStatus
+    +identificationCheckedAt : DateTime [0..1]
+    +identificationNote : String [0..1]
     +title : String
     +artistDisplay : String
     +durationMs : Integer
@@ -63,6 +66,8 @@ package "Library" {
     +originalStatus : OriginalStatus
     +tagWritesAllowed : Boolean
     +supersededAt : DateTime [0..1]
+    +fingerprint : String [0..1]
+    +fingerprintDurationS : Integer [0..1]
     +declaredQuality : QualityTier
     +effectiveQuality : QualityTier
     +addedAt : DateTime
@@ -250,6 +255,15 @@ package "Library" {
     TAGGED_COPY
   }
 
+  enum IdentificationStatus {
+    UNCHECKED
+    ISRC
+    FINGERPRINT
+    NO_MATCH
+    DUPLICATE
+    NOT_POSSIBLE
+  }
+
   enum OriginalStatus {
     ACTIVE
     SUPERSEDED
@@ -397,6 +411,7 @@ package "Sources & Jobs" {
     REVIEW_BULK
     TAGGING_BULK
     METADATA_REFRESH
+    IDENTIFY_RECORDINGS
     OMR
     TRANSCODE
   }
@@ -982,6 +997,7 @@ package "Video" {
 Recording "1" -- "0..*" AudioFile : originals (at most one ACTIVE) >
 AudioFile "1" -- "0..*" FileLocation : located at >
 AudioFile "0..*" -- "0..1" AudioFile : superseded by >
+Recording "0..*" -- "0..1" Recording : duplicate of (identification) >
 AudioFile "0..*" -- "0..1" Track : home context (imported with) >
 AudioFile "1" -- "0..1" QualityAnalysis : analysed by >
 AudioFile "1" -- "0..*" TranscodeCacheEntry : variants >

@@ -56,6 +56,19 @@ Components that are **not linked** into Anthology's code but are shipped alongsi
 |---|---|---|---|---|
 | `[TOOL]` | `[VERSION]` | `[LICENSE]` | `[separate process / sidecar / container / data]` | `[URL]` |
 
+### FFmpeg with Chromaprint in the server image (ADR 0020)
+
+Built from source in `server/Containerfile` (stage `ffmpeg`); only `ffmpeg` and `ffprobe` are
+shipped, run as separate processes. The build fails if FFmpeg is configured with `--enable-gpl`
+or `--enable-nonfree`.
+
+| Component | Version | License | Build configuration | Source |
+|---|---|---|---|---|
+| FFmpeg | 8.1.3 | LGPL-2.1-or-later | `--disable-everything --disable-autodetect`, only the audio demuxers, parsers, decoders and encoders Anthology uses, `--enable-chromaprint`; no `--enable-gpl`, no `--enable-nonfree` | <https://ffmpeg.org/releases/ffmpeg-8.1.3.tar.xz> |
+| Chromaprint | 1.6.2 | LGPL-2.1-or-later as a whole (own code MIT) | static library, `FFT_LIB=kissfft`, no tools | <https://github.com/acoustid/chromaprint/releases/tag/v1.6.2> |
+| KissFFT (bundled with Chromaprint) | as bundled in Chromaprint 1.6.2 | BSD-3-Clause | FFT of Chromaprint (FFTW3, GPL, is not used) | <https://github.com/acoustid/chromaprint/tree/master/src/3rdparty/kissfft> |
+| libstdc++, libgcc | from the build image | GPL-3.0-or-later with GCC Runtime Library Exception | statically linked runtime | <https://gcc.gnu.org/onlinedocs/libstdc++/manual/license.html> |
+
 ### Optional local MusicBrainz mirror (not shipped)
 
 Checked on 2026-10-19 (change `metadata-lookup`). The mirror is never part of Anthology's images

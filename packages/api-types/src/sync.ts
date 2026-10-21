@@ -21,6 +21,7 @@ export interface SyncProtocol {
     'library.release.tracks'?: LibraryTrackRow;
     'library.tracks'?: LibraryTrackRow;
     'library.superseded'?: LibrarySupersededRow;
+    'library.identification'?: LibraryIdentificationRow;
   };
 }
 export interface Hello {
@@ -192,4 +193,17 @@ export interface LibrarySupersededRow {
   superseded_at: string | null;
   replaced_by_id: string | null;
   replaced_by_path: string | null;
+}
+/**
+ * Recordings per identification outcome (spec: library, Identification outcome).
+ */
+export interface LibraryIdentificationRow {
+  id: string;
+  key: unknown[];
+  unchecked: number;
+  isrc: number;
+  fingerprint: number;
+  no_match: number;
+  duplicate: number;
+  not_possible: number;
 }

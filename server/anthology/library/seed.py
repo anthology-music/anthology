@@ -9,7 +9,7 @@ import uuid
 from typing import Any
 
 from anthology_library_generator import generate
-from sqlalchemy import Table, bindparam, delete, func, insert, select, update
+from sqlalchemy import Table, bindparam, delete, func, insert, select, text, update
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
 from anthology.db.types import utcnow
@@ -18,6 +18,7 @@ from anthology.library.models import (
     Artist,
     AudioFile,
     Counter,
+    IdentificationStatus,
     LibraryCounter,
     OriginalStatus,
     Recording,
@@ -51,13 +52,36 @@ async def seed_library(engine: AsyncEngine, tracks: int, reset: bool = False) ->
             raise LibraryNotEmptyError("the library is not empty; use --reset to replace it")
 
         loader = _Loader(connection)
+        analyzed = False
         for batch in generate(tracks):
             loader.add(batch)
             if len(loader.rows[Track.__table__]) >= FLUSH_TRACKS:
                 await loader.flush()
+                if not analyzed:
+                    await _analyze(connection)
+                    analyzed = True
         await loader.flush()
         await _set_counts(connection, loader.counts)
-        return await _set_counters(connection, loader.totals)
+        # Generated recordings are not identified yet.
+        unchecked = {Counter.IDENTIFICATION_UNCHECKED: loader.totals[Counter.RECORDINGS]}
+        await _set_counters(connection, {**loader.totals, **unchecked})
+    async with engine.begin() as connection:
+        await _analyze(connection)
+    return {name.value: value for name, value in loader.totals.items()}
+
+
+async def _analyze(connection: AsyncConnection) -> None:
+    """Refresh the planner statistics of the library tables (PostgreSQL).
+
+    Statistics of a small earlier library would make PostgreSQL plan the foreign key checks of
+    the bulk load as sequential scans and keep those plans, so that every inserted row scans
+    the whole referenced table. ANALYZE after the first batch (it counts this transaction's
+    rows) invalidates those plans; after the load it gives the list queries real statistics.
+    """
+    if connection.dialect.name != "postgresql":
+        return
+    for table in TABLES:
+        await connection.execute(text(f'ANALYZE "{table.name}"'))
 
 
 class _Loader:
@@ -132,6 +156,10 @@ class _Loader:
                 isrc=None,
                 mb_recording_id=None,
                 acoust_id=None,
+                identification_status=IdentificationStatus.UNCHECKED,
+                identification_checked_at=None,
+                identification_note=None,
+                identification_duplicate_of_id=None,
             )
             audio_rows[recording.id] = recording.audio
         self.totals[Counter.RECORDINGS] += len(batch.recordings)
@@ -175,6 +203,8 @@ class _Loader:
                     tag_writes_allowed=False,
                     superseded_by_id=None,
                     superseded_at=None,
+                    fingerprint=None,
+                    fingerprint_duration_s=None,
                     home_track_id=track.id,
                     added_at=self.now,
                 )
@@ -220,9 +250,8 @@ async def _set_counts(connection: AsyncConnection, counts: dict[uuid.UUID, list[
         await connection.execute(statement, rows[start : start + SQLITE_BATCH])
 
 
-async def _set_counters(connection: AsyncConnection, totals: dict[Counter, int]) -> dict[str, int]:
+async def _set_counters(connection: AsyncConnection, totals: dict[Counter, int]) -> None:
     await connection.execute(delete(LibraryCounter))
     await connection.execute(
         insert(LibraryCounter), [{"name": name, "value": value} for name, value in totals.items()]
     )
-    return {name.value: value for name, value in totals.items()}

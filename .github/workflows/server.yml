@@ -72,16 +72,19 @@ jobs:
           uv run ruff format --check .
           uv run pytest
 
+      - name: Install FFmpeg (fingerprint tests and test media for the tagger contract tests)
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+
       - name: Tests (SQLite)
+        env:
+          ANTHOLOGY_TEST_REQUIRE_FFMPEG: "1"
         run: uv run pytest
 
       - name: Tests (PostgreSQL 18)
         env:
           ANTHOLOGY_TEST_DATABASE_URL: postgresql+asyncpg://anthology:anthology@localhost:5432/anthology-test
+          ANTHOLOGY_TEST_REQUIRE_FFMPEG: "1"
         run: uv run pytest
-
-      - name: Install FFmpeg (test media for the tagger contract tests)
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
 
       - name: Start the tagger
         working-directory: services/tagger

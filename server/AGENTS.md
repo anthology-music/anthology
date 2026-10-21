@@ -86,6 +86,12 @@ Originals are managed (Anthology owns the bytes) or referenced (a foreign folder
 
 Never call MusicBrainz, the Cover Art Archive or AcoustID directly; use `app.state.lookups` (`anthology/metadata_lookup/service.py`): `lookups.musicbrainz.release(…)`, `.recording`, `.isrc`, `.discid`, `.search_recordings`, `lookups.coverart.release(…)`, `lookups.acoustid.lookup(…)`. They cache answers (including "not found"), keep the rate limits across all server processes, back off on overload and use the local mirror when `ANTHOLOGY_MUSICBRAINZ_URL` is set and available. Pass `priority=Priority.INTERACTIVE` for lookups a user is waiting for. `LookupNotConfigured` (no AcoustID key) means: skip that step. `LookupFailed` means: retry the item later. Settings: `ANTHOLOGY_MUSICBRAINZ_CONTACT` (User-Agent contact), `ANTHOLOGY_ACOUSTID_API_KEY`. Tests never reach the real services: pass an `httpx.MockTransport` with generated responses and a fake clock.
 
+## Recording identification and FFmpeg
+
+Recordings are identified by the job `identify_recordings` (`anthology/library/identification.py`): ISRC first, then the Chromaprint fingerprint at AcoustID; only identifiers are set, through `service.record_identification`. Start it with `POST /api/v1/library/identification` (editors, admins). The library import will call `Identifier.identify` for new recordings.
+
+FFmpeg runs as a separate process (`settings.ffmpeg_path`, `settings.ffprobe_path`). The server image contains an own LGPL build with Chromaprint (ADR 0020); never add a codec or filter outside that build configuration. Fingerprints are computed once per audio file (`audio_files.fingerprint`). Tests that need FFmpeg call `tests.media_helpers.require_ffmpeg()`: they are skipped without FFmpeg locally and fail in CI (`ANTHOLOGY_TEST_REQUIRE_FFMPEG=1`). Generated test audio comes from `tests.media_helpers.tone_wav`.
+
 ## Tests
 
 - Tests run on SQLite by default. Set `ANTHOLOGY_TEST_DATABASE_URL` to run them on PostgreSQL as well (CI does both), e.g. `ANTHOLOGY_TEST_DATABASE_URL=postgresql+asyncpg://anthology:anthology@localhost:5432/anthology-test uv run pytest`. The PostgreSQL test database must be **dedicated to tests**: every test session migrates it down to base and up to head, which drops all tables.
