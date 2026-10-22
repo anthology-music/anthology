@@ -17,7 +17,7 @@ across sessions goes here, so every agent and every maintainer sees the same sta
 
 ## Current state
 
-_Last updated: 2026-10-22_
+_Last updated: 2026-10-23_
 
 - **Milestone 1 (Foundation)** is implemented: server skeleton, sync protocol with progressive
   loading, users and devices, jobs (core and view), client foundation with sign-in, sync layer and
@@ -44,14 +44,16 @@ _Last updated: 2026-10-22_
   `tag-editing`). A message broker was considered for the limiter and rejected (see its design).
 - **Open, implemented in part:** `recording-identification` (PR #20 merged). Open: 5.1 (fuzzy
   suggestions) waits for `review-list`.
-- **In progress:** change `library-import-folders` on branch `feat/library-import-folders`:
-  folder import below `ANTHOLOGY_IMPORT_ROOTS` (admins) with scan, staged duplicate detection,
-  report and confirmation, storage modes with verified transfers, library entries from tags,
-  identification afterwards, adoption of referenced originals; FFmpeg build gains the `hash`
-  muxer, `tinytag` added. Open: 7.1 (quality categories, `quality-analysis`) and 7.2 (review
-  entries, `review-list`), so the change stays open after merging.
-- **Next:** `effective-quality-duplicate-checks`, `review-list`, `tag-editing` and `search`
-  (see `docs/roadmap.md`).
+- **Open, implemented in part:** `library-import-folders` (PR #21 merged). Open: 7.1 (quality
+  categories and replacement on import) and 7.2 (review entries, `review-list`).
+- **In progress:** change `quality-analysis-core` on branch `feat/quality-analysis-core`:
+  effective quality per audio hash (spectral cutoff with encoder lowpass match, fake hi-res,
+  padded bit depth), confidence and status, job with start after imports, quality badge in
+  track rows and counts in the settings; numpy added, FFmpeg build gains raw PCM output. Open:
+  review entries (`review-list`), source plausibility (`sources`), lossless reduction.
+- **Next:** quality-based replacement and the import categories of `library-import-folders`
+  7.1, then `review-list`, `tag-editing` and `search` (see `docs/roadmap.md`).
+  `effective-quality-duplicate-checks` covers CD import and sources only; it waits for them.
 
 ## Working conventions
 

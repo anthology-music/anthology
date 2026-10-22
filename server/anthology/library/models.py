@@ -58,6 +58,15 @@ class QualityTier(enum.StrEnum):
     LOSSY_LOW = "lossy_low"
 
 
+class QualityStatus(enum.StrEnum):
+    """Outcome of the quality analysis (spec: quality-analysis, Confidence instead of verdict)."""
+
+    GENUINE = "genuine"
+    SUSPICIOUS = "suspicious"
+    UPSCALED = "upscaled"
+    CONFIRMED_GENUINE = "confirmed_genuine"  # set from the review list
+
+
 class StorageMode(enum.StrEnum):
     """Who owns the bytes (spec: library, Managed and referenced originals)."""
 
@@ -85,12 +94,22 @@ class Counter(enum.StrEnum):
     IDENTIFICATION_NOT_POSSIBLE = "identification_not_possible"
     REFERENCED_FILES = "referenced_files"
     REFERENCED_BYTES = "referenced_bytes"
+    QUALITY_UNANALYSED = "quality_unanalysed"
+    QUALITY_GENUINE = "quality_genuine"
+    QUALITY_SUSPICIOUS = "quality_suspicious"
+    QUALITY_UPSCALED = "quality_upscaled"
+    QUALITY_CONFIRMED_GENUINE = "quality_confirmed_genuine"
 
 
 LIBRARY_COUNTERS = (Counter.ARTISTS, Counter.RELEASES, Counter.TRACKS, Counter.RECORDINGS)
 SUPERSEDED_COUNTERS = (Counter.SUPERSEDED_FILES, Counter.SUPERSEDED_BYTES)
 # Active referenced originals (candidates for adoption into managed storage).
 REFERENCED_COUNTERS = (Counter.REFERENCED_FILES, Counter.REFERENCED_BYTES)
+# Active originals per quality status (None: not analysed yet).
+QUALITY_COUNTERS: dict[QualityStatus | None, Counter] = {
+    None: Counter.QUALITY_UNANALYSED,
+    **{status: Counter(f"quality_{status.value}") for status in QualityStatus},
+}
 
 
 class IdentificationStatus(enum.StrEnum):
@@ -267,6 +286,10 @@ class AudioFile(Base):
     declared_quality: Mapped[QualityTier] = mapped_column(str_enum(QualityTier, "declared_quality"))
     effective_quality: Mapped[QualityTier | None] = mapped_column(
         str_enum(QualityTier, "effective_quality")
+    )
+    # Status of the quality analysis of the file's audio (denormalized for the track rows).
+    quality_status: Mapped[QualityStatus | None] = mapped_column(
+        str_enum(QualityStatus, "quality_status")
     )
     storage_mode: Mapped[StorageMode] = mapped_column(
         str_enum(StorageMode, "storage_mode"), default=StorageMode.MANAGED

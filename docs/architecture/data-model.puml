@@ -70,7 +70,8 @@ package "Library" {
     +fingerprint : String [0..1]
     +fingerprintDurationS : Integer [0..1]
     +declaredQuality : QualityTier
-    +effectiveQuality : QualityTier
+    +effectiveQuality : QualityTier [0..1]
+    +qualityStatus : AuthenticityStatus [0..1]
     +addedAt : DateTime
   }
   note right of AudioFile
@@ -91,17 +92,27 @@ package "Library" {
   }
 
   class QualityAnalysis {
-    +id : UUID
-    +cutoffHz : Integer [0..1]
-    +contentAbove22kHz : Boolean
-    +effectiveBitDepth : Integer [0..1]
-    +estimatedOrigin : String [0..1]
-    +finding : String
-    +confidence : Confidence
+    +audioHash : String
     +status : AuthenticityStatus
+    +confidence : Confidence
+    +finding : String
+    +findingValues : String
+    +effectiveQuality : QualityTier [0..1]
+    +cutoffHz : Integer [0..1]
+    +effectiveSampleRateHz : Integer [0..1]
+    +effectiveBitDepth : Integer [0..1]
+    +estimatedBitrateKbps : Integer [0..1]
+    +wholeFile : Boolean
+    +methodVersion : Integer
     +spectrogramPath : String [0..1]
     +analyzedAt : DateTime
   }
+  note right of QualityAnalysis
+    One result per audio hash: files
+    with equal audio share it.
+    Only HIGH confidence sets
+    AudioFile.effectiveQuality.
+  end note
 
   class ReleaseGroup {
     +id : UUID
@@ -1027,7 +1038,7 @@ AudioFile "1" -- "0..*" FileLocation : located at >
 AudioFile "0..*" -- "0..1" AudioFile : superseded by >
 Recording "0..*" -- "0..1" Recording : duplicate of (identification) >
 AudioFile "0..*" -- "0..1" Track : home context (imported with) >
-AudioFile "1" -- "0..1" QualityAnalysis : analysed by >
+AudioFile "0..*" -- "0..1" QualityAnalysis : analysed by (audio hash) >
 AudioFile "1" -- "0..*" TranscodeCacheEntry : variants >
 AudioFile "0..*" -- "1" Source : retrieved from >
 ReleaseGroup "1" *-- "1..*" Release

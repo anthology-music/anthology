@@ -26,6 +26,9 @@ from anthology.library_import import jobs as library_import_jobs
 from anthology.library_import.streams import STREAMS as LIBRARY_IMPORT_STREAMS
 from anthology.metadata_lookup import api as metadata_lookup_api
 from anthology.metadata_lookup.service import LookupService, check_mirror
+from anthology.quality_analysis import api as quality_analysis_api
+from anthology.quality_analysis import service as quality_analysis
+from anthology.quality_analysis.streams import STREAMS as QUALITY_ANALYSIS_STREAMS
 from anthology.sync import api as sync_api
 from anthology.sync.background import ChangeBackground
 from anthology.sync.feed import ChangeFeed
@@ -94,6 +97,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         importer = library_import_jobs.Importer(sessionmaker, settings)
         for handler in library_import_jobs.HANDLERS:
             app.state.job_handlers.get(handler.type).bind(importer)
+        app.state.job_handlers.get(quality_analysis.JOB_TYPE).bind(
+            quality_analysis.Analyzer(sessionmaker, settings)
+        )
         app.state.job_handlers.get(adoption.JOB_TYPE).bind(adoption.Adopter(sessionmaker, settings))
         if settings.background_tasks:
             await background.start()
@@ -123,6 +129,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(metadata_lookup_api.router, prefix=API_PREFIX)
     app.include_router(library_api.router, prefix=API_PREFIX)
     app.include_router(library_import_api.router, prefix=API_PREFIX)
+    app.include_router(quality_analysis_api.router, prefix=API_PREFIX)
     if settings.web_dir is not None:
         mount_web(app, settings.web_dir)  # last: its fallback must not shadow API routes
     return app
@@ -173,6 +180,7 @@ def _job_handlers(settings: Settings) -> HandlerRegistry:
     registry = HandlerRegistry()
     registry.register(identification.IdentifyRecordingsHandler())
     registry.register(adoption.AdoptOriginalsHandler())
+    registry.register(quality_analysis.AnalyzeQualityHandler())
     for handler in library_import_jobs.HANDLERS:
         registry.register(handler())
     if settings.dev_demo:
@@ -189,7 +197,7 @@ def _streams(settings: Settings) -> StreamRegistry:
     registry.register(JobsStream())
     registry.register(JobItemsStream())
     registry.register(ServicesStream())
-    for stream in (*LIBRARY_STREAMS, *LIBRARY_IMPORT_STREAMS):
+    for stream in (*LIBRARY_STREAMS, *LIBRARY_IMPORT_STREAMS, *QUALITY_ANALYSIS_STREAMS):
         registry.register(stream())
     if settings.dev_demo:
         from anthology.sync.demo import DemoItemsStream

@@ -62,8 +62,11 @@ async def seed_library(engine: AsyncEngine, tracks: int, reset: bool = False) ->
                     analyzed = True
         await loader.flush()
         await _set_counts(connection, loader.counts)
-        # Generated recordings are not identified yet.
-        unchecked = {Counter.IDENTIFICATION_UNCHECKED: loader.totals[Counter.RECORDINGS]}
+        # Generated recordings are not identified, their originals not analysed yet.
+        unchecked = {
+            Counter.IDENTIFICATION_UNCHECKED: loader.totals[Counter.RECORDINGS],
+            Counter.QUALITY_UNANALYSED: loader.totals[Counter.RECORDINGS],
+        }
         await _set_counters(connection, {**loader.totals, **unchecked})
     async with engine.begin() as connection:
         await _analyze(connection)
@@ -199,6 +202,7 @@ class _Loader:
                     content_hash=None,
                     declared_quality=audio.declared_quality,
                     effective_quality=None,
+                    quality_status=None,
                     storage_mode=StorageMode.MANAGED,
                     original_status=OriginalStatus.ACTIVE,
                     tag_writes_allowed=False,

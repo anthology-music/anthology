@@ -75,8 +75,9 @@ Seven streams for all signed-in users serve the library, plus a report and a sto
 | `library.superseded` (admins) | – | path, id | superseded files | `superseded_files`, `superseded_bytes` |
 | `library.identification` (editors, admins) | – | one summary row | 1 | recordings per identification outcome |
 | `library.storage` (admins) | – | one summary row | 1 | `referenced_files`, `referenced_bytes` (active referenced originals) |
+| `quality_analysis.summary` (editors, admins) | – | one summary row | 1 | active originals per quality status and unanalysed |
 
-The four library counters are `artists`, `releases`, `tracks` and `recordings`; all are maintained in the writing transaction. Track rows show the recording's active original; superseded referenced files (kept unchanged after a better file replaced them) appear only in `library.superseded`. A change that alters what other rows show or sort by (e.g. an artist rename) writes one change entry per affected row, so each of them receives a delta. The filtered lists ignore changes of rows outside their filter; when a row leaves a filtered list, the library writes an extra entry of type `release.moved` or `track.moved`, which the list of the former parent answers with `remove`.
+The four library counters are `artists`, `releases`, `tracks` and `recordings`; all are maintained in the writing transaction. Track rows show the recording's active original with its effective quality and quality status (both null until analysed; the effective quality only after a high-confidence result); superseded referenced files (kept unchanged after a better file replaced them) appear only in `library.superseded`. A change that alters what other rows show or sort by (e.g. an artist rename) writes one change entry per affected row, so each of them receives a delta. The filtered lists ignore changes of rows outside their filter; when a row leaves a filtered list, the library writes an extra entry of type `release.moved` or `track.moved`, which the list of the former parent answers with `remove`.
 
 ## Library imports
 

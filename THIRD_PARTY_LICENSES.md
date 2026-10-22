@@ -110,6 +110,7 @@ Licenses as published on PyPI/npm or by the projects. ⚠ marks components whose
 | rapidfuzz | MIT | fuzzy matching |
 | xxhash (Python) | BSD-2-Clause | audio hashing |
 | tinytag | MIT | fast read-only tag reading in the core |
+| numpy | BSD-3-Clause (bundled parts 0BSD, MIT, Zlib, CC0-1.0) | spectra of the quality analysis |
 | pypdfium2 | BSD-3-Clause / Apache-2.0 (PDFium: BSD-3-Clause) | PDF pages for sheet music |
 | async-upnp-client | Apache-2.0 | UPnP / Raumfeld |
 | librosa | ISC | audio analysis |

@@ -59,13 +59,14 @@ RUN curl -fsSLo ffmpeg.tar.xz "https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSI
         --enable-demuxer=flac,wav,aiff,mov,mp3,aac,ogg,matroska \
         --enable-parser=flac,mpegaudio,aac,opus,vorbis \
         --enable-decoder=flac,alac,mp3,mp3float,aac,opus,vorbis,pcm_s16le,pcm_s24le,pcm_s32le,pcm_s16be,pcm_s24be,pcm_s32be,pcm_f32le,pcm_f32be,pcm_u8 \
-        --enable-encoder=aac,alac,flac,pcm_s16le,pcm_s24le \
-        --enable-muxer=chromaprint,hash,ipod,mp4,flac,wav,null \
+        --enable-encoder=aac,alac,flac,pcm_s16le,pcm_s24le,pcm_s32le,pcm_f32le \
+        --enable-muxer=chromaprint,hash,ipod,mp4,flac,wav,null,pcm_f32le,pcm_s32le \
         --enable-filter=aresample,aformat,anull,atrim \
     && make -j"$(nproc)" \
     && make install \
     && /opt/ffmpeg/bin/ffmpeg -hide_banner -buildconf | grep -q -- --enable-chromaprint \
     && /opt/ffmpeg/bin/ffmpeg -hide_banner -muxers | grep -q " hash " \
+    && /opt/ffmpeg/bin/ffmpeg -hide_banner -muxers | grep -q " f32le " \
     && ! /opt/ffmpeg/bin/ffmpeg -hide_banner -buildconf | grep -E -- "--enable-(gpl|nonfree)"
 
 

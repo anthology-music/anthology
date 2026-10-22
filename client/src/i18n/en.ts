@@ -244,7 +244,37 @@ const en: typeof de = {
       failed: 'That did not work. Please try again.',
     },
   },
+  quality: {
+    title: 'Quality analysis',
+    hint: 'Determines the real quality of the files, e.g. MP3 saved as FLAC or upsampled hi-res. Only conclusive results are applied.',
+    statuses: {
+      genuine: 'Genuine',
+      upscaled: 'Upscaled',
+      suspicious: 'Suspicious',
+      confirmed_genuine: 'Confirmed genuine',
+      unanalysed: 'Not analysed yet',
+    },
+    full: 'Analyse older results again',
+    start: 'Start analysis',
+    messages: {
+      started: 'The analysis runs as a job (see Streaming).',
+      running: 'An analysis is already running.',
+      nothing: 'There is nothing to analyse.',
+      failed: 'That did not work. Please try again.',
+    },
+  },
   library: {
+    quality: {
+      tiers: {
+        hires_lossless: 'Hi-res',
+        cd_lossless: 'CD',
+        lossy_high: 'Lossy',
+        lossy_low: 'Lossy',
+      },
+      upscaledHint: 'The file claims a better quality than it has.',
+      check: 'Check',
+      checkHint: 'The quality analysis was not conclusive.',
+    },
     title: 'Library',
     path: 'Path',
     sections: { releases: 'Albums', artists: 'Artists', tracks: 'Tracks' },

@@ -321,6 +321,8 @@ _TRACK_ROW = (
         AudioFile.sample_rate_hz,
         AudioFile.bit_depth,
         AudioFile.bitrate_kbps,
+        AudioFile.effective_quality,
+        AudioFile.quality_status,
     )
     .join(Recording, Recording.id == Track.recording_id)
     .join(Release, Release.id == Track.release_id)
@@ -334,7 +336,8 @@ _TRACK_ROW = (
 
 def _track_row(result_row, key: SortKey) -> Row:
     """A track row by context (spec: library, Track rows by context)."""
-    track, recording, release, audio_format, sample_rate, bit_depth, bitrate = result_row
+    (track, recording, release, audio_format, sample_rate, bit_depth, bitrate, effective,
+     quality_status) = result_row  # fmt: skip
     model = LibraryTrackRow(
         id=str(track.id),
         key=list(key),
@@ -351,6 +354,8 @@ def _track_row(result_row, key: SortKey) -> Row:
         sample_rate_hz=sample_rate,
         bit_depth=bit_depth,
         bitrate_kbps=bitrate,
+        effective_quality=effective,
+        quality_status=quality_status,
     )
     return Row(id=model.id, key=key, data=_data(model))
 
