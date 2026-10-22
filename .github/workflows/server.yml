@@ -30,7 +30,7 @@ jobs:
   test:
     # GitHub-hosted standard runner only (see AGENTS.md, CI)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
 
     services:
       postgres:
@@ -75,7 +75,7 @@ jobs:
 
       # The own LGPL build of the server image (ADR 0020), compiled once and then cached.
       - name: FFmpeg (fingerprints, audio hashes, quality analysis, test media)
-        timeout-minutes: 25
+        timeout-minutes: 40
         uses: ./.github/actions/ffmpeg
 
       - name: Tests (SQLite)
