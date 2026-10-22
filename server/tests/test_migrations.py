@@ -1,3 +1,4 @@
+import pytest
 from alembic.autogenerate import compare_metadata
 from alembic.runtime.migration import MigrationContext
 from sqlalchemy.ext.asyncio import AsyncEngine
@@ -8,6 +9,8 @@ from anthology.db import Base
 from anthology.db.migrations import current_revisions, downgrade, head_revisions, upgrade
 
 
+# Rows left by earlier tests would block the downgrade (SQLite recreates tables in batch mode).
+@pytest.mark.usefixtures("clean_db")
 async def test_upgrade_and_downgrade_round_trip(settings: Settings, engine: AsyncEngine) -> None:
     await downgrade(engine, settings, "base")
     assert await current_revisions(engine) == set()

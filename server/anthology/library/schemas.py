@@ -50,6 +50,13 @@ class LibrarySupersededRow(StreamRow):
     replaced_by_path: str | None
 
 
+class LibraryStorageRow(StreamRow):
+    """Active referenced originals, candidates for adoption (spec: library)."""
+
+    referenced_files: int
+    referenced_bytes: int
+
+
 class LibraryIdentificationRow(StreamRow):
     """Recordings per identification outcome (spec: library, Identification outcome)."""
 

@@ -191,6 +191,14 @@ async def cancel_open_items(session: AsyncSession, job_id: uuid.UUID) -> None:
         await record_item_change(session, item_id)
 
 
+async def stop_job(session: AsyncSession, job_id: uuid.UUID) -> None:
+    """Cancel an unfinished job on behalf of the domain that created it (no permission check)."""
+    job = await session.get(Job, job_id, with_for_update=True)
+    if job is not None and job.status not in FINISHED:
+        await cancel_open_items(session, job.id)
+        await set_status(session, job, JobStatus.CANCELLED)
+
+
 async def has_unfinished_job(session: AsyncSession, type_: str) -> bool:
     """True if a job of ``type_`` is queued, running or paused."""
     job_id = await session.scalar(

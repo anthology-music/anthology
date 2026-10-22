@@ -157,6 +157,106 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/library-import/folders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Folders
+         * @description The import roots, or the subfolders of a folder below them with its possible modes.
+         */
+        get: operations["list_folders_api_v1_library_import_folders_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/library-imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Import
+         * @description Scan a folder and report; nothing is changed before confirmation.
+         */
+        post: operations["start_import_api_v1_library_imports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/library-imports/{import_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel Import
+         * @description Stop a scan, discard a report or stop a running import.
+         */
+        post: operations["cancel_import_api_v1_library_imports__import_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/library-imports/{import_id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm Import
+         * @description Import the files of a reported scan (spec: Report confirmation).
+         */
+        post: operations["confirm_import_api_v1_library_imports__import_id__confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/library/adoption": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Adoption
+         * @description Adopt referenced originals (below ``folder``, or all) into managed storage.
+         */
+        post: operations["start_adoption_api_v1_library_adoption_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/library/identification": {
         parameters: {
             query?: never;
@@ -378,6 +478,21 @@ export interface components {
          * @enum {string}
          */
         AccountOrigin: "local" | "oidc";
+        /** AdoptionStart */
+        AdoptionStart: {
+            /** Folder */
+            folder?: string | null;
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "move" | "copy" | "reflink";
+        };
+        /** AdoptionStarted */
+        AdoptionStarted: {
+            /** Job Id */
+            job_id: string | null;
+        };
         /**
          * BitrateSetting
          * @enum {string}
@@ -471,6 +586,21 @@ export interface components {
          * @enum {string}
          */
         DeviceType: "web" | "desktop" | "mobile";
+        /**
+         * FolderListing
+         * @description One level of folders below the import roots, with the modes the folder allows.
+         */
+        FolderListing: {
+            default_mode?: components["schemas"]["ImportMode"] | null;
+            /** Folders */
+            folders: components["schemas"]["ImportFolder"][];
+            /** Modes */
+            modes?: components["schemas"]["ImportMode"][] | null;
+            /** Parent */
+            parent: string | null;
+            /** Path */
+            path: string | null;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -495,6 +625,37 @@ export interface components {
         IdentificationStarted: {
             /** Job Id */
             job_id: string | null;
+        };
+        /** ImportAccepted */
+        ImportAccepted: {
+            /** Import Id */
+            import_id: string;
+            /** Job Id */
+            job_id: string | null;
+        };
+        /** ImportFolder */
+        ImportFolder: {
+            /** Name */
+            name: string;
+            /** Path */
+            path: string;
+        };
+        /**
+         * ImportMode
+         * @description Storage mode of an import (spec: library-import, Storage modes).
+         * @enum {string}
+         */
+        ImportMode: "reference" | "move" | "reflink" | "hardlink" | "copy";
+        /** ImportStart */
+        ImportStart: {
+            /**
+             * Allow Tag Writes
+             * @default false
+             */
+            allow_tag_writes: boolean;
+            mode?: components["schemas"]["ImportMode"] | null;
+            /** Path */
+            path: string;
         };
         /** JobOut */
         JobOut: {
@@ -989,6 +1150,165 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JobOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_folders_api_v1_library_import_folders_get: {
+        parameters: {
+            query?: {
+                path?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FolderListing"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_import_api_v1_library_imports_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImportStart"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportAccepted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_import_api_v1_library_imports__import_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                import_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportAccepted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    confirm_import_api_v1_library_imports__import_id__confirm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                import_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportAccepted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_adoption_api_v1_library_adoption_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdoptionStart"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdoptionStarted"];
                 };
             };
             /** @description Validation Error */

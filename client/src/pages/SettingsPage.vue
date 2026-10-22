@@ -5,6 +5,7 @@
       <MyDevices />
       <UserAdministration v-if="auth.isAdmin" />
       <IdentificationSettings v-if="auth.isAdmin || auth.user?.role === 'editor'" />
+      <AdoptionSettings v-if="auth.isAdmin" />
       <ServiceOverview v-if="auth.isAdmin" />
     </div>
   </q-page>
@@ -15,6 +16,7 @@ import { useI18n } from 'vue-i18n';
 
 import PageHeader from '@/components/PageHeader.vue';
 import ServiceOverview from '@/components/ServiceOverview.vue';
+import AdoptionSettings from '@/features/library/components/AdoptionSettings.vue';
 import IdentificationSettings from '@/features/library/components/IdentificationSettings.vue';
 import MyDevices from '@/features/users/components/MyDevices.vue';
 import UserAdministration from '@/features/users/components/UserAdministration.vue';

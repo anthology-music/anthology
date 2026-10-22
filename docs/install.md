@@ -48,6 +48,24 @@ docker compose up -d
 
 An existing collection on the host can be used instead of the library volume: replace `anthology-library.volume:/data/library:U` by a bind mount (`Volume=/srv/music:/data/library:Z` with SELinux) in the server and tagger units – both need the same path.
 
+## Importing a collection
+
+Admins import server folders from the Streaming page ("Import folder"). Only folders below the import roots can be chosen: `ANTHOLOGY_IMPORT_ROOTS` (comma-separated, default `/data/imports`). Paths that leave a root through `..` or symbolic links are refused.
+
+The import proposes the most economical storage mode the mounts allow:
+
+| Mode | Originals | Needs |
+|---|---|---|
+| reference | referenced: files stay where they are, Anthology never moves, renames or deletes them | – |
+| link (reflink) | managed: a copy-on-write clone in `/data/library/_originals`, no additional space | a file system with reflinks (Btrfs, XFS) and the folder on the same mount as `/data/library` |
+| link (hardlink) | referenced: a second name for the same file in `/data/library/_originals` | the folder on the same mount as `/data/library` |
+| move | managed: moved into `/data/library/_originals` (across mounts: copied, verified by checksum, then removed at the source) | – |
+| copy | managed: copied and verified by checksum; the source stays unchanged | space for a second copy |
+
+In the standard pod `anthology-imports` and `anthology-library` are separate volumes, so linking is not possible and "copy" is proposed. Hardlinks and reflinks need source and target in **one mount**: Linux refuses them across mount points, even on the same disk. To link an existing collection, bind-mount a host folder that contains it as the library and make the collection an import root, e.g. with the collection in `/srv/music/Collection`: `Volume=/srv/music:/data/library:Z` in the server and tagger units (instead of the library volume) and `Environment=ANTHOLOGY_IMPORT_ROOTS=/data/imports,/data/library/Collection` (Compose: `- /srv/music:/data/library` and `ANTHOLOGY_IMPORT_ROOTS: /data/imports,/data/library/Collection`). Anthology then writes its managed originals to `/srv/music/_originals` and leaves the collection folder as it is.
+
+Referenced files can later be adopted into managed storage in Settings › Library (move, copy or reflink; each file is verified by checksum before anything changes at the source).
+
 ## Database password
 
 The password is a secret, never part of a unit file or environment variable: PostgreSQL reads it from `POSTGRES_PASSWORD_FILE`, the server from `ANTHOLOGY_DATABASE_PASSWORD_FILE` (it replaces the password in `ANTHOLOGY_DATABASE_URL`). PostgreSQL uses the secret only when it creates the database; to change it later, change it in PostgreSQL (`ALTER USER anthology PASSWORD …`) and in the secret.

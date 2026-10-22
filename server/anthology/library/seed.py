@@ -196,6 +196,7 @@ class _Loader:
                     channels=audio.channels,
                     size_bytes=audio.size_bytes,
                     audio_hash=audio.audio_hash,
+                    content_hash=None,
                     declared_quality=audio.declared_quality,
                     effective_quality=None,
                     storage_mode=StorageMode.MANAGED,

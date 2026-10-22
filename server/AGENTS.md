@@ -88,9 +88,15 @@ Never call MusicBrainz, the Cover Art Archive or AcoustID directly; use `app.sta
 
 ## Recording identification and FFmpeg
 
-Recordings are identified by the job `identify_recordings` (`anthology/library/identification.py`): ISRC first, then the Chromaprint fingerprint at AcoustID; only identifiers are set, through `service.record_identification`. Start it with `POST /api/v1/library/identification` (editors, admins). The library import will call `Identifier.identify` for new recordings.
+Recordings are identified by the job `identify_recordings` (`anthology/library/identification.py`): ISRC first, then the Chromaprint fingerprint at AcoustID; only identifiers are set, through `service.record_identification`. Start it with `POST /api/v1/library/identification` (editors, admins). The folder import starts it after every import that created recordings.
 
-FFmpeg runs as a separate process (`settings.ffmpeg_path`, `settings.ffprobe_path`). The server image contains an own LGPL build with Chromaprint (ADR 0020); never add a codec or filter outside that build configuration. Fingerprints are computed once per audio file (`audio_files.fingerprint`). Tests that need FFmpeg call `tests.media_helpers.require_ffmpeg()`: they are skipped without FFmpeg locally and fail in CI (`ANTHOLOGY_TEST_REQUIRE_FFMPEG=1`). Generated test audio comes from `tests.media_helpers.tone_wav`.
+FFmpeg runs as a separate process (`settings.ffmpeg_path`, `settings.ffprobe_path`). The server image contains an own LGPL build with Chromaprint (ADR 0020); never add a codec or filter outside that build configuration. Fingerprints are computed once per audio file (`audio_files.fingerprint`). Tests that need FFmpeg call `tests.media_helpers.require_ffmpeg()`: they are skipped without FFmpeg locally and fail in CI (`ANTHOLOGY_TEST_REQUIRE_FFMPEG=1`). Generated test audio comes from `tests.media_helpers.tone_wav` (re-encode with tags via `tests.media_helpers.encode`).
+
+## Library import and originals storage
+
+Folder imports live in `anthology/library_import/` (spec: library-import). Admins import folders below `ANTHOLOGY_IMPORT_ROOTS` (default `<data_dir>/imports`); resolve every requested path with `paths.resolve_folder`, which refuses `..` and symbolic links leaving the roots. Three jobs work in path order, 200 files per item, one item at a time: `library_import_scan` (walk and register files), `library_import_analyze` (tags with tinytag, technical data with ffprobe, audio hash with FFmpeg's `hash` muxer, classification, report) and, after `POST /api/v1/library-imports/{id}/confirm`, `library_import_apply` (library entries through the library service, then identification). Nothing is moved, linked or copied before the confirmation. `tests/import_helpers.py` runs an import's jobs in tests (`settle`).
+
+Managed originals are stored as `<library_dir>/_originals/<xx>/<recording ID>.<ext>` (`ANTHOLOGY_LIBRARY_DIR`, default `<data_dir>/library`). Write files there only with `anthology/library/storage.py`: `transfer` copies, reflinks or moves through a temporary name and verifies the SHA-256 before the rename; a source is removed (`remove_source`, verified again) only after the library refers to the new file. Hardlinks stay referenced. Adoption of referenced originals (`anthology/library/adoption.py`, job `adopt_originals`, `POST /api/v1/library/adoption`, admins) uses the same functions and `FileOperation.ADOPT`; it never hardlinks.
 
 ## Tests
 

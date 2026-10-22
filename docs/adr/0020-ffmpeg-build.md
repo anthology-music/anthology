@@ -17,7 +17,7 @@ Chromaprint is LGPL-2.1 as a whole (MIT code plus parts of FFmpeg); its license 
 
 - The server image contains `ffmpeg` and `ffprobe` from an **own build stage** in `server/Containerfile`, built from pinned release sources verified by SHA-256.
 - **Chromaprint** is built as a static library with its bundled **KissFFT** (BSD-3-Clause). FFTW3 is never used.
-- **FFmpeg** is configured with `--disable-everything --disable-autodetect` and enables only what Anthology needs: the file and pipe protocols, demuxers, parsers and decoders of the supported audio formats, the `chromaprint` muxer, the native AAC, ALAC, FLAC and PCM encoders with the MP4/IPOD, FLAC and WAV muxers, and the resampling filters. It is never configured with `--enable-gpl` or `--enable-nonfree`; the build stage fails if `ffmpeg -buildconf` shows either.
+- **FFmpeg** is configured with `--disable-everything --disable-autodetect` and enables only what Anthology needs: the file and pipe protocols, demuxers, parsers and decoders of the supported audio formats, the `chromaprint` muxer, the `hash` muxer (audio hashes of the library import), the native AAC, ALAC, FLAC and PCM encoders with the MP4/IPOD, FLAC and WAV muxers, and the resampling filters. It is never configured with `--enable-gpl` or `--enable-nonfree`; the build stage fails if `ffmpeg -buildconf` shows either.
 - Anthology runs FFmpeg as a separate process with argument lists (never `shell=True`).
 - Further codecs or filters (e.g. for video) are added to the same configuration in the change that needs them, under the same rules.
 

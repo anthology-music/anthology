@@ -20,6 +20,7 @@ services:
       ANTHOLOGY_MUSICBRAINZ_CONTACT: ""                          # your e-mail or URL for the MusicBrainz User-Agent
       ANTHOLOGY_ACOUSTID_API_KEY: ""                             # optional, enables fingerprint lookups
       ANTHOLOGY_MUSICBRAINZ_URL: ""                              # optional local mirror (docs/architecture/musicbrainz-mirror.md)
+      ANTHOLOGY_IMPORT_ROOTS: /data/imports                      # folders admins may import from, comma-separated (docs/install.md)
     secrets:
       - db_password
     volumes:

@@ -156,3 +156,38 @@ test('browsing the library from an artist to an album, with reload and scroll re
   await page.goBack();
   await expect(page.locator('[role="listitem"][aria-posinset="1001"] a')).toBeVisible();
 });
+
+test('importing a server folder and browsing the new album', async ({ page }) => {
+  await signIn(page);
+  await page.getByRole('link', { name: 'Streaming' }).click();
+
+  await page.getByTestId('import-folder').click();
+  const dialog = page.getByTestId('import-dialog');
+  await dialog.getByRole('button', { name: 'imports öffnen' }).click();
+  await dialog.getByRole('button', { name: 'Kassette 1985 öffnen' }).click();
+  // The proposed mode is preselected (the test folders share one file system: a link).
+  await expect(dialog.locator('input[name="import-mode"]:checked')).toHaveCount(1);
+  await dialog.getByTestId('import-scan').click();
+
+  // Nothing changes before the report is confirmed.
+  const confirm = page.getByTestId('import-confirm');
+  await expect(confirm).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByTestId('import-category-new')).toContainText('2 Dateien');
+  await confirm.click();
+  await expect(page.getByTestId('import-status').first()).toContainText('Fertig', {
+    timeout: 30_000,
+  });
+  await expect(page.getByTestId('import-result')).toContainText('Importiert: 2');
+
+  // "4 Jahreszeiten" sorts before the generated (alphabetic) names.
+  await page.getByRole('link', { name: 'Lokal' }).click();
+  await expect(page).toHaveURL(/\/local\/albums$/);
+  const first = page.locator('[role="listitem"][aria-posinset="1"] [data-testid^="release-"]');
+  await expect(first).toContainText('Kassette 1985');
+  await first.click();
+  await expect(page.getByTestId('release-title')).toHaveText('Kassette 1985');
+  const tracks = page.locator('[data-testid^="track-"]');
+  await expect(tracks).toHaveCount(2);
+  await expect(tracks.first()).toContainText('Frühling');
+  await expect(tracks.nth(1)).toContainText('Sommer');
+});

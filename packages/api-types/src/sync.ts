@@ -5,6 +5,11 @@ export const PROTOCOL_VERSION = 1;
 export type ClientMessage = Hello | Auth | Subscribe | SetWindow | Ack | Unsubscribe;
 export type ServerMessage = Welcome | SnapshotMeta | Chunk | Delta | Resync | ErrorMessage;
 export type AudioFormat = 'flac' | 'wav' | 'aiff' | 'alac' | 'mp3' | 'aac' | 'opus' | 'vorbis';
+/**
+ * Storage mode of an import (spec: library-import, Storage modes).
+ */
+export type ImportMode = 'reference' | 'move' | 'reflink' | 'hardlink' | 'copy';
+export type ImportStatus = 'scanning' | 'reported' | 'importing' | 'done' | 'cancelled' | 'failed';
 
 export interface SyncProtocol {
   client?: ClientMessage;
@@ -22,6 +27,8 @@ export interface SyncProtocol {
     'library.tracks'?: LibraryTrackRow;
     'library.superseded'?: LibrarySupersededRow;
     'library.identification'?: LibraryIdentificationRow;
+    'library.storage'?: LibraryStorageRow;
+    'library_import.imports'?: LibraryImportRow;
   };
 }
 export interface Hello {
@@ -206,4 +213,32 @@ export interface LibraryIdentificationRow {
   no_match: number;
   duplicate: number;
   not_possible: number;
+}
+/**
+ * Active referenced originals, candidates for adoption (spec: library).
+ */
+export interface LibraryStorageRow {
+  id: string;
+  key: unknown[];
+  referenced_files: number;
+  referenced_bytes: number;
+}
+/**
+ * An import with its stored report (spec: library-import, Report confirmation).
+ */
+export interface LibraryImportRow {
+  id: string;
+  key: unknown[];
+  source_path: string;
+  mode: ImportMode;
+  managed: boolean;
+  allow_tag_writes: boolean;
+  status: ImportStatus;
+  report: {
+    [k: string]: unknown;
+  } | null;
+  job_id: string | null;
+  error: string | null;
+  created_at: string;
+  finished_at: string | null;
 }
