@@ -34,6 +34,7 @@ jobs:
   client:
     # GitHub-hosted standard runner only (see AGENTS.md, CI)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
 
@@ -59,6 +60,7 @@ jobs:
   api-types:
     # The committed generated types must match the server.
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
 
@@ -88,6 +90,7 @@ jobs:
   e2e:
     # End-to-end tests: real server (uv) on PostgreSQL 18, client dev server, Chromium.
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     services:
       postgres:
         image: docker.io/library/postgres:18
@@ -123,8 +126,10 @@ jobs:
           uv sync --project server --frozen
           pnpm --filter client exec playwright install --with-deps chromium
 
-      - name: Install FFmpeg (the folder import reads and hashes the generated audio)
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+      # The own LGPL build of the server image (ADR 0020), compiled once and then cached.
+      - name: FFmpeg (the folder import reads and hashes the generated audio)
+        timeout-minutes: 40
+        uses: ./.github/actions/ffmpeg
 
       - name: End-to-end tests
         env:

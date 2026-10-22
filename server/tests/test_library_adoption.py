@@ -112,7 +112,9 @@ async def test_checksum_mismatch_keeps_the_file_referenced(
     settings: Settings, tmp_path: Path, monkeypatch
 ) -> None:
     def corrupting_copy(src: Path, dst: Path) -> None:
-        dst.write_bytes(src.read_bytes()[:-1] + b"\x00")
+        # Flip the last byte: replacing it could leave the bytes unchanged.
+        data = src.read_bytes()
+        dst.write_bytes(data[:-1] + bytes([data[-1] ^ 0xFF]))
 
     source = referenced_file(tmp_path / "collection" / "Eisfeld.flac")
     content = source.read_bytes()
