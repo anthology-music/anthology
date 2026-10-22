@@ -30,6 +30,7 @@ jobs:
   test:
     # GitHub-hosted standard runner only (see AGENTS.md, CI)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     services:
       postgres:
@@ -73,6 +74,7 @@ jobs:
           uv run pytest
 
       - name: Install FFmpeg (fingerprint tests and test media for the tagger contract tests)
+        timeout-minutes: 10
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
 
       - name: Tests (SQLite)

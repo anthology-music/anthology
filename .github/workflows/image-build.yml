@@ -25,6 +25,7 @@ on:
 jobs:
   build:
     runs-on: ${{ inputs.runner }}
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
 

@@ -26,11 +26,13 @@ jobs:
   test:
     # GitHub-hosted standard runner only (see AGENTS.md, CI)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - uses: actions/checkout@v7
 
       - name: Install FFmpeg (generates test media)
+        timeout-minutes: 10
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
 
       - uses: astral-sh/setup-uv@v7
