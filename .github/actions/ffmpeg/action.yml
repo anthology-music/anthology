@@ -1,0 +1,30 @@
+name: FFmpeg (own LGPL build)
+description: >-
+  Builds the ffmpeg stage of server/Containerfile (ADR 0020) or restores it from the GitHub
+  Actions cache, and puts ffmpeg and ffprobe on the PATH. Tests then use the same FFmpeg as
+  the server image instead of a distribution package from a package mirror.
+runs:
+  using: composite
+  steps:
+    - uses: docker/setup-buildx-action@v4
+
+    - name: Build or restore the ffmpeg stage
+      uses: docker/build-push-action@v7
+      with:
+        context: .
+        file: server/Containerfile
+        target: ffmpeg-bin
+        platforms: linux/amd64
+        # The image builds cache the same stage (scope server-amd64).
+        cache-from: |
+          type=gha,scope=ffmpeg
+          type=gha,scope=server-amd64
+        cache-to: type=gha,mode=max,scope=ffmpeg
+        outputs: type=local,dest=${{ runner.temp }}/ffmpeg
+
+    - name: Put ffmpeg on the PATH
+      shell: bash
+      run: |
+        echo "${{ runner.temp }}/ffmpeg" >> "$GITHUB_PATH"
+        "${{ runner.temp }}/ffmpeg/ffmpeg" -hide_banner -version | head -1
+        "${{ runner.temp }}/ffmpeg/ffmpeg" -hide_banner -muxers | grep -E " (chromaprint|hash|f32le) "

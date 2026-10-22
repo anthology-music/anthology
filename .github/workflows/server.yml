@@ -73,9 +73,10 @@ jobs:
           uv run ruff format --check .
           uv run pytest
 
-      - name: Install FFmpeg (fingerprint tests and test media for the tagger contract tests)
-        timeout-minutes: 10
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+      # The own LGPL build of the server image (ADR 0020), compiled once and then cached.
+      - name: FFmpeg (fingerprints, audio hashes, quality analysis, test media)
+        timeout-minutes: 25
+        uses: ./.github/actions/ffmpeg
 
       - name: Tests (SQLite)
         env:

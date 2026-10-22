@@ -7,7 +7,6 @@ from services/tagger. Test media is generated with FFmpeg.
 
 import os
 import shutil
-import subprocess
 import uuid
 from pathlib import Path
 
@@ -16,6 +15,7 @@ import pytest
 from anthology.core.services import ServiceState
 from anthology.tagging.schemas import CopyFile, TagFields, WriteFile
 from anthology.tagging.tagger_client import TaggerClient, check_tagger
+from tests.media_helpers import encode, tone_wav
 
 TAGGER_URL = os.environ.get("ANTHOLOGY_TEST_TAGGER_URL", "")
 TAGGER_ROOT = os.environ.get("ANTHOLOGY_TEST_TAGGER_ROOT", "")
@@ -40,15 +40,8 @@ def workdir() -> Path:
 def flac(workdir: Path) -> Path:
     if shutil.which("ffmpeg") is None:
         pytest.fail("ffmpeg is required for the contract tests")
-    target = workdir / "tone.flac"
-    subprocess.run(  # noqa: S603
-        [  # noqa: S607
-            "ffmpeg", "-nostdin", "-loglevel", "error", "-f", "lavfi",
-            "-i", "sine=frequency=440:duration=0.3", "-c:a", "flac", str(target),
-        ],
-        check=True,
-    )  # fmt: skip
-    return target
+    # Generated in Python and encoded by the server's own FFmpeg build (it has no lavfi).
+    return encode(tone_wav(workdir / "tone.wav", [440], seconds=0.3), workdir / "tone.flac")
 
 
 @pytest.fixture

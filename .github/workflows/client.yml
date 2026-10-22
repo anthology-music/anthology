@@ -126,9 +126,10 @@ jobs:
           uv sync --project server --frozen
           pnpm --filter client exec playwright install --with-deps chromium
 
-      - name: Install FFmpeg (the folder import reads and hashes the generated audio)
-        timeout-minutes: 10
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+      # The own LGPL build of the server image (ADR 0020), compiled once and then cached.
+      - name: FFmpeg (the folder import reads and hashes the generated audio)
+        timeout-minutes: 25
+        uses: ./.github/actions/ffmpeg
 
       - name: End-to-end tests
         env:
