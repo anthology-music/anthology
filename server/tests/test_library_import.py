@@ -457,7 +457,9 @@ async def test_a_failed_transfer_is_reported_and_leaves_the_file(
     from anthology.library import storage
 
     def corrupting_copy(src: Path, dst: Path) -> None:
-        dst.write_bytes(src.read_bytes()[:-1] + b"\x00")
+        # Flip the last byte: replacing it could leave the bytes unchanged.
+        data = src.read_bytes()
+        dst.write_bytes(data[:-1] + bytes([data[-1] ^ 0xFF]))
 
     source = root / "Polarnacht"
     original = flac(raw, source / "Eisfeld.flac", "Eisfeld", artist="Nordlicht")
