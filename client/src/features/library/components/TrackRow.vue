@@ -11,6 +11,7 @@
         {{ track.artist }} · {{ track.album }}
       </span>
     </span>
+    <QualityBadge :effective="track.effective_quality" :status="track.quality_status" />
     <span class="mono text-muted library-row__format">{{ formatLabel(track) }}</span>
     <span class="mono text-muted library-row__duration">{{
       formatDuration(track.duration_ms)
@@ -30,6 +31,7 @@
         {{ track.artist }}
       </span>
     </span>
+    <QualityBadge :effective="track.effective_quality" :status="track.quality_status" />
     <span class="mono text-muted library-row__format">{{ formatLabel(track) }}</span>
     <span class="mono text-muted library-row__duration">{{
       formatDuration(track.duration_ms)
@@ -41,6 +43,7 @@
 import type { LibraryTrackRow } from '@anthology/api-types';
 
 import { formatDuration, formatLabel, trackNumber } from '../format';
+import QualityBadge from './QualityBadge.vue';
 
 /** `library`: a row of all tracks (links to its album); `release`: a row on the album page. */
 withDefaults(

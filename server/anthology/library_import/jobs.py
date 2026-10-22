@@ -35,6 +35,7 @@ from anthology.library_import.models import (
     LibraryImport,
 )
 from anthology.library_import.paths import walk
+from anthology.quality_analysis import service as quality_analysis
 
 logger = logging.getLogger(__name__)
 
@@ -268,6 +269,8 @@ class Importer:
                 created = await service.import_finished(session, import_id, ctx.job_id)
             if created:
                 await self._identify(library_import.created_by)
+                async with self.sessionmaker() as session, session.begin():
+                    await quality_analysis.start_after_import(session, library_import.created_by)
         return ItemResult(message=json.dumps(counts, sort_keys=True), result=counts)
 
     async def _identify(self, created_by: uuid.UUID) -> None:

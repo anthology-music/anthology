@@ -8,6 +8,7 @@ from anthology.jobs import models as jobs
 from anthology.library import models as library
 from anthology.library_import import models as library_import
 from anthology.metadata_lookup import models as metadata_lookup
+from anthology.quality_analysis import models as quality_analysis
 from anthology.users import models as users
 
 __all__ = [
@@ -16,6 +17,7 @@ __all__ = [
     "library",
     "library_import",
     "metadata_lookup",
+    "quality_analysis",
     "services",
     "users",
 ]

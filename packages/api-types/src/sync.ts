@@ -5,6 +5,11 @@ export const PROTOCOL_VERSION = 1;
 export type ClientMessage = Hello | Auth | Subscribe | SetWindow | Ack | Unsubscribe;
 export type ServerMessage = Welcome | SnapshotMeta | Chunk | Delta | Resync | ErrorMessage;
 export type AudioFormat = 'flac' | 'wav' | 'aiff' | 'alac' | 'mp3' | 'aac' | 'opus' | 'vorbis';
+export type QualityTier = 'hires_lossless' | 'cd_lossless' | 'lossy_high' | 'lossy_low';
+/**
+ * Outcome of the quality analysis (spec: quality-analysis, Confidence instead of verdict).
+ */
+export type QualityStatus = 'genuine' | 'suspicious' | 'upscaled' | 'confirmed_genuine';
 /**
  * Storage mode of an import (spec: library-import, Storage modes).
  */
@@ -29,6 +34,7 @@ export interface SyncProtocol {
     'library.identification'?: LibraryIdentificationRow;
     'library.storage'?: LibraryStorageRow;
     'library_import.imports'?: LibraryImportRow;
+    'quality_analysis.summary'?: QualitySummaryRow;
   };
 }
 export interface Hello {
@@ -184,6 +190,8 @@ export interface LibraryTrackRow {
   sample_rate_hz: number | null;
   bit_depth: number | null;
   bitrate_kbps: number | null;
+  effective_quality: QualityTier | null;
+  quality_status: QualityStatus | null;
 }
 /**
  * A superseded referenced original (spec: library, Superseded referenced originals).
@@ -241,4 +249,16 @@ export interface LibraryImportRow {
   error: string | null;
   created_at: string;
   finished_at: string | null;
+}
+/**
+ * Active originals per quality status (spec: quality-analysis, Quality overview).
+ */
+export interface QualitySummaryRow {
+  id: string;
+  key: unknown[];
+  unanalysed: number;
+  genuine: number;
+  suspicious: number;
+  upscaled: number;
+  confirmed_genuine: number;
 }

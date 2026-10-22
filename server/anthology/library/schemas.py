@@ -1,6 +1,6 @@
 """Row schemas of the library streams (spec: library, Track rows by context)."""
 
-from anthology.library.models import AudioFormat
+from anthology.library.models import AudioFormat, QualityStatus, QualityTier
 from anthology.sync.messages import StreamRow
 
 
@@ -34,6 +34,9 @@ class LibraryTrackRow(StreamRow):
     sample_rate_hz: int | None
     bit_depth: int | None
     bitrate_kbps: int | None
+    # Known only after a conclusive quality analysis (spec: library, Quality badge).
+    effective_quality: QualityTier | None
+    quality_status: QualityStatus | None
 
 
 class LibrarySupersededRow(StreamRow):

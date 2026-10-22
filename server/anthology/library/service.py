@@ -28,6 +28,7 @@ from anthology.db.types import utcnow
 from anthology.library.models import (
     IDENTIFICATION_COUNTERS,
     LIBRARY_COUNTERS,
+    QUALITY_COUNTERS,
     Artist,
     AudioFile,
     AudioFormat,
@@ -35,6 +36,7 @@ from anthology.library.models import (
     IdentificationStatus,
     LibraryCounter,
     OriginalStatus,
+    QualityStatus,
     QualityTier,
     Recording,
     Release,
@@ -51,6 +53,9 @@ RELEASE_MOVED = "release.moved"
 TRACK_MOVED = "track.moved"
 # Change entries of the report of superseded files (one per file entering or leaving it).
 SUPERSEDED_FILE = "superseded_file"
+# Change entries of the quality summary (stream quality_analysis.summary).
+QUALITY = "quality_summary"
+QUALITY_SUMMARY_ID = uuid.UUID("4c1e9b72-0d3a-4f86-b5e2-7a9c3d1f6e08")
 # Change entries of the storage summary (stream library.storage: referenced originals).
 STORAGE = "library_storage"
 STORAGE_SUMMARY_ID = uuid.UUID("8f3c2a91-5d4e-4b7a-9c61-0e2f7d8a4b13")
@@ -327,8 +332,15 @@ async def add_recording(
     session.add(audio_file)
     await session.flush()
     await _referenced(session, audio_file, +1)
+    await _quality_counted(session, audio_file, +1)
     await _changed(session, "audio_file", audio_file.id, ChangeOperation.INSERT)
     return track
+
+
+async def _quality_counted(session: AsyncSession, audio_file: AudioFile, sign: int) -> None:
+    """Keep the active originals per quality status (spec: quality-analysis, Quality overview)."""
+    await adjust_counter(session, QUALITY_COUNTERS[audio_file.quality_status], sign)
+    await _changed(session, QUALITY, QUALITY_SUMMARY_ID)
 
 
 async def _referenced(session: AsyncSession, audio_file: AudioFile, sign: int) -> None:
@@ -749,11 +761,13 @@ async def replace_original(
         await session.flush()
     session.add(replacement)
     await session.flush()
+    await _quality_counted(session, replacement, +1)
     await _changed(session, "audio_file", replacement.id, ChangeOperation.INSERT)
     if current is not None:
         current.superseded_by_id = replacement.id
         await session.flush()
         await _referenced(session, current, -1)
+        await _quality_counted(session, current, -1)
         await adjust_counter(session, Counter.SUPERSEDED_FILES, +1)
         await adjust_counter(session, Counter.SUPERSEDED_BYTES, current.size_bytes)
         await _changed(session, "audio_file", current.id)
@@ -935,3 +949,85 @@ async def get_recording(session: AsyncSession, recording_id: uuid.UUID) -> Recor
 
 async def get_audio_file(session: AsyncSession, audio_file_id: uuid.UUID) -> AudioFile | None:
     return await session.get(AudioFile, audio_file_id)
+
+
+# --- quality analysis --------------------------------------------------------------------------
+
+
+async def apply_quality(
+    session: AsyncSession,
+    audio_hash: str,
+    status: QualityStatus,
+    effective_quality: QualityTier | None,
+) -> int:
+    """Store the analysis result on every file with this audio data (spec: quality-analysis,
+    Stored result); returns the number of files changed. ``effective_quality`` is None unless
+    the result has high confidence. Track rows of the files' recordings receive deltas."""
+    files = list(
+        await session.scalars(
+            select(AudioFile).where(AudioFile.audio_hash == audio_hash).with_for_update()
+        )
+    )
+    changed: list[AudioFile] = []
+    for audio_file in files:
+        if (audio_file.quality_status, audio_file.effective_quality) == (status, effective_quality):
+            continue
+        if audio_file.original_status == OriginalStatus.ACTIVE:
+            await _quality_counted(session, audio_file, -1)
+        audio_file.quality_status = status
+        audio_file.effective_quality = effective_quality
+        if audio_file.original_status == OriginalStatus.ACTIVE:
+            await _quality_counted(session, audio_file, +1)
+        changed.append(audio_file)
+    if not changed:
+        return 0
+    await session.flush()
+    for audio_file in changed:
+        await _changed(session, "audio_file", audio_file.id)
+    recordings = {audio_file.recording_id for audio_file in changed}
+    tracks = await session.scalars(select(Track.id).where(Track.recording_id.in_(recordings)))
+    await _rows_changed(session, "track", list(tracks))
+    return len(changed)
+
+
+async def release_year(session: AsyncSession, audio_file: AudioFile) -> int | None:
+    """Year of the release of the file's home track context (old recordings are judged more
+    tolerantly)."""
+    if audio_file.home_track_id is None:
+        return None
+    released = await session.scalar(
+        select(Release.release_date)
+        .join(Track, Track.release_id == Release.id)
+        .where(Track.id == audio_file.home_track_id)
+    )
+    return released.year if released else None
+
+
+async def audio_hashes(
+    session: AsyncSession,
+    *,
+    without,
+    limit: int,
+    after: str | None = None,
+    first: str | None = None,
+    last: str | None = None,
+) -> list[str]:
+    """Audio hashes of active originals in order (after ``after``, or from ``first`` to
+    ``last``), except those selected by ``without`` (a select of hashes, e.g. the analysed)."""
+    query = (
+        select(AudioFile.audio_hash)
+        .where(
+            AudioFile.original_status == OriginalStatus.ACTIVE,
+            AudioFile.audio_hash.not_in(without),
+        )
+        .distinct()
+        .order_by(AudioFile.audio_hash)
+        .limit(limit)
+    )
+    if after is not None:
+        query = query.where(AudioFile.audio_hash > after)
+    if first is not None:
+        query = query.where(AudioFile.audio_hash >= first)
+    if last is not None:
+        query = query.where(AudioFile.audio_hash <= last)
+    return list(await session.scalars(query))

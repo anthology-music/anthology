@@ -382,6 +382,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/quality-analysis": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Analysis
+         * @description Analyse the effective quality of all files without a result (spec: Analysis job).
+         */
+        post: operations["start_analysis_api_v1_quality_analysis_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ready": {
         parameters: {
             query?: never;
@@ -490,6 +510,19 @@ export interface components {
         };
         /** AdoptionStarted */
         AdoptionStarted: {
+            /** Job Id */
+            job_id: string | null;
+        };
+        /** AnalysisStart */
+        AnalysisStart: {
+            /**
+             * Full
+             * @default false
+             */
+            full: boolean;
+        };
+        /** AnalysisStarted */
+        AnalysisStarted: {
             /** Job Id */
             job_id: string | null;
         };
@@ -1591,6 +1624,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LookupStatusOut"];
+                };
+            };
+        };
+    };
+    start_analysis_api_v1_quality_analysis_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnalysisStart"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisStarted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

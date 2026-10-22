@@ -14,6 +14,7 @@ from anthology.library.schemas import (
     LibraryTrackRow,
 )
 from anthology.library_import.schemas import LibraryImportRow
+from anthology.quality_analysis.schemas import QualitySummaryRow
 
 ROW_SCHEMAS: dict[str, type[BaseModel]] = {
     "library.artists": LibraryArtistRow,
@@ -27,4 +28,5 @@ ROW_SCHEMAS: dict[str, type[BaseModel]] = {
     "library.identification": LibraryIdentificationRow,
     "library.storage": LibraryStorageRow,
     "library_import.imports": LibraryImportRow,
+    "quality_analysis.summary": QualitySummaryRow,
 }

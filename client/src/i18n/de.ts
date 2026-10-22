@@ -244,8 +244,38 @@ export default {
       failed: 'Das hat nicht geklappt. Bitte versuche es noch einmal.',
     },
   },
+  quality: {
+    title: 'Qualitätsanalyse',
+    hint: 'Ermittelt die tatsächliche Qualität der Dateien, z. B. MP3 als FLAC gespeichert oder hochgerechnetes Hi-Res. Nur eindeutige Ergebnisse werden übernommen.',
+    statuses: {
+      genuine: 'Echt',
+      upscaled: 'Hochgerechnet',
+      suspicious: 'Verdächtig',
+      confirmed_genuine: 'Als echt bestätigt',
+      unanalysed: 'Noch nicht analysiert',
+    },
+    full: 'Ältere Ergebnisse erneut analysieren',
+    start: 'Analyse starten',
+    messages: {
+      started: 'Die Analyse läuft als Auftrag (siehe Streaming).',
+      running: 'Eine Analyse läuft bereits.',
+      nothing: 'Es ist nichts zu analysieren.',
+      failed: 'Das hat nicht geklappt. Bitte versuche es noch einmal.',
+    },
+  },
   library: {
     title: 'Bibliothek',
+    quality: {
+      tiers: {
+        hires_lossless: 'Hi-Res',
+        cd_lossless: 'CD',
+        lossy_high: 'Verlustbehaftet',
+        lossy_low: 'Verlustbehaftet',
+      },
+      upscaledHint: 'Die Datei gibt eine bessere Qualität vor, als sie hat.',
+      check: 'Prüfen',
+      checkHint: 'Die Qualitätsanalyse war nicht eindeutig.',
+    },
     path: 'Pfad',
     sections: { releases: 'Alben', artists: 'Künstler', tracks: 'Titel' },
     artist: 'Künstler',
