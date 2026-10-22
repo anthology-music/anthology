@@ -62,6 +62,7 @@ package "Library" {
     +channels : Integer
     +sizeBytes : Long
     +audioHash : String
+    +contentHash : String [0..1]
     +storageMode : StorageMode
     +originalStatus : OriginalStatus
     +tagWritesAllowed : Boolean
@@ -373,20 +374,37 @@ package "Sources & Jobs" {
     +id : UUID
     +sourceType : ImportSourceType
     +sourcePath : String
+    +root : String
     +mode : ImportMode
+    +sameMount : Boolean
     +allowTagWrites : Boolean
-    +throttle : ThrottleLevel
-    +dryRun : Boolean
+    +status : ImportStatus
     +reportJson : String [0..1]
+    +error : String [0..1]
+    +createdAt : DateTime
+    +finishedAt : DateTime [0..1]
   }
 
   class ImportItem {
     +id : UUID
     +path : String
     +sizeBytes : Long
-    +modifiedAt : DateTime
+    +mtimeNs : Long
     +audioHash : String [0..1]
-    +result : ImportResult
+    +tagsJson : String [0..1]
+    +artistKey : String [0..1]
+    +titleKey : String [0..1]
+    +groupKey : String [0..1]
+    +durationMs : Integer [0..1]
+    +isrc : String [0..1]
+    +mbRecordingId : UUID [0..1]
+    +fingerprint : String [0..1]
+    +result : ImportResult [0..1]
+    +note : String [0..1]
+    +recordingId : UUID [0..1]
+    +contentHash : String [0..1]
+    +appliedAt : DateTime [0..1]
+    +failed : Boolean
   }
 
   enum SourceKind {
@@ -442,8 +460,18 @@ package "Sources & Jobs" {
   enum ImportMode {
     REFERENCE
     MOVE
-    LINK
+    REFLINK
+    HARDLINK
     COPY
+  }
+
+  enum ImportStatus {
+    SCANNING
+    REPORTED
+    IMPORTING
+    DONE
+    CANCELLED
+    FAILED
   }
 
   enum ThrottleLevel {
@@ -1019,7 +1047,11 @@ JobItem "0..*" -- "0..1" Recording : produced >
 Job "1" -- "0..1" CdImportSession
 Job "1" -- "0..1" LibraryImport
 LibraryImport "1" *-- "0..*" ImportItem
-ImportItem "0..*" -- "0..1" AudioFile : matched / created >
+LibraryImport "0..*" -- "1" User : created by >
+ImportItem "0..*" -- "0..1" AudioFile : created >
+ImportItem "0..*" -- "0..1" Recording : matched >
+ImportItem "0..*" -- "0..1" ImportItem : duplicate of >
+ImportItem "0..*" -- "0..1" Release : grouped into >
 CdImportSession "0..*" -- "1" Device : ripped on >
 
 ' Relationships – Users & Devices

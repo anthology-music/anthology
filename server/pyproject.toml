@@ -14,6 +14,7 @@ dependencies = [
     "pydantic-settings>=2.15.0",
     "pyjwt>=2.15.1",
     "sqlalchemy[asyncio]>=2.1.4",
+    "tinytag>=2.3.2",
     "uvicorn[standard]>=0.54.0",
 ]
 

@@ -15,6 +15,7 @@ from sqlalchemy.orm import aliased
 from anthology.library import service
 from anthology.library.models import (
     IDENTIFICATION_COUNTERS,
+    REFERENCED_COUNTERS,
     SUPERSEDED_COUNTERS,
     Artist,
     AudioFile,
@@ -27,6 +28,7 @@ from anthology.library.schemas import (
     LibraryArtistRow,
     LibraryIdentificationRow,
     LibraryReleaseRow,
+    LibraryStorageRow,
     LibrarySupersededRow,
     LibraryTrackRow,
 )
@@ -497,6 +499,54 @@ async def _identification_row(db: AsyncSession) -> Row:
     return Row(id=model.id, key=(summary_id,), data=_data(model))
 
 
+# --- storage summary ------------------------------------------------------------------------
+
+
+class StorageStream:
+    """One row with the number and size of active referenced originals (admins)."""
+
+    name = "library.storage"
+    entity_types = frozenset({service.STORAGE})
+
+    def allowed(self, session: SessionInfo) -> bool:
+        return session.role == Role.ADMIN
+
+    def validate(self, params: dict[str, Any]) -> dict[str, Any]:
+        return _no_params(params)
+
+    async def meta(self, db: AsyncSession, ctx: StreamContext) -> Meta:
+        return Meta(total=1, counters=await service.counters(db, REFERENCED_COUNTERS))
+
+    def key_query(self, ctx: StreamContext) -> KeyQuery:
+        # A single row without a table of its own, like the identification summary.
+        return KeyQuery(
+            query=select(Recording).where(Recording.id == service.STORAGE_SUMMARY_ID),
+            columns=(Recording.id,),
+        )
+
+    async def rows(
+        self, db: AsyncSession, ctx: StreamContext, after: SortKey | None, limit: int
+    ) -> list[Row]:
+        if after is not None or limit < 1:
+            return []
+        return [await _storage_row(db)]
+
+    async def changes(
+        self, db: AsyncSession, ctx: StreamContext, event: ChangeEvent
+    ) -> list[RowChange]:
+        return _upsert(await _storage_row(db))
+
+
+async def _storage_row(db: AsyncSession) -> Row:
+    summary_id = service.STORAGE_SUMMARY_ID
+    model = LibraryStorageRow(
+        id=str(summary_id),
+        key=[str(summary_id)],
+        **await service.counters(db, REFERENCED_COUNTERS),
+    )
+    return Row(id=model.id, key=(summary_id,), data=_data(model))
+
+
 # --- superseded files ---------------------------------------------------------------------
 
 SUPERSEDED_KEY = (AudioFile.path, AudioFile.id)
@@ -584,4 +634,5 @@ STREAMS = (
     TracksStream,
     SupersededFilesStream,
     IdentificationStream,
+    StorageStream,
 )

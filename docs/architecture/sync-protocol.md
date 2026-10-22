@@ -61,7 +61,7 @@ The stream `services` (all signed-in users, no parameters) lists the services th
 
 ## Library lists
 
-Seven streams for all signed-in users serve the library, plus a report for admins and the identification summary (`openspec/specs/library/spec.md`). The two entry streams deliver the one row of an artist or release (for page headers and deep links); the lists are one index range scan each; the sort keys are normalized (no case, no diacritics) and stored on the listed rows, and they compare bytewise on both engines (collation `"C"` on PostgreSQL). Row types are published with the message schema (`LibraryArtistRow`, `LibraryReleaseRow`, `LibraryTrackRow` in `packages/api-types`).
+Seven streams for all signed-in users serve the library, plus a report and a storage summary for admins and the identification summary (`openspec/specs/library/spec.md`). The two entry streams deliver the one row of an artist or release (for page headers and deep links); the lists are one index range scan each; the sort keys are normalized (no case, no diacritics) and stored on the listed rows, and they compare bytewise on both engines (collation `"C"` on PostgreSQL). Row types are published with the message schema (`LibraryArtistRow`, `LibraryReleaseRow`, `LibraryTrackRow` in `packages/api-types`).
 
 | Stream | Params | Sort key | Total | Counters |
 |---|---|---|---|---|
@@ -74,8 +74,13 @@ Seven streams for all signed-in users serve the library, plus a report for admin
 | `library.tracks` | – | artist sort name, title, album title, id | tracks | all four |
 | `library.superseded` (admins) | – | path, id | superseded files | `superseded_files`, `superseded_bytes` |
 | `library.identification` (editors, admins) | – | one summary row | 1 | recordings per identification outcome |
+| `library.storage` (admins) | – | one summary row | 1 | `referenced_files`, `referenced_bytes` (active referenced originals) |
 
 The four library counters are `artists`, `releases`, `tracks` and `recordings`; all are maintained in the writing transaction. Track rows show the recording's active original; superseded referenced files (kept unchanged after a better file replaced them) appear only in `library.superseded`. A change that alters what other rows show or sort by (e.g. an artist rename) writes one change entry per affected row, so each of them receives a delta. The filtered lists ignore changes of rows outside their filter; when a row leaves a filtered list, the library writes an extra entry of type `release.moved` or `track.moved`, which the list of the former parent answers with `remove`.
+
+## Library imports
+
+The stream `library_import.imports` (admins, no parameters) lists the folder imports newest first (`created_at`, `id`; total = number of imports) with status (`scanning`, `reported`, `importing`, `done`, `cancelled`, `failed`), mode, whether the originals will be managed, and the stored report: files and bytes per category, the storage the import adds and, after the import, the imported and failed files (`openspec/specs/library-import/spec.md`). Every status or report change writes one change entry, so the row is updated by a delta; job progress comes from the `jobs` streams.
 
 ## Change sequence and visibility
 

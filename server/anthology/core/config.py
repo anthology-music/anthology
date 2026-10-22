@@ -52,6 +52,12 @@ class Settings(BaseSettings):
     # FFmpeg with Chromaprint (ADR 0020); the server image contains it on the PATH.
     ffmpeg_path: str = "ffmpeg"
     ffprobe_path: str = "ffprobe"
+    # Library storage; managed originals live in <library_dir>/_originals.
+    # Default <data_dir>/library.
+    library_dir: Path | None = None
+    # Folders admins may import from (spec: library-import, Import roots), comma-separated.
+    # Default <data_dir>/imports.
+    import_roots: str = ""
     omr_url: str = ""
     source_services: str = ""
 
@@ -69,6 +75,15 @@ class Settings(BaseSettings):
     def source_service_urls(self) -> list[str]:
         """Configured source service base URLs (ADR 0017)."""
         return [url.strip() for url in self.source_services.split(",") if url.strip()]
+
+    @property
+    def library_path(self) -> Path:
+        return self.library_dir or self.data_dir / "library"
+
+    @property
+    def import_root_paths(self) -> list[Path]:
+        roots = [Path(root.strip()) for root in self.import_roots.split(",") if root.strip()]
+        return roots or [self.data_dir / "imports"]
 
     @property
     def keys_dir(self) -> Path:

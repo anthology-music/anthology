@@ -123,6 +123,9 @@ jobs:
           uv sync --project server --frozen
           pnpm --filter client exec playwright install --with-deps chromium
 
+      - name: Install FFmpeg (the folder import reads and hashes the generated audio)
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+
       - name: End-to-end tests
         env:
           ANTHOLOGY_E2E_DATABASE_URL: postgresql+asyncpg://anthology:anthology@localhost:5432/anthology-e2e

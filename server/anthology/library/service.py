@@ -51,6 +51,9 @@ RELEASE_MOVED = "release.moved"
 TRACK_MOVED = "track.moved"
 # Change entries of the report of superseded files (one per file entering or leaving it).
 SUPERSEDED_FILE = "superseded_file"
+# Change entries of the storage summary (stream library.storage: referenced originals).
+STORAGE = "library_storage"
+STORAGE_SUMMARY_ID = uuid.UUID("8f3c2a91-5d4e-4b7a-9c61-0e2f7d8a4b13")
 
 
 def sort_key(text: str) -> str:
@@ -77,6 +80,8 @@ class AudioFileInfo:
     storage_mode: StorageMode = StorageMode.MANAGED
     # Opt-in of the import for referenced files (spec: library, Managed and referenced originals).
     tag_writes_allowed: bool = False
+    # SHA-256 of the whole file, when known (verified transfers).
+    content_hash: str | None = None
 
 
 def _audio_file(
@@ -94,6 +99,7 @@ def _audio_file(
         channels=audio.channels,
         size_bytes=audio.size_bytes,
         audio_hash=audio.audio_hash,
+        content_hash=audio.content_hash,
         declared_quality=audio.declared_quality,
         storage_mode=audio.storage_mode,
         original_status=OriginalStatus.ACTIVE,
@@ -282,11 +288,15 @@ async def add_recording(
     isrc: str | None = None,
     mb_recording_id: uuid.UUID | None = None,
     acoust_id: uuid.UUID | None = None,
+    recording_id: uuid.UUID | None = None,
     user_id: uuid.UUID | None = None,
 ) -> Track:
-    """Create a recording with its original and its home track context on ``release``."""
+    """Create a recording with its original and its home track context on ``release``.
+
+    ``recording_id`` is given when the original's managed file name was chosen before.
+    """
     recording = Recording(
-        id=uuid.uuid4(),
+        id=recording_id or uuid.uuid4(),
         title=title,
         artist_id=artist.id,
         artist_display=artist_display or artist.name,
@@ -316,8 +326,18 @@ async def add_recording(
     audio_file = _audio_file(recording.id, audio, track.id)
     session.add(audio_file)
     await session.flush()
+    await _referenced(session, audio_file, +1)
     await _changed(session, "audio_file", audio_file.id, ChangeOperation.INSERT)
     return track
+
+
+async def _referenced(session: AsyncSession, audio_file: AudioFile, sign: int) -> None:
+    """Keep the counters of active referenced originals (spec: library, adoption)."""
+    if audio_file.storage_mode != StorageMode.REFERENCED:
+        return
+    await adjust_counter(session, Counter.REFERENCED_FILES, sign)
+    await adjust_counter(session, Counter.REFERENCED_BYTES, sign * audio_file.size_bytes)
+    await _changed(session, STORAGE, STORAGE_SUMMARY_ID)
 
 
 async def add_track(
@@ -650,6 +670,8 @@ class FileOperation(enum.StrEnum):
     RENAME = "rename"
     DELETE = "delete"
     WRITE_TAGS = "write_tags"
+    # Taking a referenced original into managed storage (job adopt_originals only).
+    ADOPT = "adopt"
 
 
 class FileOperationRefused(Exception):
@@ -665,10 +687,15 @@ def check_file_operation(audio_file: AudioFile, operation: FileOperation) -> Non
     """Refuse what Anthology must not do to a file (spec: library, Managed and referenced
     originals; Superseded referenced originals). Every file operation calls this first.
 
-    Managed originals allow everything. Referenced files are never moved, renamed or deleted
-    and written only with the opt-in; superseded files are never touched at all.
+    Managed originals allow everything but adoption. Referenced files are never moved, renamed
+    or deleted and written only with the opt-in; only adoption takes them into managed storage
+    (after checksum verification). Superseded files are never touched at all.
     """
     if audio_file.original_status == OriginalStatus.SUPERSEDED:
+        raise FileOperationRefused(audio_file, operation)
+    if operation == FileOperation.ADOPT:
+        if audio_file.storage_mode == StorageMode.REFERENCED:
+            return
         raise FileOperationRefused(audio_file, operation)
     if audio_file.storage_mode == StorageMode.MANAGED:
         return
@@ -726,6 +753,7 @@ async def replace_original(
     if current is not None:
         current.superseded_by_id = replacement.id
         await session.flush()
+        await _referenced(session, current, -1)
         await adjust_counter(session, Counter.SUPERSEDED_FILES, +1)
         await adjust_counter(session, Counter.SUPERSEDED_BYTES, current.size_bytes)
         await _changed(session, "audio_file", current.id)
@@ -801,3 +829,109 @@ async def store_fingerprint(
     audio_file.fingerprint = fingerprint
     audio_file.fingerprint_duration_s = duration_s
     await session.flush()
+
+
+async def adopt_original(
+    session: AsyncSession,
+    audio_file: AudioFile,
+    *,
+    path: str,
+    content_hash: str,
+    user_id: uuid.UUID | None = None,
+) -> None:
+    """Make a referenced original managed after its bytes were verified at ``path``."""
+    check_file_operation(audio_file, FileOperation.ADOPT)
+    old_path = audio_file.path
+    await _referenced(session, audio_file, -1)
+    audio_file.path = path
+    audio_file.content_hash = content_hash
+    audio_file.storage_mode = StorageMode.MANAGED
+    audio_file.tag_writes_allowed = False
+    await session.flush()
+    await _changed(session, "audio_file", audio_file.id)
+    await _audit(
+        session,
+        "audio_file",
+        audio_file.id,
+        "adopt",
+        user_id,
+        {"path": [old_path, path], "storage_mode": ["referenced", "managed"]},
+    )
+
+
+# --- lookups for imports and acquisition ------------------------------------------------------
+
+DURATION_TOLERANCE_MS = 2_000
+
+
+async def original_by_audio_hash(session: AsyncSession, audio_hash: str) -> AudioFile | None:
+    """An active original with the same audio data (tags excluded)."""
+    return await session.scalar(
+        select(AudioFile)
+        .where(
+            AudioFile.audio_hash == audio_hash,
+            AudioFile.original_status == OriginalStatus.ACTIVE,
+        )
+        .limit(1)
+    )
+
+
+async def recording_by_identifiers(
+    session: AsyncSession, *, mb_recording_id: uuid.UUID | None, isrc: str | None, duration_ms: int
+) -> Recording | None:
+    """The recording with this MusicBrainz ID, else one with this ISRC within ±2 seconds."""
+    if mb_recording_id is not None:
+        found = await session.scalar(
+            select(Recording).where(Recording.mb_recording_id == mb_recording_id)
+        )
+        if found is not None:
+            return found
+    if isrc:
+        return await session.scalar(
+            select(Recording)
+            .where(
+                Recording.isrc == isrc,
+                func.abs(Recording.duration_ms - duration_ms) <= DURATION_TOLERANCE_MS,
+            )
+            .limit(1)
+        )
+    return None
+
+
+async def recordings_by_name(
+    session: AsyncSession, artist_key: str, title_key: str, duration_ms: int, *, limit: int = 5
+) -> list[uuid.UUID]:
+    """Recordings shown with this artist and title (sort keys) within ±2 seconds."""
+    query = (
+        select(Track.recording_id)
+        .join(Recording, Recording.id == Track.recording_id)
+        .where(
+            Track.sort_artist == artist_key,
+            Track.sort_title == title_key,
+            func.abs(Recording.duration_ms - duration_ms) <= DURATION_TOLERANCE_MS,
+        )
+        .distinct()
+        .limit(limit)
+    )
+    return list(await session.scalars(query))
+
+
+async def has_track(session: AsyncSession, release_id: uuid.UUID, recording_id: uuid.UUID) -> bool:
+    found = await session.scalar(
+        select(Track.id)
+        .where(Track.release_id == release_id, Track.recording_id == recording_id)
+        .limit(1)
+    )
+    return found is not None
+
+
+async def get_release(session: AsyncSession, release_id: uuid.UUID) -> Release | None:
+    return await session.get(Release, release_id)
+
+
+async def get_recording(session: AsyncSession, recording_id: uuid.UUID) -> Recording | None:
+    return await session.get(Recording, recording_id)
+
+
+async def get_audio_file(session: AsyncSession, audio_file_id: uuid.UUID) -> AudioFile | None:
+    return await session.get(AudioFile, audio_file_id)

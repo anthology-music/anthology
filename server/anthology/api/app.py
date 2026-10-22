@@ -18,9 +18,12 @@ from anthology.jobs import api as jobs_api
 from anthology.jobs.handlers import HandlerRegistry
 from anthology.jobs.runner import JobRunner
 from anthology.jobs.streams import JobItemsStream, JobsStream
+from anthology.library import adoption, identification
 from anthology.library import api as library_api
-from anthology.library import identification
 from anthology.library.streams import STREAMS as LIBRARY_STREAMS
+from anthology.library_import import api as library_import_api
+from anthology.library_import import jobs as library_import_jobs
+from anthology.library_import.streams import STREAMS as LIBRARY_IMPORT_STREAMS
 from anthology.metadata_lookup import api as metadata_lookup_api
 from anthology.metadata_lookup.service import LookupService, check_mirror
 from anthology.sync import api as sync_api
@@ -88,6 +91,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             identification.JOB_TYPE, lambda: identification.backlog(sessionmaker)
         )
         app.state.mirror_monitor = mirror_monitor
+        importer = library_import_jobs.Importer(sessionmaker, settings)
+        for handler in library_import_jobs.HANDLERS:
+            app.state.job_handlers.get(handler.type).bind(importer)
+        app.state.job_handlers.get(adoption.JOB_TYPE).bind(adoption.Adopter(sessionmaker, settings))
         if settings.background_tasks:
             await background.start()
             await runner.start()
@@ -115,6 +122,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(jobs_api.router, prefix=API_PREFIX)
     app.include_router(metadata_lookup_api.router, prefix=API_PREFIX)
     app.include_router(library_api.router, prefix=API_PREFIX)
+    app.include_router(library_import_api.router, prefix=API_PREFIX)
     if settings.web_dir is not None:
         mount_web(app, settings.web_dir)  # last: its fallback must not shadow API routes
     return app
@@ -164,6 +172,9 @@ def _lookups(settings: Settings, sessionmaker) -> tuple[LookupService, ServiceMo
 def _job_handlers(settings: Settings) -> HandlerRegistry:
     registry = HandlerRegistry()
     registry.register(identification.IdentifyRecordingsHandler())
+    registry.register(adoption.AdoptOriginalsHandler())
+    for handler in library_import_jobs.HANDLERS:
+        registry.register(handler())
     if settings.dev_demo:
         from anthology.jobs.demo import DemoJobHandler
 
@@ -178,7 +189,7 @@ def _streams(settings: Settings) -> StreamRegistry:
     registry.register(JobsStream())
     registry.register(JobItemsStream())
     registry.register(ServicesStream())
-    for stream in LIBRARY_STREAMS:
+    for stream in (*LIBRARY_STREAMS, *LIBRARY_IMPORT_STREAMS):
         registry.register(stream())
     if settings.dev_demo:
         from anthology.sync.demo import DemoItemsStream

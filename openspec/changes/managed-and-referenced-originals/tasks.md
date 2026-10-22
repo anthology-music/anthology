@@ -20,12 +20,12 @@
 
 ## 4. Import storage modes
 
-- [ ] 4.1 (waits for `library-import`) Map import modes to storage modes (move/copy/reflink → managed, reference/hardlink → referenced) and detect reflink support; verify with tests on a temporary file system for both cases
-- [ ] 4.2 (waits for `library-import`) Show in the dry-run report whether the chosen mode yields managed or referenced originals; verify with a report test
+- [x] 4.1 (waits for `library-import`) Map import modes to storage modes (move/copy/reflink → managed, reference/hardlink → referenced) and detect reflink support; verify with tests on a temporary file system for both cases
+- [x] 4.2 (waits for `library-import`) Show in the dry-run report whether the chosen mode yields managed or referenced originals; verify with a report test
 
 ## 5. Adoption
 
-- [ ] 5.1 (waits for `library-import`) Implement the adoption job (move, copy, reflink; no hardlink) with confirmation, checksum verification before source removal and per-item failure reporting; verify with tests for success and checksum mismatch
+- [x] 5.1 (waits for `library-import`) Implement the adoption job (move, copy, reflink; no hardlink) with confirmation, checksum verification before source removal and per-item failure reporting; verify with tests for success and checksum mismatch
 
 ## Workflow follow-up
 

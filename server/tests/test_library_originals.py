@@ -126,9 +126,19 @@ def _file(mode: StorageMode, status: OriginalStatus, tag_writes_allowed: bool) -
 @pytest.mark.parametrize(
     ("mode", "status", "opt_in", "allowed"),
     [
-        (StorageMode.MANAGED, OriginalStatus.ACTIVE, False, set(FileOperation)),
-        (StorageMode.REFERENCED, OriginalStatus.ACTIVE, False, set()),
-        (StorageMode.REFERENCED, OriginalStatus.ACTIVE, True, {FileOperation.WRITE_TAGS}),
+        (
+            StorageMode.MANAGED,
+            OriginalStatus.ACTIVE,
+            False,
+            set(FileOperation) - {FileOperation.ADOPT},
+        ),
+        (StorageMode.REFERENCED, OriginalStatus.ACTIVE, False, {FileOperation.ADOPT}),
+        (
+            StorageMode.REFERENCED,
+            OriginalStatus.ACTIVE,
+            True,
+            {FileOperation.WRITE_TAGS, FileOperation.ADOPT},
+        ),
         (StorageMode.REFERENCED, OriginalStatus.SUPERSEDED, False, set()),
         (StorageMode.REFERENCED, OriginalStatus.SUPERSEDED, True, set()),
     ],

@@ -23,6 +23,8 @@ Environment=ANTHOLOGY_OMR_URL=http://localhost:8430
 Environment=ANTHOLOGY_MUSICBRAINZ_CONTACT=
 Environment=ANTHOLOGY_ACOUSTID_API_KEY=
 Environment=ANTHOLOGY_MUSICBRAINZ_URL=
+# Folders admins may import from, comma-separated (docs/install.md, Importing a collection)
+Environment=ANTHOLOGY_IMPORT_ROOTS=/data/imports
 Volume=anthology-keys.volume:/data/keys:U
 Volume=anthology-library.volume:/data/library:U
 Volume=anthology-cache.volume:/data/cache:U

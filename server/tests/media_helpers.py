@@ -30,7 +30,7 @@ def tone_wav(path: Path, frequencies: list[float], seconds: float = 20.0) -> Pat
 
 
 def require_ffmpeg() -> None:
-    """Skip without FFmpeg (with the Chromaprint muxer); fail instead in CI.
+    """Skip without FFmpeg (with the Chromaprint and hash muxers); fail instead in CI.
 
     CI sets ANTHOLOGY_TEST_REQUIRE_FFMPEG=1 so that these tests never pass by being skipped.
     """
@@ -40,10 +40,26 @@ def require_ffmpeg() -> None:
         muxers = subprocess.run(  # noqa: S603  (the FFmpeg found on the PATH)
             [ffmpeg, "-hide_banner", "-muxers"], capture_output=True, text=True, check=False
         ).stdout
-        usable = " chromaprint " in muxers
+        usable = " chromaprint " in muxers and " hash " in muxers
     if usable:
         return
-    message = "FFmpeg with the Chromaprint muxer is not installed"
+    message = "FFmpeg with the Chromaprint and hash muxers is not installed"
     if os.environ.get("ANTHOLOGY_TEST_REQUIRE_FFMPEG"):
         pytest.fail(message)
     pytest.skip(message)
+
+
+def encode(source: Path, target: Path, *, compression: int | None = None, **tags: str) -> Path:
+    """Re-encode generated audio (format by ``target``'s extension) with the given tags.
+
+    A different FLAC ``compression`` level gives the same audio in different packets.
+    """
+    target.parent.mkdir(parents=True, exist_ok=True)
+    args = [shutil.which("ffmpeg") or "ffmpeg", "-y", "-hide_banner", "-loglevel", "error"]
+    args += ["-i", str(source)]
+    if compression is not None:
+        args += ["-compression_level", str(compression)]
+    for name, value in tags.items():
+        args += ["-metadata", f"{name}={value}"]
+    subprocess.run([*args, str(target)], check=True)  # noqa: S603  (generated test media)
+    return target

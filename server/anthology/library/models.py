@@ -83,10 +83,14 @@ class Counter(enum.StrEnum):
     IDENTIFICATION_NO_MATCH = "identification_no_match"
     IDENTIFICATION_DUPLICATE = "identification_duplicate"
     IDENTIFICATION_NOT_POSSIBLE = "identification_not_possible"
+    REFERENCED_FILES = "referenced_files"
+    REFERENCED_BYTES = "referenced_bytes"
 
 
 LIBRARY_COUNTERS = (Counter.ARTISTS, Counter.RELEASES, Counter.TRACKS, Counter.RECORDINGS)
 SUPERSEDED_COUNTERS = (Counter.SUPERSEDED_FILES, Counter.SUPERSEDED_BYTES)
+# Active referenced originals (candidates for adoption into managed storage).
+REFERENCED_COUNTERS = (Counter.REFERENCED_FILES, Counter.REFERENCED_BYTES)
 
 
 class IdentificationStatus(enum.StrEnum):
@@ -210,6 +214,9 @@ class Track(Base):
     sort_album: Mapped[str] = mapped_column(sort_text(SORT))
 
 
+REFERENCED_ACTIVE = "storage_mode = 'referenced' AND original_status = 'active'"
+
+
 class AudioFile(Base):
     """The technical description of an original file of a recording."""
 
@@ -232,6 +239,14 @@ class AudioFile(Base):
             postgresql_where=text("original_status = 'superseded'"),
             sqlite_where=text("original_status = 'superseded'"),
         ),
+        # Adoption reads the active referenced originals by path.
+        Index(
+            "ix_audio_files_referenced",
+            "path",
+            "id",
+            postgresql_where=text(REFERENCED_ACTIVE),
+            sqlite_where=text(REFERENCED_ACTIVE),
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
@@ -247,6 +262,8 @@ class AudioFile(Base):
     channels: Mapped[int] = mapped_column(Integer)
     size_bytes: Mapped[int] = mapped_column(BigInteger)
     audio_hash: Mapped[str] = mapped_column(String(128), index=True)
+    # SHA-256 of the whole file, verified after every copy or transfer.
+    content_hash: Mapped[str | None] = mapped_column(String(64))
     declared_quality: Mapped[QualityTier] = mapped_column(str_enum(QualityTier, "declared_quality"))
     effective_quality: Mapped[QualityTier | None] = mapped_column(
         str_enum(QualityTier, "effective_quality")

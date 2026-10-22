@@ -17,7 +17,7 @@ across sessions goes here, so every agent and every maintainer sees the same sta
 
 ## Current state
 
-_Last updated: 2026-10-18_
+_Last updated: 2026-10-22_
 
 - **Milestone 1 (Foundation)** is implemented: server skeleton, sync protocol with progressive
   loading, users and devices, jobs (core and view), client foundation with sign-in, sync layer and
@@ -34,23 +34,24 @@ _Last updated: 2026-10-18_
 - **Library:** `library-core` is merged (PR #15). Decided with the maintainer: one artist per
   recording and one album artist per release, with the credited text kept as display text.
 - **Library views:** `library-views` is merged (PR #16).
-- **Open, implemented in part:** `managed-and-referenced-originals` (PR #17 merged): storage
-  mode and original status, file operation guard, replacement of a referenced original,
-  active-original resolver and the `library.superseded` report are done. Open until their
-  features exist: 2.3 (tag writes, with `tag-editing`), 4.1, 4.2 and 5.1 (import modes and
-  adoption, with `library-import`). Replacing a managed original is refused until acquisition
-  has checksum-verified file handling (`effective-quality-duplicate-checks`).
+- **Open, implemented in part:** `managed-and-referenced-originals` (PR #17 merged; import modes
+  and adoption done with `library-import-folders`). Open: 2.3 (tag writes, with `tag-editing`).
+  Replacing a managed original is still refused: `effective-quality-duplicate-checks` can now
+  build on the verified transfers of `anthology/library/storage.py`.
 - **Open, implemented in part:** `metadata-lookup` (PR #18 merged): license check, lookup clients
   with cache, cross-process rate limit, priorities, mirror with fallback and the status/estimate
   endpoint are done. Open: 2.4 (the refresh job applies changes through tagging, so it waits for
   `tag-editing`). A message broker was considered for the limiter and rejected (see its design).
-- **In progress:** change `recording-identification` on branch `feat/recording-identification`:
-  identification job (ISRC, then fingerprint at AcoustID), outcome per recording with counters,
-  `external_refs`, admin view in the settings, own LGPL FFmpeg with Chromaprint/KissFFT in the
-  server image (ADR 0020); PR #20, CI green. Open: 5.1 (fuzzy suggestions) waits for
-  `review-list`, so the change stays open after merging.
-- **Next:** `library-import`, `effective-quality-duplicate-checks`, `review-list`,
-  `tag-editing` and `search` (see `docs/roadmap.md`).
+- **Open, implemented in part:** `recording-identification` (PR #20 merged). Open: 5.1 (fuzzy
+  suggestions) waits for `review-list`.
+- **In progress:** change `library-import-folders` on branch `feat/library-import-folders`:
+  folder import below `ANTHOLOGY_IMPORT_ROOTS` (admins) with scan, staged duplicate detection,
+  report and confirmation, storage modes with verified transfers, library entries from tags,
+  identification afterwards, adoption of referenced originals; FFmpeg build gains the `hash`
+  muxer, `tinytag` added. Open: 7.1 (quality categories, `quality-analysis`) and 7.2 (review
+  entries, `review-list`), so the change stays open after merging.
+- **Next:** `effective-quality-duplicate-checks`, `review-list`, `tag-editing` and `search`
+  (see `docs/roadmap.md`).
 
 ## Working conventions
 
@@ -87,3 +88,10 @@ _Last updated: 2026-10-18_
 - Right after a bulk load PostgreSQL has no statistics; avoid correlated `UPDATE`s over large
   fresh tables (compute values while loading instead).
 - `pkill -f <pattern>` also matches the shell running it when the pattern is in the command.
+- A PostgreSQL test database left at an earlier draft of a revision cannot be migrated down
+  (the test session starts with a downgrade). Reset it:
+  `drop schema public cascade; create schema public;`.
+- Link probes and hardlinks need source and target in one mount: Linux refuses `link()` and
+  reflinks across mount points (`EXDEV`), even on the same disk. Tests simulate `EXDEV`.
+- The local FFmpeg must have the `chromaprint` and `hash` muxers (build the `ffmpeg` stage of
+  `server/Containerfile` with `podman build --target ffmpeg` and copy `ffmpeg`/`ffprobe` out).
