@@ -46,3 +46,15 @@ The analysis SHALL run as a throttled background step, SHALL analyse excerpts fi
 #### Scenario: Same audio twice
 - **WHEN** a file with an already analysed audio hash is added
 - **THEN** the stored result is reused
+
+### Requirement: Analysis on acquisition
+During imports, uploads, downloads and CD imports the system SHALL analyse only files that are duplicate candidates of an existing recording or of another acquired file, together with the files they are compared with. Other files SHALL be analysed only when a user starts the quality check of the whole library.
+
+#### Scenario: New album without duplicates
+- **WHEN** an import adds an album whose recordings are not in the library
+- **THEN** its files are not analysed during the import
+- **AND** they are analysed when an editor starts the quality check of the library
+
+#### Scenario: Candidate analysed once
+- **WHEN** a file was analysed as a duplicate candidate during an import
+- **THEN** the later quality check of the library reuses its result

@@ -42,9 +42,8 @@ _Last updated: 2026-10-23_
   with cache, cross-process rate limit, priorities, mirror with fallback and the status/estimate
   endpoint are done. Open: 2.4 (the refresh job applies changes through tagging, so it waits for
   `tag-editing`). A message broker was considered for the limiter and rejected (see its design).
-- **Complete, to be archived:** `recording-identification` (PR #20), `library-import-folders`
-  (PR #21) and `quality-based-replacement` (PR #24); their last tasks were done with
-  `review-list`.
+- **Archived:** `recording-identification` (PR #20), `library-import-folders` (PR #21) and
+  `quality-based-replacement` (PR #24); their last tasks were done with `review-list`.
 - **Open, implemented in part:** `quality-analysis-core` (PR #22 merged). Open: source
   plausibility (`sources`), lossless reduction. The automatic analysis after imports was removed
   again (ADR 0022).
