@@ -78,3 +78,63 @@ A sheet whose optical music recognition left uncertain measures SHALL appear as 
 #### Scenario: OMR result with uncertain measures
 - **WHEN** recognition of a part finishes with uncertain measures
 - **THEN** one review entry for the part appears and leads to the sheet editor with the uncertain measures highlighted
+
+### Requirement: Same recording
+Two recordings that may be the same SHALL appear as one entry: a file matching a recording by artist, title and duration (±2 s) but not by audio hash, identifier or fingerprint, or two recordings with the same MusicBrainz ID. Accepting SHALL merge them, keep all track contexts, keep the better original active (the existing one if inconclusive) and supersede the other without deleting it. Rejecting SHALL keep them separate.
+
+#### Scenario: Accept a fuzzy match
+- **WHEN** an editor accepts that two recordings are the same
+- **THEN** one recording remains with the track contexts of both
+- **AND** the other original is listed as superseded and stays on disk
+
+#### Scenario: Different fingerprint
+- **WHEN** an imported file matches a recording by artist, title and duration but their fingerprints differ
+- **THEN** an entry with low confidence is created that shows the fingerprint similarity
+- **AND** the recordings stay separate until a user decides
+
+### Requirement: MusicBrainz suggestions
+For a recording without ISRC or fingerprint match the system SHALL search MusicBrainz by artist and title within the lookup rate limits and SHALL propose a recording whose duration matches within ±2 s; accepting SHALL assign its ID, and nothing SHALL be merged automatically.
+
+#### Scenario: Accept a suggestion
+- **WHEN** an editor accepts a suggested MusicBrainz recording
+- **THEN** the recording carries its ID and the outcome "confirmed"
+
+#### Scenario: ID already in the library
+- **WHEN** the suggested ID meanwhile belongs to another recording of the library
+- **THEN** the outcome is "duplicate" and a "same recording" entry is created instead
+
+### Requirement: Import matches with a different title
+An import match whose title differs SHALL appear as an entry: accepting SHALL confirm the match, rejecting SHALL make the file a recording of its own, placed in the import's storage mode. When the source file changed since the import, the entry SHALL be closed as obsolete.
+
+#### Scenario: Separate a different title
+- **WHEN** an editor rejects the match of a file whose title differs
+- **THEN** the file becomes a recording of its own and its track moves to it
+
+#### Scenario: Source file changed
+- **WHEN** the source file was changed after the import and an editor decides the entry
+- **THEN** the entry is closed as obsolete and nothing is changed
+
+### Requirement: Inconclusive replacements
+An imported file whose quality comparison was inconclusive SHALL appear as an entry: accepting SHALL make it the original after checksum verification, rejecting SHALL keep the original.
+
+#### Scenario: Accept an inconclusive replacement
+- **WHEN** an editor accepts the replacement proposed for an inconclusive comparison
+- **THEN** the file becomes the active original and the previous original is listed as superseded
+
+### Requirement: Quality findings
+A quality result without high confidence SHALL appear as an entry with its spectrogram, except a result that was too quiet to judge. The decision SHALL be "genuine" (confirmed genuine, effective quality = declared quality) or "upscaled" (effective quality estimated from the finding). A human decision SHALL be kept when the analysis runs again.
+
+#### Scenario: Confirm genuine
+- **WHEN** an editor decides "genuine" for a suspicious file
+- **THEN** its status is "confirmed genuine" and its declared quality counts as effective quality
+
+#### Scenario: Analysis runs again
+- **WHEN** a full analysis runs again after an editor decided "upscaled"
+- **THEN** the file stays "upscaled" and no new entry is created
+
+### Requirement: Results from before the review list
+Uncertain results stored before the review list existed SHALL get their entries once, without duplicates.
+
+#### Scenario: Update of an existing installation
+- **WHEN** an installation with earlier "needs review" import results is updated
+- **THEN** their entries appear in the review list once
