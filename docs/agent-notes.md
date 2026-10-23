@@ -51,10 +51,9 @@ _Last updated: 2026-10-23_
   after imports was removed again (ADR 0022).
 - **Open, implemented in part:** `quality-based-replacement` (PR #24 merged). Open: 5.1 (review
   entries, `review-list`).
-- **In progress:** change `system-maintenance` on branch `feat/system-maintenance` (UC-001,
-  US-001 in `docs/requirements/`): schedules of recurring jobs (`job_schedules`, scheduler per
-  process), the maintenance job for orphans, leftovers and missing originals with grace period
-  and safety limit, Settings › Systempflege.
+- **System maintenance:** `system-maintenance` is merged (PR #25): job schedules (`job_schedules`,
+  scheduler task per process, installation time zone `ANTHOLOGY_TIME_ZONE`) and the library
+  maintenance job with grace period and safety limit.
 - **Next:** `review-list`, `tag-editing` and `search` (see
   `docs/roadmap.md`).
   `effective-quality-duplicate-checks` covers CD import and sources only; it waits for them.
