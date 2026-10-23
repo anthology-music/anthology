@@ -29,6 +29,9 @@ class Quality:
 
     @staticmethod
     def of(analysis: QualityAnalysis) -> "Quality":
+        if analysis.decided_status is not None:
+            # A human decision from the review list counts as conclusive.
+            return Quality(analysis.decided_status, Confidence.HIGH, analysis.decided_quality)
         return Quality(analysis.status, analysis.confidence, analysis.effective_quality)
 
     @property

@@ -9,7 +9,7 @@
 
         <nav :aria-label="t('nav.main')" class="sidebar__nav">
           <router-link
-            v-for="item in navigation"
+            v-for="item in visibleNavigation"
             :key="item.name"
             :to="{ name: item.name }"
             class="sidebar__link"
@@ -17,6 +17,7 @@
           >
             <q-icon :name="item.icon" size="20px" aria-hidden="true" />
             <span class="sidebar__label">{{ t(`nav.${item.name}`) }}</span>
+            <ReviewNavCount v-if="item.name === 'review'" />
           </router-link>
         </nav>
 
@@ -56,11 +57,12 @@
 
 <script setup lang="ts">
 // Drawer width matches --sidebar-width in docs/design/tokens.css.
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 
 import ConnectionState from '@/components/ConnectionState.vue';
+import ReviewNavCount from '@/features/review/components/ReviewNavCount.vue';
 import { useAuthStore } from '@/features/users/store';
 import { useSyncStore } from '@/sync/store';
 
@@ -79,9 +81,14 @@ const navigation = [
   { name: 'streaming', icon: 'cloud_download' },
   { name: 'local', icon: 'library_music' },
   { name: 'works', icon: 'queue_music' },
+  { name: 'review', icon: 'fact_check', editors: true },
   { name: 'settings', icon: 'settings' },
   ...(import.meta.env.DEV ? [{ name: 'demo', icon: 'science' } as const] : []),
 ] as const;
+// The review list is offered to editors and admins only (spec: review, Access).
+const visibleNavigation = computed(() =>
+  navigation.filter((item) => !('editors' in item) || auth.canEdit),
+);
 </script>
 
 <style scoped>

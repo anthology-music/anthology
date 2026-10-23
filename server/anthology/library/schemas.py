@@ -81,6 +81,7 @@ class LibraryIdentificationRow(StreamRow):
     no_match: int
     duplicate: int
     not_possible: int
+    confirmed: int
 
 
 class MaintenanceRunRow(StreamRow):

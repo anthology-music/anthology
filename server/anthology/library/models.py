@@ -97,6 +97,7 @@ class Counter(enum.StrEnum):
     IDENTIFICATION_NO_MATCH = "identification_no_match"
     IDENTIFICATION_DUPLICATE = "identification_duplicate"
     IDENTIFICATION_NOT_POSSIBLE = "identification_not_possible"
+    IDENTIFICATION_CONFIRMED = "identification_confirmed"
     REFERENCED_FILES = "referenced_files"
     REFERENCED_BYTES = "referenced_bytes"
     QUALITY_UNANALYSED = "quality_unanalysed"
@@ -131,6 +132,7 @@ class IdentificationStatus(enum.StrEnum):
     NO_MATCH = "no_match"
     DUPLICATE = "duplicate"
     NOT_POSSIBLE = "not_possible"
+    CONFIRMED = "confirmed"  # a MusicBrainz suggestion accepted in the review list
 
 
 IDENTIFICATION_COUNTERS = {

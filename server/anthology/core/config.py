@@ -49,6 +49,9 @@ class Settings(BaseSettings):
     musicbrainz_contact: str = ""
     # Base URL of an optional local MusicBrainz mirror (docs/architecture/musicbrainz-mirror.md).
     musicbrainz_url: str = ""
+    # The public MusicBrainz service; end-to-end tests point it at a closed port so that they
+    # never reach the real service.
+    musicbrainz_public_url: str = "https://musicbrainz.org"
     musicbrainz_mirror_check_interval_seconds: float = 60.0
     # AcoustID application key of this installation; without it, fingerprint lookups are skipped.
     acoustid_api_key: str = ""

@@ -42,21 +42,22 @@ _Last updated: 2026-10-23_
   with cache, cross-process rate limit, priorities, mirror with fallback and the status/estimate
   endpoint are done. Open: 2.4 (the refresh job applies changes through tagging, so it waits for
   `tag-editing`). A message broker was considered for the limiter and rejected (see its design).
-- **Open, implemented in part:** `recording-identification` (PR #20 merged). Open: 5.1 (fuzzy
-  suggestions) waits for `review-list`.
-- **Open, implemented in part:** `library-import-folders` (PR #21 merged; 7.1 done with
-  `quality-based-replacement`). Open: 7.2 (review entries, `review-list`).
-- **Open, implemented in part:** `quality-analysis-core` (PR #22 merged). Open: review entries
-  (`review-list`), source plausibility (`sources`), lossless reduction. The automatic analysis
-  after imports was removed again (ADR 0022).
-- **Open, implemented in part:** `quality-based-replacement` (PR #24 merged). Open: 5.1 (review
-  entries, `review-list`).
-- **In progress:** change `system-maintenance` on branch `feat/system-maintenance` (UC-001,
-  US-001 in `docs/requirements/`): schedules of recurring jobs (`job_schedules`, scheduler per
-  process), the maintenance job for orphans, leftovers and missing originals with grace period
-  and safety limit, Settings › Systempflege.
-- **Next:** `review-list`, `tag-editing` and `search` (see
-  `docs/roadmap.md`).
+- **Archived:** `recording-identification` (PR #20), `library-import-folders` (PR #21) and
+  `quality-based-replacement` (PR #24); their last tasks were done with `review-list`.
+- **Open, implemented in part:** `quality-analysis-core` (PR #22 merged). Open: source
+  plausibility (`sources`), lossless reduction. The automatic analysis after imports was removed
+  again (ADR 0022).
+- **System maintenance:** `system-maintenance` is merged (PR #25): job schedules (`job_schedules`,
+  scheduler task per process, installation time zone `ANTHOLOGY_TIME_ZONE`) and the library
+  maintenance job with grace period and safety limit.
+- **In progress:** change `review-list` on branch `feat/review-list`: central review list
+  (`anthology/review/`, stream `review.items`, `POST /api/v1/review/decisions`, page `/review`)
+  with the library, import and quality producers. Decided with the maintainer: name matches
+  always become "same recording?" entries (medium without fingerprint comparison, low with
+  differing fingerprints); quality findings are decided "genuine" or "upscaled"; a different
+  title is confirmed or separated. Open: producers of works/publishers, sources and
+  sheet-music (3.6–3.8), so the change stays open after the merge.
+- **Next:** `tag-editing` and `search` (see `docs/roadmap.md`).
   `effective-quality-duplicate-checks` covers CD import and sources only; it waits for them.
 
 ## Working conventions
@@ -94,6 +95,10 @@ _Last updated: 2026-10-23_
 - Right after a bulk load PostgreSQL has no statistics; avoid correlated `UPDATE`s over large
   fresh tables (compute values while loading instead).
 - `pkill -f <pattern>` also matches the shell running it when the pattern is in the command.
+- No `session.begin_nested()` (savepoints): with aiosqlite they left a transaction open and
+  other writers ran into "database is locked". Validate first, then write.
+- `ON CONFLICT … WHERE` for a partial unique index must repeat the index predicate literally
+  (`index_where=text(…)`); with bound parameters PostgreSQL finds no matching index.
 - A PostgreSQL test database left at an earlier draft of a revision cannot be migrated down
   (the test session starts with a downgrade). Reset it:
   `drop schema public cascade; create schema public;`.

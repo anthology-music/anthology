@@ -107,14 +107,20 @@ package "Library" {
     +estimatedBitrateKbps : Integer [0..1]
     +wholeFile : Boolean
     +methodVersion : Integer
-    +spectrogramPath : String [0..1]
     +analyzedAt : DateTime
+    +decidedStatus : AuthenticityStatus [0..1]
+    +decidedQuality : QualityTier [0..1]
+    +decidedAt : DateTime [0..1]
   }
   note right of QualityAnalysis
     One result per audio hash: files
     with equal audio share it.
-    Only HIGH confidence sets
-    AudioFile.effectiveQuality.
+    Only HIGH confidence or a human
+    decision (review list) sets
+    AudioFile.effectiveQuality; the
+    decision survives re-analysis.
+    Spectrograms are rendered on
+    demand and cached by audio hash.
   end note
 
   class ReleaseGroup {
@@ -352,6 +358,7 @@ package "Library" {
     NO_MATCH
     DUPLICATE
     NOT_POSSIBLE
+    CONFIRMED
   }
 
   enum OriginalStatus {
@@ -516,6 +523,7 @@ package "Sources & Jobs" {
     +fingerprint : String [0..1]
     +result : ImportResult [0..1]
     +note : String [0..1]
+    +nameMatchSimilarity : Float [0..1]
     +recordingId : UUID [0..1]
     +contentHash : String [0..1]
     +appliedAt : DateTime [0..1]
@@ -973,23 +981,40 @@ package "Review" {
     +evidenceJson : String
     +proposalJson : String
     +suppressionKey : String
+    +summaryJson : String
     +status : ReviewStatus
+    +note : String [0..1]
     +createdAt : DateTime
     +decidedAt : DateTime [0..1]
-    +changeSeq : Long
   }
   note right of ReviewItem
     Also holds work candidates.
     Unique suppressionKey while
     OPEN, DEFERRED or REJECTED.
+    summaryJson: display text of
+    subject, current and proposed value.
+  end note
+
+  class ReviewCounter {
+    +type : ReviewType
+    +origin : ReviewOrigin
+    +confidence : Confidence
+    +status : ReviewStatus
+    +value : Long
+  }
+  note right of ReviewCounter
+    Maintained with every insert
+    and decision (counts first).
   end note
 
   enum ReviewType {
     RECORDING_MATCH
+    MUSICBRAINZ_SUGGESTION
+    IMPORT_TITLE
+    IMPORT_REPLACEMENT
     QUALITY_FINDING
     WORK_ASSIGNMENT
     DOWNLOAD_REPLACEMENT
-    TAG_CONFLICT
     SHEET_OMR
   }
 
@@ -1171,6 +1196,8 @@ LibraryImport "0..*" -- "1" User : created by >
 ImportItem "0..*" -- "0..1" AudioFile : created >
 ImportItem "0..*" -- "0..1" Recording : matched >
 ImportItem "0..*" -- "0..1" ImportItem : duplicate of >
+ImportItem "0..*" -- "0..1" Recording : name match >
+ImportItem "0..*" -- "0..1" ImportItem : name match >
 ImportItem "0..*" -- "0..1" Release : grouped into >
 CdImportSession "0..*" -- "1" Device : ripped on >
 
@@ -1208,6 +1235,7 @@ RecordingWork "0..*" -- "1" Work
 Publisher "1" *-- "0..*" Publication
 Publication "0..*" -- "1" Work : edition of >
 ReviewItem "0..*" -- "0..1" User : decided by >
+QualityAnalysis "0..*" -- "0..1" User : decided by >
 ReviewItem "0..*" -- "0..1" Job : bulk decision >
 
 ' Relationships – Sheet Music

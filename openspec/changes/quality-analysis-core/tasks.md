@@ -24,7 +24,7 @@
 
 ## 5. Deferred
 
-- [ ] 5.1 (waits for `review-list`) Review entries with spectrogram for results that are not high confidence; "confirmed genuine" from the review
+- [x] 5.1 (done with `review-list`) Review entries with spectrogram for results that are not high confidence; "confirmed genuine" from the review
 - [ ] 5.2 (waits for `sources`) Plausibility of the result with the declared quality of the source
 - [ ] 5.3 (later change) Optional lossless reduction of upscaled files with confirmation and checksum verification
 

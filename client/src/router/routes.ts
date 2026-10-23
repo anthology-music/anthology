@@ -48,6 +48,13 @@ const routes: RouteRecordRaw[] = [
         ],
       },
       { path: 'works', name: 'works', component: () => import('@/pages/WorksPage.vue') },
+      {
+        // Review list (spec: review): editors and admins.
+        path: 'review',
+        name: 'review',
+        meta: { editors: true },
+        component: () => import('@/features/review/pages/ReviewPage.vue'),
+      },
       { path: 'settings', name: 'settings', component: () => import('@/pages/SettingsPage.vue') },
       // Developer demo of a large list (server needs ANTHOLOGY_DEV_DEMO=true); dev builds only.
       ...(import.meta.env.DEV

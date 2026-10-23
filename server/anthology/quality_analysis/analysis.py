@@ -208,6 +208,17 @@ def _lossy_tier(bitrate_kbps: int) -> QualityTier:
     return QualityTier.LOSSY_HIGH if bitrate_kbps >= 256 else QualityTier.LOSSY_LOW
 
 
+def estimated_tier(values: dict[str, Any], cutoff_hz: int | None) -> QualityTier | None:
+    """The effective tier a result without high confidence suggests if the file is upscaled:
+    the lossy tier of the estimated bitrate, or of the encoder nearest to the cutoff."""
+    bitrate = values.get("bitrate_kbps")
+    if bitrate:
+        return _lossy_tier(int(bitrate))
+    if cutoff_hz:
+        return _lossy_tier(nearest_bitrate(cutoff_hz))
+    return None
+
+
 def _cd_rate(sample_rate: int) -> int:
     return 44_100 if sample_rate % 44_100 == 0 else 48_000
 

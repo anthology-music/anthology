@@ -1,9 +1,10 @@
 """Results of the quality analysis, one per audio data (spec: quality-analysis)."""
 
 import enum
+import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, Integer, String, Text
+from sqlalchemy import Boolean, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from anthology.db import Base
@@ -40,3 +41,14 @@ class QualityAnalysis(Base):
     whole_file: Mapped[bool] = mapped_column(Boolean, default=False)
     method_version: Mapped[int] = mapped_column(Integer)
     analyzed_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
+    # A human decision from the review list; kept when the analysis runs again.
+    decided_status: Mapped[QualityStatus | None] = mapped_column(
+        str_enum(QualityStatus, "decided_status")
+    )
+    decided_quality: Mapped[QualityTier | None] = mapped_column(
+        str_enum(QualityTier, "decided_quality")
+    )
+    decided_by: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), index=True
+    )
+    decided_at: Mapped[datetime | None] = mapped_column(UTCDateTime)

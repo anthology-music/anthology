@@ -84,6 +84,7 @@ type Message = 'started' | 'running' | 'nothing' | 'failed';
 const OUTCOMES = [
   'isrc',
   'fingerprint',
+  'confirmed',
   'no_match',
   'duplicate',
   'not_possible',

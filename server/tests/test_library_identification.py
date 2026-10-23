@@ -10,7 +10,7 @@ import httpx
 import pytest
 from fastapi import FastAPI
 from httpx import AsyncClient
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, func, select, update
 
 from anthology.core.config import Settings
 from anthology.db.types import utcnow
@@ -20,13 +20,19 @@ from anthology.library.fingerprint import FingerprintError, compute
 from anthology.library.identification import Identifier, by_fingerprint, by_isrc
 from anthology.library.models import (
     IDENTIFICATION_COUNTERS,
+    SUPERSEDED_COUNTERS,
     AudioFile,
     IdentificationStatus,
+    OriginalStatus,
     Recording,
+    Track,
 )
 from anthology.library.seed import seed_library
 from anthology.metadata_lookup.models import ExternalRef, LookupCache, LookupSchedule
 from anthology.metadata_lookup.service import LookupService
+from anthology.quality_analysis.models import Confidence
+from anthology.review.models import ReviewItem, ReviewOrigin, ReviewStatus, ReviewType
+from tests.import_helpers import client_for
 from tests.library_helpers import assert_consistent, audio
 from tests.lookup_helpers import FakeClock, FakeWeb, ok
 from tests.media_helpers import require_ffmpeg, tone_wav
@@ -280,7 +286,8 @@ async def test_without_acoustid_key_identification_is_not_possible(
     checked = await recording(app, recording_id)
     assert status == IdentificationStatus.NOT_POSSIBLE
     assert checked.identification_note == "no_acoustid_key"
-    assert web.requests == []
+    # AcoustID is not asked; MusicBrainz is searched by name for a suggestion only.
+    assert [request.url.path for _, request in web.requests] == ["/ws/2/recording"]
     await no_key.aclose()
 
 
@@ -317,6 +324,162 @@ async def test_identified_duplicates_stay_separate(
     assert counts["identification_isrc"] == 1
     assert counts["identification_duplicate"] == 1
     assert counts["identification_unchecked"] == 0
+
+
+async def test_duplicate_becomes_a_review_entry_and_merges_on_acceptance(
+    app: FastAPI, settings: Settings, lookups: LookupService, web: FakeWeb, tmp_path: Path
+) -> None:
+    """Spec: review, Same recording: nothing merges before a user decides."""
+    match = mb_recording()
+    web.answer(MB, "/ws/2/isrc/XXA012600003", ok({"recordings": [match]}))
+    first_file, second_file = tmp_path / "first.flac", tmp_path / "second.flac"
+    first_file.write_bytes(b"first")
+    second_file.write_bytes(b"second")
+    first = await one_recording(app, isrc="XXA012600003", path=str(first_file))
+    second = await one_recording(app, isrc="XXA012600003", path=str(second_file), title="Eisfeld!")
+    ident = identifier(app, settings, lookups)
+    await ident.identify(first)
+    await ident.identify(second)
+    async with app.state.sessionmaker() as session:
+        [entry] = list(await session.scalars(select(ReviewItem)))
+        separate = await session.scalar(select(func.count()).select_from(Recording))
+    async with client_for(app) as client:
+        user = uuid.UUID((await setup_admin(client)).user["id"])
+
+    status = await app.state.reviewer.decide(entry.id, "accept", user_id=user)
+
+    assert separate == 2
+    assert (entry.type, entry.origin, entry.confidence) == (
+        ReviewType.RECORDING_MATCH,
+        ReviewOrigin.MUSICBRAINZ,
+        Confidence.HIGH,
+    )
+    assert (entry.subject_id, json.loads(entry.proposal_json)) == (
+        str(second),
+        {"into": str(first)},
+    )
+    assert status == ReviewStatus.ACCEPTED
+    async with app.state.sessionmaker() as session:
+        await assert_consistent(session)
+        remaining = list(await session.scalars(select(Recording)))
+        tracks = list(await session.scalars(select(Track).order_by(Track.sort_title)))
+        files = {f.path: f.original_status for f in await session.scalars(select(AudioFile))}
+        counts = await service.counters(
+            session, (*IDENTIFICATION_COUNTERS.values(), *SUPERSEDED_COUNTERS)
+        )
+        refs = list(await session.scalars(select(ExternalRef.entity_id)))
+    assert [r.id for r in remaining] == [first]
+    # Both track contexts stay; the merged one keeps its own title.
+    assert [(t.recording_id, t.context_title) for t in tracks] == [
+        (first, None),
+        (first, "Eisfeld!"),
+    ]
+    # Inconclusive quality: the existing original stays, the other is superseded, not deleted.
+    assert files == {
+        str(first_file): OriginalStatus.ACTIVE,
+        str(second_file): OriginalStatus.SUPERSEDED,
+    }
+    assert second_file.exists()
+    assert counts["identification_isrc"] == 1 and counts["identification_duplicate"] == 0
+    assert counts["superseded_files"] == 1
+    assert refs == [first]
+
+
+def mb_found(title: str = "Eisfeld", artist: str = "Nordlicht", length: int = 201_000) -> dict:
+    """A generated recording in the shape of a MusicBrainz search result (fictional data)."""
+    return {
+        "id": str(uuid.uuid4()),
+        "score": 100,
+        "title": title,
+        "length": length,
+        "artist-credit": [{"name": artist, "joinphrase": ""}],
+    }
+
+
+def test_name_search_rules() -> None:
+    one = mb_found()
+    assert identification.by_name({"recordings": [one]}, "Eisfeld", "Nordlicht", 200_000) == (
+        identification.library_review.Suggestion(
+            mb_recording_id=uuid.UUID(one["id"]),
+            title="Eisfeld",
+            artist="Nordlicht",
+            duration_ms=201_000,
+            candidates=1,
+            score=100,
+        )
+    )
+    several = {"recordings": [mb_found(), mb_found()]}
+    assert identification.by_name(several, "eisfeld", "NORDLICHT", 200_000).candidates == 2
+    for other in (mb_found(title="Eisberg"), mb_found(artist="Südwind"), mb_found(length=203_500)):
+        assert (
+            identification.by_name({"recordings": [other]}, "Eisfeld", "Nordlicht", 200_000) is None
+        )
+    assert identification.search_query('Er sagte "Ja"', "A\\B") == (
+        'recording:"Er sagte \\"Ja\\"" AND artist:"A\\\\B"'
+    )
+
+
+async def test_name_search_suggests_and_accepting_assigns_the_id(
+    app: FastAPI, settings: Settings, lookups: LookupService, web: FakeWeb
+) -> None:
+    """Spec: review, MusicBrainz suggestions."""
+    found = mb_found()
+    web.answer(ACOUSTID, "/v2/lookup", ok({"status": "ok", "results": []}))
+    web.answer(MB, "/ws/2/recording", ok({"recordings": [found, mb_found(title="Eisberg")]}))
+    recording_id = await one_recording(app, fingerprint="AQAAstored")
+
+    status = await identifier(app, settings, lookups).identify(recording_id)
+    async with app.state.sessionmaker() as session:
+        [entry] = list(await session.scalars(select(ReviewItem)))
+    unassigned = (await recording(app, recording_id)).mb_recording_id
+    async with client_for(app) as client:
+        user = uuid.UUID((await setup_admin(client)).user["id"])
+    decided = await app.state.reviewer.decide(entry.id, "accept", user_id=user)
+    confirmed = await recording(app, recording_id)
+    async with app.state.sessionmaker() as session:
+        counts = await service.counters(session, tuple(IDENTIFICATION_COUNTERS.values()))
+        refs = list(await session.scalars(select(ExternalRef.entity_id)))
+
+    assert status == IdentificationStatus.NO_MATCH and unassigned is None  # nothing automatic
+    assert (entry.type, entry.confidence) == (ReviewType.MUSICBRAINZ_SUGGESTION, Confidence.MEDIUM)
+    assert json.loads(entry.proposal_json) == {"mb_recording_id": found["id"]}
+    assert decided == ReviewStatus.ACCEPTED
+    assert confirmed.mb_recording_id == uuid.UUID(found["id"])
+    assert confirmed.identification_status == IdentificationStatus.CONFIRMED
+    assert counts["identification_confirmed"] == 1 and counts["identification_no_match"] == 0
+    assert refs == [recording_id]
+
+
+async def test_suggested_id_owned_by_another_recording_becomes_a_match(
+    app: FastAPI, settings: Settings, lookups: LookupService, web: FakeWeb
+) -> None:
+    found = mb_found()
+    web.answer(ACOUSTID, "/v2/lookup", ok({"status": "ok", "results": []}))
+    web.answer(MB, "/ws/2/recording", ok({"recordings": [found]}))
+    recording_id = await one_recording(app, fingerprint="AQAAstored")
+    await identifier(app, settings, lookups).identify(recording_id)
+    owner = await one_recording(app)
+    async with app.state.sessionmaker() as session, session.begin():
+        await service.update_recording(
+            session,
+            await session.get_one(Recording, owner),
+            mb_recording_id=uuid.UUID(found["id"]),
+        )
+        [suggestion] = list(await session.scalars(select(ReviewItem)))
+    async with client_for(app) as client:
+        user = uuid.UUID((await setup_admin(client)).user["id"])
+
+    await app.state.reviewer.decide(suggestion.id, "accept", user_id=user)
+    async with app.state.sessionmaker() as session:
+        match = await session.scalar(
+            select(ReviewItem).where(ReviewItem.type == ReviewType.RECORDING_MATCH)
+        )
+    duplicate = await recording(app, recording_id)
+
+    assert duplicate.mb_recording_id is None
+    assert duplicate.identification_status == IdentificationStatus.DUPLICATE
+    assert duplicate.identification_duplicate_of_id == owner
+    assert match.subject_id == str(recording_id) and match.status == ReviewStatus.OPEN
 
 
 # --- the job ----------------------------------------------------------------------------------

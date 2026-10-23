@@ -191,3 +191,41 @@ test('importing a server folder and browsing the new album', async ({ page }) =>
   await expect(tracks.first()).toContainText('Frühling');
   await expect(tracks.nth(1)).toContainText('Sommer');
 });
+
+test('a name match in the review list is merged on acceptance', async ({ page }) => {
+  await signIn(page);
+  await page.getByRole('link', { name: 'Streaming' }).click();
+
+  // "Frühling" again, with other audio: imported as its own recording plus a suggestion.
+  await page.getByTestId('import-folder').click();
+  const dialog = page.getByTestId('import-dialog');
+  await dialog.getByRole('button', { name: 'imports öffnen' }).click();
+  await dialog.getByRole('button', { name: 'Remaster 1999 öffnen' }).click();
+  await dialog.getByTestId('import-scan').click();
+  const confirm = page.getByTestId('import-confirm');
+  await expect(confirm).toBeVisible({ timeout: 30_000 });
+  await confirm.click();
+  await expect(page.getByTestId('import-status').first()).toContainText('Fertig', {
+    timeout: 30_000,
+  });
+
+  await page.getByRole('link', { name: /Prüfliste/ }).click();
+  await expect(page).toHaveURL(/\/review$/);
+  const row = page.locator('[data-testid^="review-row-"]').filter({ hasText: 'Frühling' });
+  await expect(row).toHaveCount(1);
+  await row.getByRole('button').click();
+  await expect(page.getByTestId('review-detail')).toContainText('Gleiche Aufnahme?');
+  await page.getByTestId('review-accept').click();
+  await expect(page.getByTestId('review-message')).toContainText('Angenommen');
+  await expect(page.getByTestId('review-empty')).toBeVisible();
+
+  // The decision is recorded with the editor's name.
+  await page.getByTestId('review-filter-status').selectOption('accepted');
+  await page.locator('[data-testid^="review-row-"]').first().getByRole('button').click();
+  await expect(page.getByTestId('review-decided')).toContainText(ADMIN.name);
+
+  // Both albums keep their track: one recording, two contexts.
+  await page.getByRole('link', { name: 'Lokal' }).click();
+  await page.locator('[data-testid^="release-"]').filter({ hasText: 'Remaster 1999' }).click();
+  await expect(page.locator('[data-testid^="track-"]')).toContainText(['Frühling']);
+});

@@ -24,8 +24,10 @@ from anthology.core.changes import ChangeOperation, ChangeScope, record_change
 from anthology.db.types import utcnow
 from anthology.jobs import service as jobs
 from anthology.library import service as library
+from anthology.library import storage
 from anthology.library.fingerprint import decode, similarity
 from anthology.library.models import ReleaseGroupType
+from anthology.library.service import AudioFileInfo
 from anthology.library_import.analysis import FileInfo, Tags
 from anthology.library_import.models import (
     MANAGED_MODES,
@@ -565,11 +567,67 @@ async def fingerprint_candidates(
     return recordings, earlier
 
 
-def same_audio(first: str, second: str) -> bool:
+@dataclass(frozen=True)
+class NameMatch:
+    """The candidate of a name match that the fingerprint did not confirm (a library
+    recording is preferred over an earlier file of the source)."""
+
+    recording_id: uuid.UUID | None = None
+    item_id: uuid.UUID | None = None
+    similarity: float | None = None
+
+    def closer(
+        self,
+        value: float | None,
+        *,
+        recording_id: uuid.UUID | None = None,
+        item_id: uuid.UUID | None = None,
+    ) -> "NameMatch":
+        """The candidate with the higher compared similarity (compared beats not compared;
+        recordings are checked after files, so they win ties)."""
+        if value is None:
+            return self
+        if self.similarity is not None and value < self.similarity:
+            return self
+        return NameMatch(recording_id=recording_id, item_id=item_id, similarity=value)
+
+
+def fingerprint_similarity(first: str, second: str) -> float | None:
     try:
-        return similarity(decode(first), decode(second)) >= FINGERPRINT_MATCH
+        return similarity(decode(first), decode(second))
     except ValueError:
-        return False
+        return None
+
+
+def same_audio(first: str, second: str) -> bool:
+    value = fingerprint_similarity(first, second)
+    return value is not None and value >= FINGERPRINT_MATCH
+
+
+def audio_info(
+    library_import: LibraryImport,
+    item: ImportItem,
+    info: FileInfo,
+    transferred: storage.Transferred,
+    content_hash: str | None,
+) -> AudioFileInfo:
+    """The original's data for the library, from the analysed file and its placement."""
+    technical = info.technical
+    return AudioFileInfo(
+        path=transferred.path,
+        format=technical.format,
+        codec=technical.codec,
+        sample_rate_hz=technical.sample_rate_hz,
+        channels=technical.channels,
+        size_bytes=item.size_bytes,
+        audio_hash=item.audio_hash,
+        declared_quality=technical.declared_quality,
+        bitrate_kbps=technical.bitrate_kbps,
+        bit_depth=technical.bit_depth,
+        storage_mode=transferred.storage_mode,
+        tag_writes_allowed=library_import.allow_tag_writes,
+        content_hash=content_hash,
+    )
 
 
 # --- importing (spec: Library entries from tags) ----------------------------------------------

@@ -150,6 +150,20 @@ async def test_user_agent_names_version_and_contact(
     await service.aclose()
 
 
+async def test_public_musicbrainz_url_is_configurable(
+    app: FastAPI, settings: Settings, clock: FakeClock, web: FakeWeb
+) -> None:
+    """End-to-end tests point it at a closed port, so they never reach the real service."""
+    mbid = str(uuid.uuid4())
+    web.answer("musicbrainz.test", f"/ws/2/release/{mbid}", ok(release(mbid)))
+    service = lookups(app, settings, clock, web, musicbrainz_public_url="http://musicbrainz.test/")
+
+    found = await service.musicbrainz.release(mbid)
+
+    assert found.found and web.hosts() == ["musicbrainz.test"]
+    await service.aclose()
+
+
 async def test_overload_waits_and_retries_instead_of_failing(
     app: FastAPI, settings: Settings, clock: FakeClock, web: FakeWeb
 ) -> None:

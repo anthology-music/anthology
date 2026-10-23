@@ -21,15 +21,22 @@ from anthology.jobs.schedules import Scheduler, ScheduleRegistry
 from anthology.jobs.streams import JobItemsStream, JobsStream
 from anthology.library import adoption, identification, maintenance, superseded
 from anthology.library import api as library_api
+from anthology.library import review as library_review
 from anthology.library.streams import STREAMS as LIBRARY_STREAMS
 from anthology.library_import import api as library_import_api
 from anthology.library_import import jobs as library_import_jobs
+from anthology.library_import import review as library_import_review
 from anthology.library_import.streams import STREAMS as LIBRARY_IMPORT_STREAMS
 from anthology.metadata_lookup import api as metadata_lookup_api
 from anthology.metadata_lookup.service import LookupService, check_mirror
 from anthology.quality_analysis import api as quality_analysis_api
+from anthology.quality_analysis import review as quality_review
 from anthology.quality_analysis import service as quality_analysis
 from anthology.quality_analysis.streams import STREAMS as QUALITY_ANALYSIS_STREAMS
+from anthology.review import api as review_api
+from anthology.review import jobs as review_jobs
+from anthology.review import service as review
+from anthology.review import streams as review_streams
 from anthology.sync import api as sync_api
 from anthology.sync.background import ChangeBackground
 from anthology.sync.feed import ChangeFeed
@@ -108,7 +115,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.job_handlers.get(maintenance.JOB_TYPE).bind(
             maintenance.Maintainer(sessionmaker, settings)
         )
+        for handler in library_import_review.HANDLERS:
+            app.state.review_handlers.get(handler.type).bind(sessionmaker, settings)
+        reviewer = review.Reviewer(sessionmaker, app.state.review_handlers)
+        app.state.reviewer = reviewer
+        app.state.job_handlers.get(review_jobs.JOB_TYPE).bind(reviewer)
+        app.state.job_handlers.get(review_jobs.BACKFILL_JOB).bind(reviewer)
         if settings.background_tasks:
+            async with sessionmaker() as session, session.begin():
+                await review_jobs.ensure_backfill(session, app.state.review_handlers)
             await background.start()
             await runner.start()
             await scheduler.start()
@@ -129,7 +144,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             await engine.dispose()
 
     app = FastAPI(title="Anthology", version=__version__, lifespan=lifespan)
-    app.state.streams = _streams(settings)
+    app.state.review_handlers = _review_handlers()
+    app.state.streams = _streams(settings, app.state.review_handlers)
     app.state.job_handlers = _job_handlers(settings)
     app.state.schedules = _schedules()
     app.include_router(health.router, prefix=API_PREFIX)
@@ -140,6 +156,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(library_api.router, prefix=API_PREFIX)
     app.include_router(library_import_api.router, prefix=API_PREFIX)
     app.include_router(quality_analysis_api.router, prefix=API_PREFIX)
+    app.include_router(review_api.router, prefix=API_PREFIX)
     if settings.web_dir is not None:
         mount_web(app, settings.web_dir)  # last: its fallback must not shadow API routes
     return app
@@ -193,6 +210,8 @@ def _job_handlers(settings: Settings) -> HandlerRegistry:
     registry.register(superseded.DeleteSupersededHandler())
     registry.register(maintenance.MaintenanceHandler())
     registry.register(quality_analysis.AnalyzeQualityHandler())
+    registry.register(review_jobs.ReviewDecisionHandler())
+    registry.register(review_jobs.ReviewBackfillHandler())
     for handler in library_import_jobs.HANDLERS:
         registry.register(handler())
     if settings.dev_demo:
@@ -208,7 +227,19 @@ def _schedules() -> ScheduleRegistry:
     return registry
 
 
-def _streams(settings: Settings) -> StreamRegistry:
+def _review_handlers() -> review.HandlerRegistry:
+    """Apply handlers of the review types, one per type (spec: review)."""
+    registry = review.HandlerRegistry()
+    for handler in (
+        *library_review.HANDLERS,
+        *library_import_review.HANDLERS,
+        *quality_review.HANDLERS,
+    ):
+        registry.register(handler())
+    return registry
+
+
+def _streams(settings: Settings, review_handlers: review.HandlerRegistry) -> StreamRegistry:
     registry = StreamRegistry()
     registry.register(UsersStream())
     registry.register(MyDevicesStream())
@@ -217,6 +248,8 @@ def _streams(settings: Settings) -> StreamRegistry:
     registry.register(ServicesStream())
     for stream in (*LIBRARY_STREAMS, *LIBRARY_IMPORT_STREAMS, *QUALITY_ANALYSIS_STREAMS):
         registry.register(stream())
+    for review_stream in review_streams.streams(review_handlers):
+        registry.register(review_stream)
     if settings.dev_demo:
         from anthology.sync.demo import DemoItemsStream
 
