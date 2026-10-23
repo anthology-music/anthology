@@ -7,6 +7,7 @@
       <IdentificationSettings v-if="auth.isAdmin || auth.user?.role === 'editor'" />
       <QualitySettings v-if="auth.isAdmin || auth.user?.role === 'editor'" />
       <AdoptionSettings v-if="auth.isAdmin" />
+      <SupersededSettings v-if="auth.isAdmin" />
       <ServiceOverview v-if="auth.isAdmin" />
     </div>
   </q-page>
@@ -18,6 +19,7 @@ import { useI18n } from 'vue-i18n';
 import PageHeader from '@/components/PageHeader.vue';
 import ServiceOverview from '@/components/ServiceOverview.vue';
 import AdoptionSettings from '@/features/library/components/AdoptionSettings.vue';
+import SupersededSettings from '@/features/library/components/SupersededSettings.vue';
 import IdentificationSettings from '@/features/library/components/IdentificationSettings.vue';
 import QualitySettings from '@/features/quality-analysis/components/QualitySettings.vue';
 import MyDevices from '@/features/users/components/MyDevices.vue';

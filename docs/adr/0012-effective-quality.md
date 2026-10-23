@@ -15,6 +15,6 @@ Files often claim a better quality than they have: lossy audio saved as FLAC, up
 
 ## Consequences
 
-- An analysis step runs for every new file (throttled, cached per audio hash).
+- An analysis step runs for every new file (throttled, cached per audio hash). Superseded by ADR 0022: on acquisition only duplicate candidates are analysed; the whole library is checked on request.
 - False positives on old recordings are possible; they are evaluated more tolerantly and can be confirmed manually.
 - A reference set of genuine and upscaled test files is needed in CI.

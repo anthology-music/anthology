@@ -11,6 +11,7 @@ from sqlalchemy import func, select, update
 
 from anthology.core.config import Settings
 from anthology.jobs import service as jobs
+from anthology.library import identification
 from anthology.library import service as library
 from anthology.library.models import (
     QUALITY_COUNTERS,
@@ -201,7 +202,9 @@ async def test_api_roles_and_one_job_at_a_time(app: FastAPI, client) -> None:
     assert again.status_code == 409
 
 
-async def test_analysis_starts_after_an_import(settings: Settings, tmp_path: Path, files) -> None:
+async def test_import_starts_identification_but_no_quality_analysis(
+    settings: Settings, tmp_path: Path, files
+) -> None:
     root = tmp_path / "imports"
     folder = root / "Polarnacht"
     folder.mkdir(parents=True)
@@ -223,9 +226,12 @@ async def test_analysis_starts_after_an_import(settings: Settings, tmp_path: Pat
             await imports.confirm(session, library_import.id)
         await settle(app, library_import.id)
         async with app.state.sessionmaker() as session:
-            started = await jobs.has_unfinished_job(session, service.JOB_TYPE)
+            analysis = await jobs.has_unfinished_job(session, service.JOB_TYPE)
+            identification_started = await jobs.has_unfinished_job(session, identification.JOB_TYPE)
 
-    assert started
+    # ADR 0022: on acquisition only duplicate candidates are analysed.
+    assert identification_started
+    assert not analysis
 
 
 async def test_track_rows_and_summary_follow_the_analysis(

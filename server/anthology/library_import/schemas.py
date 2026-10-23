@@ -29,6 +29,8 @@ class ImportStart(BaseModel):
     mode: ImportMode | None = None
     # Only for referenced originals (reference, hardlink).
     allow_tag_writes: bool = False
+    # Delete replaced managed originals after verification, else keep them (ADR 0021).
+    delete_replaced: bool = True
 
 
 class ImportAccepted(BaseModel):
@@ -43,6 +45,7 @@ class LibraryImportRow(StreamRow):
     mode: ImportMode
     managed: bool
     allow_tag_writes: bool
+    delete_replaced: bool
     status: ImportStatus
     report: dict[str, Any] | None
     job_id: str | None

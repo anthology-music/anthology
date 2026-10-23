@@ -10,7 +10,7 @@ from typing import Any
 import pytest
 from fastapi import FastAPI
 from httpx import AsyncClient
-from sqlalchemy import select, text
+from sqlalchemy import func, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -140,6 +140,8 @@ def _file(mode: StorageMode, status: OriginalStatus, tag_writes_allowed: bool) -
             {FileOperation.WRITE_TAGS, FileOperation.ADOPT},
         ),
         (StorageMode.REFERENCED, OriginalStatus.SUPERSEDED, False, set()),
+        # ADR 0021: a superseded managed file may only be deleted.
+        (StorageMode.MANAGED, OriginalStatus.SUPERSEDED, False, {FileOperation.DELETE}),
         (StorageMode.REFERENCED, OriginalStatus.SUPERSEDED, True, set()),
     ],
 )
@@ -192,7 +194,7 @@ async def test_better_file_supersedes_a_referenced_original(app: FastAPI, tmp_pa
         recording = await session.get_one(Recording, track.recording_id)
         old = await service.active_original(session, recording.id)
         old_id = old.id
-        replacement = await service.replace_original(session, recording, audio())
+        replacement, _ = await service.replace_original(session, recording, audio())
 
     assert (old_path.read_bytes(), old_path.stat().st_mtime_ns) == before
     async with app.state.sessionmaker() as session:
@@ -213,24 +215,79 @@ async def test_better_file_supersedes_a_referenced_original(app: FastAPI, tmp_pa
         assert await service.counters(session, SUPERSEDED_COUNTERS) == {
             "superseded_files": 1,
             "superseded_bytes": old.size_bytes,
+            "superseded_managed_files": 0,
+            "superseded_managed_bytes": 0,
         }
         await assert_consistent(session)
 
 
-async def test_replacement_refuses_what_it_cannot_do_safely(app: FastAPI, tmp_path: Path) -> None:
+async def test_downloads_never_become_referenced_replacements(app: FastAPI, tmp_path: Path) -> None:
     async with app.state.sessionmaker() as session, session.begin():
-        _, [managed] = await album(session, "Nordlicht", "Polarnacht", ["Eisfeld"])
         [referenced_track] = await referenced_album(session, tmp_path, ["Treibeis"])
 
     async with app.state.sessionmaker() as session, session.begin():
-        recording = await session.get_one(Recording, managed.recording_id)
-        with pytest.raises(service.ReplacementNotSupported):
-            await service.replace_original(session, recording, audio())
         recording = await session.get_one(Recording, referenced_track.recording_id)
         with pytest.raises(service.ReplacementNotSupported):
             await service.replace_original(
                 session, recording, referenced(foreign_file(tmp_path, "other.mp3"))
             )
+
+
+async def test_managed_original_is_superseded_and_then_deletable(app: FastAPI) -> None:
+    async with app.state.sessionmaker() as session, session.begin():
+        _, [track] = await album(session, "Nordlicht", "Polarnacht", ["Eisfeld"])
+    async with app.state.sessionmaker() as session, session.begin():
+        recording = await session.get_one(Recording, track.recording_id)
+        old = await service.active_original(session, recording.id)
+        old_id, old_size = old.id, old.size_bytes
+        replacement, superseded = await service.replace_original(session, recording, audio())
+        replacement_id = replacement.id
+        assert superseded is not None and superseded.id == old_id
+    async with app.state.sessionmaker() as session:
+        held = await service.counters(session, SUPERSEDED_COUNTERS)
+        kept = await session.get_one(AudioFile, old_id)
+        assert kept.original_status == OriginalStatus.SUPERSEDED
+        with pytest.raises(FileOperationRefused):
+            service.check_file_operation(kept, FileOperation.MOVE)
+
+    async with app.state.sessionmaker() as session, session.begin():
+        kept = await session.get_one(AudioFile, old_id)
+        kept_path = kept.path
+        path = await service.delete_superseded(session, kept)
+    async with app.state.sessionmaker() as session:
+        after = await service.counters(session, SUPERSEDED_COUNTERS)
+        gone = await session.get(AudioFile, old_id)
+        active_id = (await service.active_original(session, track.recording_id)).id
+        contexts = await session.scalar(
+            select(func.count()).where(Track.recording_id == track.recording_id)
+        )
+        await assert_consistent(session)
+
+    assert held == {
+        "superseded_files": 1,
+        "superseded_bytes": old_size,
+        "superseded_managed_files": 1,
+        "superseded_managed_bytes": old_size,
+    }
+    assert path == kept_path
+    assert gone is None
+    assert active_id == replacement_id
+    assert contexts == 1
+    assert after == {name: 0 for name in after}
+
+
+async def test_referenced_superseded_files_are_never_deletable(
+    app: FastAPI, tmp_path: Path
+) -> None:
+    [superseded_id] = await _supersede(app, tmp_path, ["Treibeis"])
+    async with app.state.sessionmaker() as session:
+        superseded = await session.get_one(AudioFile, superseded_id)
+        counters = await service.counters(session, SUPERSEDED_COUNTERS)
+        with pytest.raises(FileOperationRefused):
+            await service.delete_superseded(session, superseded)
+
+    assert counters["superseded_files"] == 1
+    assert counters["superseded_managed_files"] == 0
 
 
 async def test_only_the_active_original_is_resolved(
@@ -240,7 +297,7 @@ async def test_only_the_active_original_is_resolved(
     async with app.state.sessionmaker() as session, session.begin():
         [track] = await referenced_album(session, tmp_path, ["Eisfeld"])
         recording = await session.get_one(Recording, track.recording_id)
-        replacement = await service.replace_original(session, recording, audio())
+        replacement, _ = await service.replace_original(session, recording, audio())
 
     async with app.state.sessionmaker() as session:
         active = await service.active_original(session, track.recording_id)
@@ -285,6 +342,8 @@ async def test_report_of_superseded_files(
     assert meta["data"]["counters"] == {
         "superseded_files": 3,
         "superseded_bytes": 3 * total_size // 4,
+        "superseded_managed_files": 0,
+        "superseded_managed_bytes": 0,
     }
     assert [Path(row["path"]).name for row in first] == ["Alpha.mp3", "Bravo.mp3"]
     assert chunk["data"]["start"] == 2

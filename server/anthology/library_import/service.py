@@ -11,11 +11,12 @@ import json
 import logging
 import re
 import uuid
+from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import case, func, select
+from sqlalchemy import case, func, select, update
 from sqlalchemy.dialects import postgresql, sqlite
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -48,13 +49,17 @@ VARIOUS_ARTISTS = "Various Artists"
 FINGERPRINT_MATCH = 0.85
 DURATION_TOLERANCE_MS = 2_000
 DISC_FOLDER = re.compile(r"^(?:cd|disc|disk)\s*(\d+)$", re.IGNORECASE)
-# Items the import job works on: everything that becomes a file or a track context.
-APPLIED_RESULTS = (
-    ImportResult.NEW,
+# Items that become originals: new files and files replacing a worse original.
+PRIMARY_RESULTS = (ImportResult.NEW, ImportResult.REPLACES_LOWER_QUALITY)
+# Items that become track contexts of an existing or primary recording.
+CONTEXT_RESULTS = (
     ImportResult.ALREADY_PRESENT,
     ImportResult.DUPLICATE_IN_SOURCE,
     ImportResult.NEEDS_REVIEW,
+    ImportResult.SUSPICIOUS_QUALITY,
 )
+# Items the import job works on.
+APPLIED_RESULTS = PRIMARY_RESULTS + CONTEXT_RESULTS
 
 # Change entries of the imports list (stream library_import.imports).
 IMPORT = "library_import"
@@ -113,6 +118,7 @@ async def start(
     same_mount: bool,
     allow_tag_writes: bool,
     created_by: uuid.UUID,
+    delete_replaced: bool = True,
 ) -> LibraryImport:
     """Create an import and its scan job. An unconfirmed report of the same folder is replaced
     (spec: Report confirmation)."""
@@ -139,6 +145,7 @@ async def start(
         mode=mode,
         same_mount=same_mount,
         allow_tag_writes=allow_tag_writes and mode in (ImportMode.REFERENCE, ImportMode.HARDLINK),
+        delete_replaced=delete_replaced,
         status=ImportStatus.SCANNING,
         created_by=created_by,
         created_at=utcnow(),
@@ -171,9 +178,19 @@ async def confirm(session: AsyncSession, import_id: uuid.UUID) -> LibraryImport:
     library_import = await _locked(session, import_id)
     if library_import.status != ImportStatus.REPORTED:
         raise InvalidState()
-    batches = await path_batches(
-        session, library_import.id, ImportItem.result.in_(list(APPLIED_RESULTS))
-    )
+    # Originals first, then the track contexts, which may refer to an original later in the
+    # path order (the best copy within the source).
+    batches = [
+        [*bounds, "primary"]
+        for bounds in await path_batches(
+            session, library_import.id, ImportItem.result.in_(list(PRIMARY_RESULTS))
+        )
+    ] + [
+        [*bounds, "context"]
+        for bounds in await path_batches(
+            session, library_import.id, ImportItem.result.in_(list(CONTEXT_RESULTS))
+        )
+    ]
     if not batches:
         library_import.report_json = json.dumps(await compute_report(session, library_import))
         await _set_status(session, library_import, ImportStatus.DONE)
@@ -348,7 +365,10 @@ async def compute_report(session: AsyncSession, library_import: LibraryImport) -
         failed_files += failed
         failed_bytes += int(failed_size)
         imported += applied
-    new_bytes = categories[ImportResult.NEW.value]["bytes"]
+    new_bytes = (
+        categories[ImportResult.NEW.value]["bytes"]
+        + categories[ImportResult.REPLACES_LOWER_QUALITY.value]["bytes"]
+    )
     adds = library_import.mode == ImportMode.COPY or (
         library_import.mode == ImportMode.MOVE and not library_import.same_mount
     )
@@ -358,6 +378,7 @@ async def compute_report(session: AsyncSession, library_import: LibraryImport) -
         "bytes": sum(value["bytes"] for value in categories.values()),
         "adds_bytes": new_bytes if adds else 0,
         "managed": library_import.mode in MANAGED_MODES,
+        "delete_replaced": library_import.delete_replaced,
         "imported": imported,
         "failed": {"files": failed_files, "bytes": failed_bytes},
     }
@@ -428,35 +449,42 @@ def describe(item: ImportItem, info: FileInfo) -> None:
 
 
 def _earlier(item: ImportItem):
+    """Earlier files of the source that are (so far) the original of their recording."""
     return (
         ImportItem.import_id == item.import_id,
         ImportItem.path < item.path,
-        ImportItem.result == ImportResult.NEW,
+        ImportItem.result.in_(list(PRIMARY_RESULTS)),
     )
 
 
-async def match_known(session: AsyncSession, item: ImportItem) -> bool:
-    """Stages audio hash and identifiers; sets the result and returns True on a match."""
+@dataclass(frozen=True)
+class Match:
+    """What a file matched: a library recording or an earlier file of the source."""
+
+    same_audio: bool  # equal audio hash: no quality comparison needed
+    recording: Any = None
+    earlier: ImportItem | None = None
+
+
+async def match_known(session: AsyncSession, item: ImportItem) -> Match | None:
+    """Stages audio hash and identifiers (spec: Staged duplicate detection)."""
     original = await library.original_by_audio_hash(session, item.audio_hash)
     if original is not None:
         recording = await library.get_recording(session, original.recording_id)
-        matched(item, ImportResult.ALREADY_PRESENT, recording=recording)
-        return True
+        return Match(same_audio=True, recording=recording)
     earlier = await session.scalar(
         select(ImportItem).where(*_earlier(item), ImportItem.audio_hash == item.audio_hash).limit(1)
     )
     if earlier is not None:
-        matched(item, ImportResult.DUPLICATE_IN_SOURCE, earlier=earlier)
-        return True
+        return Match(same_audio=True, earlier=earlier)
 
     if item.mb_recording_id is None and item.isrc is None:
-        return False
+        return None
     recording = await library.recording_by_identifiers(
         session, mb_recording_id=item.mb_recording_id, isrc=item.isrc, duration_ms=item.duration_ms
     )
     if recording is not None:
-        matched(item, ImportResult.ALREADY_PRESENT, recording=recording)
-        return True
+        return Match(same_audio=False, recording=recording)
     conditions = []
     if item.mb_recording_id is not None:
         conditions.append(ImportItem.mb_recording_id == item.mb_recording_id)
@@ -470,9 +498,38 @@ async def match_known(session: AsyncSession, item: ImportItem) -> bool:
             select(ImportItem).where(*_earlier(item), condition).limit(1)
         )
         if earlier is not None:
-            matched(item, ImportResult.DUPLICATE_IN_SOURCE, earlier=earlier)
-            return True
-    return False
+            return Match(same_audio=False, earlier=earlier)
+    return None
+
+
+async def replacing_item(session: AsyncSession, item: ImportItem, recording_id: uuid.UUID):
+    """An earlier file of the source that already replaces the recording's original."""
+    return await session.scalar(
+        select(ImportItem)
+        .where(
+            *_earlier(item),
+            ImportItem.result == ImportResult.REPLACES_LOWER_QUALITY,
+            ImportItem.matched_recording_id == recording_id,
+        )
+        .limit(1)
+    )
+
+
+async def take_over(session: AsyncSession, item: ImportItem, primary: ImportItem) -> None:
+    """``item`` is better than the earlier ``primary``: it takes its role (new original or
+    replacement) and ``primary`` with its own duplicates becomes a duplicate of ``item``."""
+    item.result = primary.result
+    item.matched_recording_id = primary.matched_recording_id
+    item.duplicate_of_id = None
+    await session.execute(
+        update(ImportItem)
+        .where(ImportItem.duplicate_of_id == primary.id)
+        .values(duplicate_of_id=item.id)
+        .execution_options(synchronize_session=False)
+    )
+    primary.result = ImportResult.DUPLICATE_IN_SOURCE
+    primary.matched_recording_id = None
+    primary.duplicate_of_id = item.id
 
 
 def matched(item: ImportItem, result: ImportResult, *, recording=None, earlier=None) -> None:

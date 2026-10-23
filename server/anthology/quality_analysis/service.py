@@ -93,14 +93,6 @@ async def start(
     return job.id
 
 
-async def start_after_import(session: AsyncSession, created_by: uuid.UUID) -> None:
-    """Spec: After an import. A running job is left alone; its next run covers the files."""
-    try:
-        await start(session, created_by=created_by)
-    except AnalysisRunning:
-        logger.info("quality analysis is running; new files wait for its next run")
-
-
 async def store(session: AsyncSession, audio_hash: str, result: Result) -> None:
     """Store the result for the hash and apply it to its files (spec: Stored result)."""
     analysis = await session.get(QualityAnalysis, audio_hash, with_for_update=True)
@@ -192,3 +184,32 @@ class AnalyzeQualityHandler:
             counts[outcome] = counts.get(outcome, 0) + 1
             await ctx.report((index + 1) / len(hashes), f"{index + 1}/{len(hashes)}")
         return ItemResult(message=json.dumps(counts, sort_keys=True), result=counts)
+
+
+# --- single files on acquisition (ADR 0022) -------------------------------------------------------
+
+
+async def stored(session: AsyncSession, audio_hash: str) -> QualityAnalysis | None:
+    return await session.get(QualityAnalysis, audio_hash)
+
+
+async def analyse_file(
+    path: str, facts: FileFacts, duration_s: float, *, ffmpeg: str
+) -> Result | None:
+    """Analyse a file that is not (yet) in the library; None if it cannot be decoded."""
+    if not await asyncio.to_thread(Path(path).is_file):
+        return None
+    try:
+        return await analyze(path, facts, duration_s, ffmpeg=ffmpeg)
+    except DecodeError as error:
+        logger.info("quality analysis of %s failed: %s", path, error)
+        return None
+
+
+async def apply_stored(session: AsyncSession, audio_hash: str) -> None:
+    """Apply a result stored before the file entered the library (a duplicate candidate)."""
+    analysis = await stored(session, audio_hash)
+    if analysis is None:
+        return
+    effective = analysis.effective_quality if analysis.confidence == Confidence.HIGH else None
+    await library.apply_quality(session, audio_hash, analysis.status, effective)

@@ -1,11 +1,11 @@
 ## ADDED Requirements
 
 ### Requirement: Analysis job
-Editors and admins SHALL be able to start the quality analysis of all audio files without a stored result as a background job; the system SHALL also start it after an import that created originals. A re-run on request SHALL analyse again the files whose result was produced by an older version of the analysis.
+Editors and admins SHALL be able to start the quality analysis of all audio files without a stored result as a background job (the quality check of the whole library; acquisitions analyse only duplicate candidates, ADR 0022). A re-run on request SHALL analyse again the files whose result was produced by an older version of the analysis.
 
-#### Scenario: After an import
-- **WHEN** a folder import has created 300 originals
-- **THEN** a quality analysis job checks them without a separate user action
+#### Scenario: Whole library on request
+- **WHEN** an editor starts the quality check after an import has created 300 originals
+- **THEN** a quality analysis job checks the files without a stored result
 
 #### Scenario: One job at a time
 - **WHEN** an editor starts the analysis while one is running

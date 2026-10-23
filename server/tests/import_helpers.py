@@ -21,6 +21,10 @@ def make_dirs(*folders: Path) -> None:
         folder.mkdir(parents=True, exist_ok=True)
 
 
+def exists(path: str | Path) -> bool:
+    return Path(path).exists()
+
+
 def read(path: str | Path) -> bytes:
     return Path(path).read_bytes()
 

@@ -13,7 +13,7 @@ Anthology is an open-source, self-hosted music application built as one integrat
 - Multi-room playback (Teufel Raumfeld first) through exchangeable output adapters.
 - Works, arrangements and medleys for wind bands, with publishers and sheet music.
 
-Background and rationale: `docs/concept/anthology-six-pager.md`. Decisions: `docs/adr/`. Data model: `docs/architecture/data-model.puml`. UI reference: `docs/design/`. Order of work and deferred topics: `docs/roadmap.md`. Current state and next steps: `docs/agent-notes.md`.
+Background and rationale: `docs/concept/anthology-six-pager.md`. Decisions: `docs/adr/`. Data model: `docs/architecture/data-model.puml`. UI reference: `docs/design/`. Use cases and user stories: `docs/requirements/`. Order of work and deferred topics: `docs/roadmap.md`. Current state and next steps: `docs/agent-notes.md`.
 
 ## Language
 

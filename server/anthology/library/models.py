@@ -86,6 +86,8 @@ class Counter(enum.StrEnum):
     RECORDINGS = "recordings"
     SUPERSEDED_FILES = "superseded_files"
     SUPERSEDED_BYTES = "superseded_bytes"
+    SUPERSEDED_MANAGED_FILES = "superseded_managed_files"
+    SUPERSEDED_MANAGED_BYTES = "superseded_managed_bytes"
     IDENTIFICATION_UNCHECKED = "identification_unchecked"
     IDENTIFICATION_ISRC = "identification_isrc"
     IDENTIFICATION_FINGERPRINT = "identification_fingerprint"
@@ -102,7 +104,12 @@ class Counter(enum.StrEnum):
 
 
 LIBRARY_COUNTERS = (Counter.ARTISTS, Counter.RELEASES, Counter.TRACKS, Counter.RECORDINGS)
-SUPERSEDED_COUNTERS = (Counter.SUPERSEDED_FILES, Counter.SUPERSEDED_BYTES)
+SUPERSEDED_COUNTERS = (
+    Counter.SUPERSEDED_FILES,
+    Counter.SUPERSEDED_BYTES,
+    Counter.SUPERSEDED_MANAGED_FILES,
+    Counter.SUPERSEDED_MANAGED_BYTES,
+)
 # Active referenced originals (candidates for adoption into managed storage).
 REFERENCED_COUNTERS = (Counter.REFERENCED_FILES, Counter.REFERENCED_BYTES)
 # Active originals per quality status (None: not analysed yet).

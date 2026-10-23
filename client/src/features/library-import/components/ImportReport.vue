@@ -38,6 +38,23 @@
         <q-icon :name="row.managed ? 'inventory_2' : 'link'" aria-hidden="true" />
         {{ t(row.managed ? 'libraryImport.report.managed' : 'libraryImport.report.referenced') }}
       </p>
+      <p
+        v-if="data.categories.replaces_lower_quality.files"
+        class="import-report__line"
+        data-testid="import-replaced"
+      >
+        <q-icon name="swap_horiz" aria-hidden="true" />
+        {{
+          t(
+            row.delete_replaced
+              ? 'libraryImport.report.replacedDeleted'
+              : 'libraryImport.report.replacedKept',
+            {
+              n: number(data.categories.replaces_lower_quality.files),
+            },
+          )
+        }}
+      </p>
       <p v-if="row.status === 'done'" class="import-report__line" data-testid="import-result">
         <q-icon name="check_circle" aria-hidden="true" />
         {{ t('libraryImport.report.imported', { n: number(data.imported) }) }}

@@ -36,6 +36,7 @@ def _row(library_import: LibraryImport) -> Row:
         mode=library_import.mode,
         managed=library_import.mode in MANAGED_MODES,
         allow_tag_writes=library_import.allow_tag_writes,
+        delete_replaced=library_import.delete_replaced,
         status=library_import.status,
         report=json.loads(library_import.report_json) if library_import.report_json else None,
         job_id=str(library_import.job_id) if library_import.job_id else None,

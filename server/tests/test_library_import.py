@@ -192,7 +192,7 @@ async def test_same_song_in_three_folders_is_imported_once(
                     select(Release.title, Recording.title)
                     .join(Track, Track.release_id == Release.id)
                     .join(Recording, Recording.id == Track.recording_id)
-                    .order_by(Release.title)
+                    .order_by(Release.title, Recording.title)
                 )
             )
             originals = list(await session.scalars(select(AudioFile.path)))
@@ -200,7 +200,9 @@ async def test_same_song_in_three_folders_is_imported_once(
 
     assert found["A/Eisfeld.flac"].result == ImportResult.NEW
     assert found["B/Eisfeld.flac"].result == ImportResult.DUPLICATE_IN_SOURCE
-    assert found["C/Eisfeld.flac"].result == ImportResult.DUPLICATE_IN_SOURCE
+    # Found by fingerprint, so the qualities are compared: pure sine tones have no treble,
+    # the analysis is not conclusive, and the copy only becomes a track context.
+    assert found["C/Eisfeld.flac"].result == ImportResult.SUSPICIOUS_QUALITY
     assert found["C/Eisfeld.flac"].fingerprint is not None
     assert found["C/Polarlicht.flac"].result == ImportResult.NEW
     assert sorted(recordings) == ["Eisfeld", "Polarlicht"]
@@ -211,7 +213,8 @@ async def test_same_song_in_three_folders_is_imported_once(
         ("Live", "Polarlicht"),
         ("Polarnacht", "Eisfeld"),
     ]
-    assert files(report(done), "duplicate_in_source") == 2
+    assert files(report(done), "duplicate_in_source") == 1
+    assert files(report(done), "suspicious_quality") == 1
     assert report(done)["imported"] == 4
 
 
@@ -252,7 +255,8 @@ async def test_already_present_by_audio_hash_and_identifiers(
         found = await items(app, library_import.id)
 
     assert found["Eisfeld (retagged).flac"].result == ImportResult.ALREADY_PRESENT
-    assert found["Polarlicht.flac"].result == ImportResult.ALREADY_PRESENT
+    # Other audio, matched by ISRC: compared, and sine tones are not conclusive.
+    assert found["Polarlicht.flac"].result == ImportResult.SUSPICIOUS_QUALITY
     assert found["Unbekannt.flac"].result == ImportResult.NEEDS_REVIEW
     assert files(report(library_import), "needs_review") == 1
 

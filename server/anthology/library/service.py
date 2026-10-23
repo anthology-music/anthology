@@ -701,9 +701,12 @@ def check_file_operation(audio_file: AudioFile, operation: FileOperation) -> Non
 
     Managed originals allow everything but adoption. Referenced files are never moved, renamed
     or deleted and written only with the opt-in; only adoption takes them into managed storage
-    (after checksum verification). Superseded files are never touched at all.
+    (after checksum verification). A superseded managed file may only be deleted (ADR 0021);
+    superseded referenced files are never touched at all.
     """
     if audio_file.original_status == OriginalStatus.SUPERSEDED:
+        if audio_file.storage_mode == StorageMode.MANAGED and operation == FileOperation.DELETE:
+            return
         raise FileOperationRefused(audio_file, operation)
     if operation == FileOperation.ADOPT:
         if audio_file.storage_mode == StorageMode.REFERENCED:
@@ -735,21 +738,21 @@ async def replace_original(
     recording: Recording,
     audio: AudioFileInfo,
     *,
+    allow_referenced: bool = False,
     user_id: uuid.UUID | None = None,
-) -> AudioFile:
-    """Make ``audio`` (a managed file) the active original of ``recording``.
+) -> tuple[AudioFile, AudioFile | None]:
+    """Make ``audio`` the active original of ``recording``; returns (new, superseded).
 
-    A referenced active original is kept unchanged at its location, marked superseded and
-    listed in the report of superseded files (spec: library, Quality-based replacement).
+    The old active original is kept unchanged, marked superseded and listed in the report of
+    superseded files (spec: library, Quality-based replacement). A superseded managed file may
+    be deleted afterwards with ``delete_superseded`` (ADR 0021); referenced ones never.
     Whether the new file is better is decided by the caller (effective quality); track
-    contexts stay as they are.
+    contexts stay as they are. A referenced replacement is allowed only for imports in a
+    referenced mode (``allow_referenced``); acquisitions store managed files.
     """
-    if audio.storage_mode != StorageMode.MANAGED:
-        raise ReplacementNotSupported("a replacing original is always managed")
+    if audio.storage_mode != StorageMode.MANAGED and not allow_referenced:
+        raise ReplacementNotSupported("a downloaded or ripped original is always managed")
     current = await active_original(session, recording.id)
-    if current is not None and current.storage_mode == StorageMode.MANAGED:
-        # Deleting the old file needs the checksum-verified file handling of acquisition.
-        raise ReplacementNotSupported("replacing a managed original is not supported yet")
 
     replacement = _audio_file(
         recording.id, audio, current.home_track_id if current is not None else None
@@ -761,6 +764,7 @@ async def replace_original(
         await session.flush()
     session.add(replacement)
     await session.flush()
+    await _referenced(session, replacement, +1)
     await _quality_counted(session, replacement, +1)
     await _changed(session, "audio_file", replacement.id, ChangeOperation.INSERT)
     if current is not None:
@@ -768,8 +772,7 @@ async def replace_original(
         await session.flush()
         await _referenced(session, current, -1)
         await _quality_counted(session, current, -1)
-        await adjust_counter(session, Counter.SUPERSEDED_FILES, +1)
-        await adjust_counter(session, Counter.SUPERSEDED_BYTES, current.size_bytes)
+        await _superseded_counted(session, current, +1)
         await _changed(session, "audio_file", current.id)
         await _changed(session, SUPERSEDED_FILE, current.id, ChangeOperation.INSERT)
     await _audit(
@@ -783,7 +786,46 @@ async def replace_original(
     # Every context of the recording shows the new file's format.
     track_ids = await session.scalars(select(Track.id).where(Track.recording_id == recording.id))
     await _rows_changed(session, "track", list(track_ids))
-    return replacement
+    return replacement, current
+
+
+async def _superseded_counted(session: AsyncSession, audio_file: AudioFile, sign: int) -> None:
+    await adjust_counter(session, Counter.SUPERSEDED_FILES, sign)
+    await adjust_counter(session, Counter.SUPERSEDED_BYTES, sign * audio_file.size_bytes)
+    if audio_file.storage_mode == StorageMode.MANAGED:
+        await adjust_counter(session, Counter.SUPERSEDED_MANAGED_FILES, sign)
+        await adjust_counter(
+            session, Counter.SUPERSEDED_MANAGED_BYTES, sign * audio_file.size_bytes
+        )
+
+
+async def delete_superseded(
+    session: AsyncSession, audio_file: AudioFile, *, user_id: uuid.UUID | None = None
+) -> str:
+    """Remove a superseded managed file's entry; returns its path, which the caller deletes
+    after the commit. The caller has verified the replacing original (ADR 0021)."""
+    check_file_operation(audio_file, FileOperation.DELETE)
+    path = audio_file.path
+    await _superseded_counted(session, audio_file, -1)
+    await session.execute(
+        update(AudioFile)
+        .where(AudioFile.superseded_by_id == audio_file.id)
+        .values(superseded_by_id=audio_file.superseded_by_id)
+        .execution_options(synchronize_session=False)
+    )
+    await session.delete(audio_file)
+    await session.flush()
+    await _changed(session, "audio_file", audio_file.id, ChangeOperation.DELETE)
+    await _changed(session, SUPERSEDED_FILE, audio_file.id, ChangeOperation.DELETE)
+    await _audit(
+        session,
+        "recording",
+        audio_file.recording_id,
+        "delete_superseded",
+        user_id,
+        {"original": [path, None]},
+    )
+    return path
 
 
 # --- identification -------------------------------------------------------------------------

@@ -124,7 +124,7 @@ No copyrighted audio.
 ### API, stream and client
 
 - `POST /api/v1/quality-analysis` (editors, admins), `{full: bool}`: `full` re-analyses all hashes of an older method version. Returns 409 while running.
-- Started automatically after an import, in the same place as identification.
+- Not started automatically after an import any more: acquisitions analyse only duplicate candidates (ADR 0022, change `quality-based-replacement`).
 - Stream `quality_analysis.summary` (editors, admins): one row with the number of active originals per status, plus the unanalysed ones, from maintained library counters (files, like the identification counters on recordings).
 - The track row schema gains `effective_quality` (tier or null) and `quality_status` (status or null, from the audio file: a denormalized `quality_status` column on `audio_files`, set together with the effective quality, so that rows need no join).
 - Client:

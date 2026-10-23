@@ -1,6 +1,6 @@
 """Row schemas of the library streams (spec: library, Track rows by context)."""
 
-from anthology.library.models import AudioFormat, QualityStatus, QualityTier
+from anthology.library.models import AudioFormat, QualityStatus, QualityTier, StorageMode
 from anthology.sync.messages import StreamRow
 
 
@@ -45,6 +45,8 @@ class LibrarySupersededRow(StreamRow):
     path: str
     size_bytes: int
     format: AudioFormat
+    # Managed files can be deleted after verification; referenced ones never (ADR 0021).
+    storage_mode: StorageMode
     recording_id: str
     title: str
     artist: str

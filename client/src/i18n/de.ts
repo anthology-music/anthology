@@ -190,6 +190,9 @@ export default {
       tagWrites: 'Anthology darf Tags in diese Dateien schreiben',
       scan: 'Ordner prüfen',
       cancel: 'Schliessen',
+      deleteReplaced: 'Ersetzte verwaltete Originale löschen',
+      deleteReplacedHint:
+        'Gilt für alle Ersetzungen dieses Imports. Gelöscht wird erst, nachdem das neue Original per Prüfsumme geprüft ist; referenzierte Dateien werden nie gelöscht.',
       chooseFolder: 'Wähle einen Ordner unterhalb eines Import-Ordners.',
     },
     report: {
@@ -201,6 +204,8 @@ export default {
         already_present: 'Bereits vorhanden',
         duplicate_in_source: 'Doppelt in der Quelle',
         needs_review: 'Zu prüfen',
+        replaces_lower_quality: 'Ersetzt schlechtere Qualität',
+        suspicious_quality: 'Verdächtige Qualität',
         broken: 'Defekt',
         skipped: 'Unverändert seit dem letzten Import',
       },
@@ -209,6 +214,10 @@ export default {
       managed: 'Anthology verwaltet die Originale.',
       referenced:
         'Die Originale bleiben referenziert: Anthology verschiebt, benennt oder löscht sie nie.',
+      replacedDeleted:
+        '{n} Originale werden ersetzt; ersetzte verwaltete Dateien werden nach der Prüfung gelöscht.',
+      replacedKept:
+        '{n} Originale werden ersetzt; die ersetzten Dateien bleiben im Bericht der ersetzten Originale.',
       confirmHint: 'Bis zur Bestätigung wird nichts verschoben, verlinkt oder kopiert.',
       imported: 'Importiert: {n}',
       failed: 'Fehlgeschlagen: {n}',
@@ -222,6 +231,27 @@ export default {
       outside_roots: 'Dieser Ordner liegt nicht unterhalb eines Import-Ordners.',
       not_a_folder: 'Diesen Ordner gibt es nicht.',
       mode_not_possible: 'Dieser Speichermodus ist für den Ordner nicht möglich.',
+      failed: 'Das hat nicht geklappt. Bitte versuche es noch einmal.',
+    },
+  },
+  superseded: {
+    title: 'Ersetzte Originale',
+    hint: 'Dateien, die durch eine bessere Datei derselben Aufnahme ersetzt wurden. Verwaltete Dateien können gelöscht werden, sobald das neue Original per Prüfsumme geprüft ist.',
+    managed: 'Verwaltet (löschbar)',
+    referenced: 'Referenziert',
+    neverDeleted: 'Werden nie gelöscht und bleiben an ihrem Ort.',
+    summary: '{n} Datei ({size}) | {n} Dateien ({size})',
+    modes: { managed: 'Verwaltet', referenced: 'Referenziert' },
+    delete: 'Ersetzte verwaltete Dateien löschen',
+    confirmTitle: 'Ersetzte Dateien löschen?',
+    confirmText:
+      '{files} werden endgültig gelöscht. Jede Datei wird erst gelöscht, nachdem das neue Original geprüft ist; referenzierte Dateien bleiben.',
+    confirm: 'Löschen',
+    cancel: 'Abbrechen',
+    messages: {
+      started: 'Das Löschen läuft als Auftrag (siehe Streaming).',
+      running: 'Das Löschen läuft bereits.',
+      nothing: 'Es gibt nichts zu löschen.',
       failed: 'Das hat nicht geklappt. Bitte versuche es noch einmal.',
     },
   },

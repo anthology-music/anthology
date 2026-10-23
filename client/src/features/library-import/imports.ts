@@ -7,9 +7,11 @@ export type ImportStatus = LibraryImportRow['status'];
 /** Report categories in the order the report shows them (spec: library-import, Dry-run report). */
 export const CATEGORIES = [
   'new',
+  'replaces_lower_quality',
   'already_present',
   'duplicate_in_source',
   'needs_review',
+  'suspicious_quality',
   'broken',
   'skipped',
 ] as const;

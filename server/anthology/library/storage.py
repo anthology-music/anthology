@@ -55,9 +55,13 @@ def originals_dir(library: Path) -> Path:
     return library / ORIGINALS
 
 
-def target_path(library: Path, recording_id: uuid.UUID, extension: str) -> Path:
-    """Managed file name of a recording's original."""
-    return originals_dir(library) / recording_id.hex[:2] / f"{recording_id}{extension.lower()}"
+def target_path(
+    library: Path, recording_id: uuid.UUID, extension: str, variant: str | None = None
+) -> Path:
+    """Managed file name of a recording's original; a replacing file gets a ``variant`` so that
+    it never collides with the original it replaces."""
+    name = f"{recording_id}-{variant}" if variant else str(recording_id)
+    return originals_dir(library) / recording_id.hex[:2] / f"{name}{extension.lower()}"
 
 
 def sha256(path: str | Path) -> str:
