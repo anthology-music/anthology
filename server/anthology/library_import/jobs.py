@@ -24,8 +24,7 @@ from anthology.library import identification, storage, superseded
 from anthology.library import service as library
 from anthology.library.fingerprint import FingerprintError, compute
 from anthology.library.models import StorageMode
-from anthology.library.service import AudioFileInfo
-from anthology.library_import import service
+from anthology.library_import import review, service
 from anthology.library_import.analysis import Broken, FileInfo, read_file
 from anthology.library_import.models import (
     MANAGED_MODES,
@@ -182,29 +181,49 @@ class Importer:
                     return item.result
 
         if match is None:
-            match = await self._fingerprint_match(item_id, recordings, earlier)
+            match, near = await self._fingerprint_match(item_id, recordings, earlier)
         if match is None:
+            # A name match the fingerprint did not confirm stays a suggestion (spec: review,
+            # Same recording): a new recording now, an entry after the import.
             async with self.sessionmaker() as session, session.begin():
-                await self._store(session, item_id, result=ImportResult.NEW)
+                await self._store(
+                    session,
+                    item_id,
+                    result=ImportResult.NEW,
+                    name_match_recording_id=near.recording_id,
+                    name_match_item_id=near.item_id,
+                    name_match_similarity=near.similarity,
+                )
             return ImportResult.NEW
         return await self._decide(item_id, match)
 
-    async def _fingerprint_match(self, item_id, recordings, earlier) -> service.Match | None:
-        """Stage 5: fingerprints of the candidates, computed (once) and compared locally."""
+    async def _fingerprint_match(
+        self, item_id, recordings, earlier
+    ) -> tuple[service.Match | None, service.NameMatch]:
+        """Stage 5: fingerprints of the candidates, computed (once) and compared locally.
+        Without a match, the closest name candidate is returned with its similarity."""
         fingerprint = await self._item_fingerprint(item_id)
+        near = service.NameMatch(
+            recording_id=recordings[0] if recordings else None,
+            item_id=earlier[0].id if earlier and not recordings else None,
+        )
         if fingerprint is None:
-            return None
+            return None, near
         for candidate in earlier:
             other = await self._item_fingerprint(candidate.id)
-            if other is not None and service.same_audio(fingerprint, other):
-                return service.Match(same_audio=False, earlier=candidate)
+            value = service.fingerprint_similarity(fingerprint, other) if other else None
+            if value is not None and value >= service.FINGERPRINT_MATCH:
+                return service.Match(same_audio=False, earlier=candidate), near
+            near = near.closer(value, item_id=candidate.id)
         for recording_id in recordings:
             other = await self._recording_fingerprint(recording_id)
-            if other is not None and service.same_audio(fingerprint, other):
+            value = service.fingerprint_similarity(fingerprint, other) if other else None
+            if value is not None and value >= service.FINGERPRINT_MATCH:
                 async with self.sessionmaker() as session:
                     recording = await library.get_recording(session, recording_id)
-                return service.Match(same_audio=False, recording=recording)
-        return None
+                return service.Match(same_audio=False, recording=recording), near
+            near = near.closer(value, recording_id=recording_id)
+        return None, near
 
     async def _decide(self, item_id: uuid.UUID, match: service.Match) -> ImportResult:
         """Compare the file with the original it would duplicate: the library's original, or
@@ -440,31 +459,6 @@ class Importer:
             return None
         return transferred, content_hash
 
-    def _audio(
-        self,
-        library_import: LibraryImport,
-        item: ImportItem,
-        info: FileInfo,
-        transferred: storage.Transferred,
-        content_hash: str | None,
-    ) -> AudioFileInfo:
-        technical = info.technical
-        return AudioFileInfo(
-            path=transferred.path,
-            format=technical.format,
-            codec=technical.codec,
-            sample_rate_hz=technical.sample_rate_hz,
-            channels=technical.channels,
-            size_bytes=item.size_bytes,
-            audio_hash=item.audio_hash,
-            declared_quality=technical.declared_quality,
-            bitrate_kbps=technical.bitrate_kbps,
-            bit_depth=technical.bit_depth,
-            storage_mode=transferred.storage_mode,
-            tag_writes_allowed=library_import.allow_tag_writes,
-            content_hash=content_hash,
-        )
-
     async def _apply_new(self, library_import: LibraryImport, item: ImportItem) -> str:
         recording_id = item.recording_id or uuid.uuid4()
         placed = await self._place(library_import, item, recording_id)
@@ -499,7 +493,7 @@ class Importer:
                 mb_recording_id=mbid,
                 recording_id=recording_id,
                 user_id=library_import.created_by,
-                audio=self._audio(library_import, fresh, info, transferred, content_hash),
+                audio=service.audio_info(library_import, fresh, info, transferred, content_hash),
             )
             original = await library.active_original(session, recording_id)
             # A duplicate candidate was analysed during the scan (ADR 0022).
@@ -507,6 +501,7 @@ class Importer:
             fresh.audio_file_id = original.id
             fresh.release_id = release.id
             fresh.applied_at = utcnow()
+            await review.name_match(session, fresh)
         if transferred.remove_source and content_hash:
             await asyncio.to_thread(storage.remove_source, source, content_hash)
         return "imported"
@@ -536,7 +531,7 @@ class Importer:
             replacement, previous = await library.replace_original(
                 session,
                 recording,
-                self._audio(library_import, fresh, info, transferred, content_hash),
+                service.audio_info(library_import, fresh, info, transferred, content_hash),
                 allow_referenced=True,
                 user_id=library_import.created_by,
             )
@@ -576,20 +571,15 @@ class Importer:
         """A file whose recording exists: a track context on its album, no second file."""
         async with self.sessionmaker() as session, session.begin():
             fresh = await session.get_one(ImportItem, item.id, with_for_update=True)
-            recording_id = fresh.matched_recording_id
-            if recording_id is None and fresh.duplicate_of_id is not None:
-                first = await session.get(ImportItem, fresh.duplicate_of_id)
-                if first is not None and first.audio_file_id is not None:
-                    original = await library.get_audio_file(session, first.audio_file_id)
-                    recording_id = original.recording_id if original else None
-            recording = await library.get_recording(session, recording_id) if recording_id else None
+            recording = await review.item_recording(session, fresh)
             if recording is None:
                 fresh.failed, fresh.note = True, "original_missing"
                 return "failed"
             release = await service.release_for(session, fresh, library_import.created_by)
-            if not await library.has_track(session, release.id, recording.id):
+            track = await library.track_of(session, release.id, recording.id)
+            if track is None:
                 disc, number = await service.position(session, fresh)
-                await library.add_track(
+                track = await library.add_track(
                     session,
                     release=release,
                     recording=recording,
@@ -599,6 +589,11 @@ class Importer:
                 )
             fresh.release_id = release.id
             fresh.applied_at = utcnow()
+            # Uncertain results wait for a decision in the review list.
+            if fresh.result == ImportResult.NEEDS_REVIEW:
+                await review.different_title(session, fresh, recording, track)
+            elif fresh.result == ImportResult.SUSPICIOUS_QUALITY:
+                await review.inconclusive_replacement(session, fresh, recording)
         return "context"
 
 

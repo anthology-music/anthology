@@ -7,6 +7,7 @@ from datetime import datetime
 from sqlalchemy import (
     BigInteger,
     Boolean,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -130,6 +131,16 @@ class ImportItem(Base):
     duplicate_of_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("import_items.id", ondelete="SET NULL"), index=True
     )
+    # A name match (artist, title, duration) that the fingerprint did not confirm: a library
+    # recording or an earlier file of the source, and the fingerprint similarity (None: not
+    # compared). It becomes a "same recording?" review entry after the import.
+    name_match_recording_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("recordings.id", ondelete="SET NULL"), index=True
+    )
+    name_match_item_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("import_items.id", ondelete="SET NULL"), index=True
+    )
+    name_match_similarity: Mapped[float | None] = mapped_column(Float)
     # Planned before a transfer, so that a repeated item finds its verified target.
     recording_id: Mapped[uuid.UUID | None] = mapped_column(Uuid)
     content_hash: Mapped[str | None] = mapped_column(String(64))

@@ -22,6 +22,7 @@ from anthology.db.types import utcnow
 from anthology.jobs import service as jobs
 from anthology.jobs.handlers import ItemContext, ItemResult
 from anthology.library import service as library
+from anthology.quality_analysis import review as quality_review
 from anthology.quality_analysis.analysis import (
     METHOD_VERSION,
     DecodeError,
@@ -112,9 +113,14 @@ async def store(session: AsyncSession, audio_hash: str, result: Result) -> None:
     analysis.method_version = METHOD_VERSION
     analysis.analyzed_at = utcnow()
     await session.flush()
-    # Only a high-confidence result sets the effective quality.
+    if analysis.decided_status is not None:
+        # A human decision from the review list is kept (spec: review, Quality findings).
+        await quality_review.apply_decision(session, analysis)
+        return
+    # Only a high-confidence result sets the effective quality; others need a decision.
     effective = result.effective_quality if result.confidence == Confidence.HIGH else None
     await library.apply_quality(session, audio_hash, result.status, effective)
+    await quality_review.propose_finding(session, analysis)
 
 
 @dataclass
@@ -211,5 +217,9 @@ async def apply_stored(session: AsyncSession, audio_hash: str) -> None:
     analysis = await stored(session, audio_hash)
     if analysis is None:
         return
+    if analysis.decided_status is not None:
+        await quality_review.apply_decision(session, analysis)
+        return
     effective = analysis.effective_quality if analysis.confidence == Confidence.HIGH else None
     await library.apply_quality(session, audio_hash, analysis.status, effective)
+    await quality_review.propose_finding(session, analysis)

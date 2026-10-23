@@ -24,6 +24,11 @@ export type FindingOutcome = 'deleted' | 'listed' | 'referenced' | 'too_young' |
  */
 export type ImportMode = 'reference' | 'move' | 'reflink' | 'hardlink' | 'copy';
 export type ImportStatus = 'scanning' | 'reported' | 'importing' | 'done' | 'cancelled' | 'failed';
+export type ReviewType =
+  'recording_match' | 'musicbrainz_suggestion' | 'import_title' | 'import_replacement' | 'quality_finding';
+export type ReviewOrigin = 'fuzzy_match' | 'musicbrainz' | 'import' | 'quality_analysis';
+export type Confidence = 'high' | 'medium' | 'low';
+export type ReviewStatus = 'open' | 'accepted' | 'rejected' | 'deferred' | 'obsolete';
 
 export interface SyncProtocol {
   client?: ClientMessage;
@@ -46,6 +51,21 @@ export interface SyncProtocol {
     'library.maintenance.findings'?: MaintenanceFindingRow;
     'library_import.imports'?: LibraryImportRow;
     'quality_analysis.summary'?: QualitySummaryRow;
+    'review.items'?: ReviewItemRow;
+  };
+  /**
+   * Typed content of untyped row fields (e.g. review evidence).
+   */
+  parts?: {
+    'review.recording_match.evidence'?: RecordingMatchEvidence;
+    'review.recording_match.proposal'?: RecordingMatchProposal;
+    'review.musicbrainz_suggestion.evidence'?: MusicBrainzSuggestionEvidence;
+    'review.musicbrainz_suggestion.proposal'?: MusicBrainzSuggestionProposal;
+    'review.import_title.evidence'?: ImportTitleEvidence;
+    'review.import_replacement.evidence'?: ImportReplacementEvidence;
+    'review.import.proposal'?: ImportProposal;
+    'review.quality_finding.evidence'?: QualityFindingEvidence;
+    'review.quality_finding.proposal'?: QualityFindingProposal;
   };
 }
 export interface Hello {
@@ -233,6 +253,7 @@ export interface LibraryIdentificationRow {
   no_match: number;
   duplicate: number;
   not_possible: number;
+  confirmed: number;
 }
 /**
  * Active referenced originals, candidates for adoption (spec: library).
@@ -315,4 +336,117 @@ export interface QualitySummaryRow {
   suspicious: number;
   upscaled: number;
   confirmed_genuine: number;
+}
+/**
+ * An entry of the review list (spec: review, Review entry content).
+ */
+export interface ReviewItemRow {
+  id: string;
+  key: unknown[];
+  type: ReviewType;
+  subject_type: string;
+  subject_id: string;
+  origin: ReviewOrigin;
+  confidence: Confidence;
+  status: ReviewStatus;
+  summary: ReviewSummary;
+  evidence: {
+    [k: string]: unknown;
+  };
+  proposal: {
+    [k: string]: unknown;
+  };
+  note: string | null;
+  created_at: string;
+  decided_by: string | null;
+  decided_by_name: string | null;
+  decided_at: string | null;
+  choices: string[];
+  applicable: boolean;
+}
+/**
+ * Display values written by the producer; labels come from the client per type.
+ */
+export interface ReviewSummary {
+  subject: string;
+  current?: string | null;
+  proposed?: string | null;
+}
+export interface RecordingMatchEvidence {
+  subject: RecordingSide;
+  other: RecordingSide;
+  fingerprint_similarity?: number | null;
+  mb_recording_id?: string | null;
+}
+/**
+ * One recording of a match as shown in the entry.
+ */
+export interface RecordingSide {
+  recording_id: string;
+  title: string;
+  artist: string;
+  duration_ms: number;
+  format?: string | null;
+  effective_quality?: string | null;
+}
+/**
+ * Merge the subject recording into ``into``.
+ */
+export interface RecordingMatchProposal {
+  into: string;
+}
+export interface MusicBrainzSuggestionEvidence {
+  recording: RecordingSide;
+  title: string;
+  artist: string;
+  duration_ms: number | null;
+  candidates: number;
+  score?: number | null;
+}
+export interface MusicBrainzSuggestionProposal {
+  mb_recording_id: string;
+}
+export interface ImportTitleEvidence {
+  recording: RecordingSide;
+  file_title: string;
+  file_artist: string;
+  path: string;
+  duration_ms: number | null;
+}
+export interface ImportReplacementEvidence {
+  recording: RecordingSide;
+  path: string;
+  audio_hash: string;
+  current_audio_hash: string;
+  current_audio_file_id: string;
+  format?: string | null;
+  declared_quality?: string | null;
+}
+/**
+ * The import item a decision works with (title or replacement entries) and the recording
+ * it was matched to; title entries also name the track context created for it.
+ */
+export interface ImportProposal {
+  import_id: string;
+  item_id: string;
+  recording_id: string;
+  track_id?: string | null;
+}
+export interface QualityFindingEvidence {
+  audio_hash: string;
+  status: string;
+  finding: string;
+  values: {
+    [k: string]: unknown;
+  };
+  declared_quality: string;
+  format: string;
+  sample_rate_hz: number;
+  bit_depth: number | null;
+  bitrate_kbps: number | null;
+  files: number;
+  recording?: RecordingSide | null;
+}
+export interface QualityFindingProposal {
+  upscaled_quality: string | null;
 }

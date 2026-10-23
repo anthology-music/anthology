@@ -10,7 +10,7 @@ export function installAuthGuard(router: Router): void {
     if (to.meta.public) {
       return signedIn && (to.name === 'login' || to.name === 'setup') ? { name: 'local' } : true;
     }
-    if (signedIn) return true;
+    if (signedIn) return to.meta.editors && !auth.canEdit ? { name: 'local' } : true;
     try {
       if (await auth.setupRequired()) return { name: 'setup' };
     } catch {
@@ -23,5 +23,7 @@ export function installAuthGuard(router: Router): void {
 declare module 'vue-router' {
   interface RouteMeta {
     public?: boolean;
+    /** Only for editors and admins. */
+    editors?: boolean;
   }
 }

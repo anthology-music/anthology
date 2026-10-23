@@ -24,7 +24,7 @@
 
 ## 5. Deferred
 
-- [ ] 5.1 (waits for `review-list`) Fuzzy suggestions: recordings without match get a suggestion entry when artist, title and duration (±2 s) match a MusicBrainz recording; verify that nothing is merged automatically
+- [x] 5.1 (done with `review-list`) Fuzzy suggestions: recordings without match get a suggestion entry when artist, title and duration (±2 s) match a MusicBrainz recording; verify that nothing is merged automatically
 
 ## 6. Documentation
 

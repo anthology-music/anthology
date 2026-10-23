@@ -19,14 +19,18 @@ from anthology.core.config import Settings
 from anthology.db.types import utcnow
 from anthology.jobs import service as jobs
 from anthology.jobs.handlers import ItemContext, ItemResult
+from anthology.library import review as library_review
 from anthology.library import service
 from anthology.library.fingerprint import FingerprintError, compute
 from anthology.library.models import IdentificationStatus, Recording
 from anthology.metadata_lookup.service import (
+    LookupFailed,
     LookupNotConfigured,
     LookupService,
     Priority,
 )
+from anthology.quality_analysis.models import Confidence
+from anthology.review.models import ReviewOrigin
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +84,47 @@ def by_fingerprint(answer: dict[str, Any] | None) -> tuple[uuid.UUID, uuid.UUID]
     return uuid.UUID(recordings.pop()), uuid.UUID(results[0]["id"])
 
 
+def _lucene(text: str) -> str:
+    return text.replace("\\", "\\\\").replace('"', '\\"')
+
+
+def search_query(title: str, artist: str) -> str:
+    return f'recording:"{_lucene(title)}" AND artist:"{_lucene(artist)}"'
+
+
+def _credit(recording: dict[str, Any]) -> str:
+    return "".join(
+        f"{credit.get('name', '')}{credit.get('joinphrase', '')}"
+        for credit in recording.get("artist-credit") or []
+    )
+
+
+def by_name(
+    answer: dict[str, Any] | None, title: str, artist: str, duration_ms: int
+) -> library_review.Suggestion | None:
+    """The MusicBrainz recording with the same title and artist within ±2 s (the best score
+    among several); medium confidence for one such recording, low for several."""
+    matching = [
+        recording
+        for recording in (answer or {}).get("recordings") or []
+        if service.sort_key(recording.get("title") or "") == service.sort_key(title)
+        and service.sort_key(_credit(recording)) == service.sort_key(artist)
+        and recording.get("length") is not None
+        and abs(recording["length"] - duration_ms) <= DURATION_TOLERANCE_MS
+    ]
+    if not matching:
+        return None
+    best = max(matching, key=lambda recording: recording.get("score", 0))
+    return library_review.Suggestion(
+        mb_recording_id=uuid.UUID(best["id"]),
+        title=best["title"],
+        artist=_credit(best),
+        duration_ms=best["length"],
+        candidates=len(matching),
+        score=best.get("score"),
+    )
+
+
 class Identifier:
     """Checks one recording and stores the outcome."""
 
@@ -104,7 +149,37 @@ class Identifier:
                 outcome = Outcome(IdentificationStatus.ISRC, mb_recording_id=mbid)
         if outcome is None:
             outcome = await self._by_fingerprint(original)
-        return await self._store(recording_id, outcome)
+        status = await self._store(recording_id, outcome)
+        if status == IdentificationStatus.NO_MATCH or outcome.note == "no_acoustid_key":
+            await self._suggest(recording_id)
+        return status
+
+    async def _suggest(self, recording_id: uuid.UUID) -> None:
+        """Search MusicBrainz by artist and title for a recording without ISRC or fingerprint
+        match (also without an AcoustID key); a fitting result becomes a suggestion, never an
+        assignment (spec: review, MusicBrainz suggestions)."""
+        async with self.sessionmaker() as session:
+            recording = await session.get_one(Recording, recording_id)
+            title, artist, duration_ms = (
+                recording.title,
+                recording.artist_display,
+                recording.duration_ms,
+            )
+        try:
+            answer = await self._lookups.musicbrainz.search_recordings(
+                search_query(title, artist), priority=Priority.BACKGROUND
+            )
+        except LookupFailed as error:
+            logger.info("MusicBrainz search for %s failed: %s", recording_id, error)
+            return
+        found = by_name(answer.data, title, artist, duration_ms)
+        if found is None:
+            return
+        async with self.sessionmaker() as session, session.begin():
+            recording = await session.get(Recording, recording_id)
+            if recording is None or recording.mb_recording_id is not None:
+                return
+            await library_review.propose_suggestion(session, recording, found)
 
     async def _by_fingerprint(self, original) -> Outcome:
         if original is None:
@@ -154,6 +229,14 @@ class Identifier:
                         IdentificationStatus.DUPLICATE,
                         checked_at=now,
                         duplicate_of_id=owner,
+                    )
+                    # Merged only on a user's decision (spec: review, Same recording).
+                    await library_review.propose_match(
+                        session,
+                        recording.id,
+                        owner,
+                        origin=ReviewOrigin.MUSICBRAINZ,
+                        confidence=Confidence.HIGH,
                     )
                     return IdentificationStatus.DUPLICATE
             await service.record_identification(

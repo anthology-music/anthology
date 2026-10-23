@@ -12,6 +12,8 @@ export ANTHOLOGY_DEV_DEMO=true
 export ANTHOLOGY_DATA_DIR="${ANTHOLOGY_E2E_DATA_DIR:-${TMPDIR:-/tmp}/anthology-e2e}"
 rm -rf "$ANTHOLOGY_DATA_DIR"
 export ANTHOLOGY_IMPORT_ROOTS="$ANTHOLOGY_DATA_DIR/imports"
+# Never reach the real MusicBrainz (port 9 is closed): name searches fail and are skipped.
+export ANTHOLOGY_MUSICBRAINZ_PUBLIC_URL="http://127.0.0.1:9"
 
 uv run alembic downgrade base
 uv run alembic upgrade head

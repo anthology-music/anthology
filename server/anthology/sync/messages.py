@@ -203,6 +203,12 @@ def json_schema() -> dict[str, Any]:
         definitions.update(schema.pop("$defs", {}))
         definitions[model.__name__] = schema
         rows[stream] = {"$ref": f"#/$defs/{model.__name__}"}
+    parts = {}
+    for name, model in _part_schemas().items():
+        schema = model.model_json_schema(mode="serialization")
+        definitions.update(schema.pop("$defs", {}))
+        definitions[model.__name__] = schema
+        parts[name] = {"$ref": f"#/$defs/{model.__name__}"}
     return {
         "title": "SyncProtocol",
         "protocol": PROTOCOL_VERSION,
@@ -216,6 +222,12 @@ def json_schema() -> dict[str, Any]:
                 "description": "Row schema per stream (streams without one send untyped rows).",
                 "properties": rows,
             },
+            "parts": {
+                "title": "RowParts",
+                "type": "object",
+                "description": "Typed content of untyped row fields (e.g. review evidence).",
+                "properties": parts,
+            },
         },
         "$defs": definitions,
     }
@@ -226,6 +238,12 @@ def _row_schemas() -> dict[str, type[BaseModel]]:
     from anthology.stream_rows import ROW_SCHEMAS
 
     return ROW_SCHEMAS
+
+
+def _part_schemas() -> dict[str, type[BaseModel]]:
+    from anthology.stream_rows import PART_SCHEMAS
+
+    return PART_SCHEMAS
 
 
 if __name__ == "__main__":

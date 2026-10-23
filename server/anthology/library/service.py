@@ -45,7 +45,7 @@ from anthology.library.models import (
     StorageMode,
     Track,
 )
-from anthology.metadata_lookup.service import register_external_ref
+from anthology.metadata_lookup.service import register_external_ref, unregister_external_ref
 
 # Change entry written when a release leaves the list of its former album artist.
 RELEASE_MOVED = "release.moved"
@@ -828,6 +828,189 @@ async def delete_superseded(
     return path
 
 
+# --- merging recordings ----------------------------------------------------------------------
+
+
+async def merge_recordings(
+    session: AsyncSession,
+    source: Recording,
+    target: Recording,
+    *,
+    keep_source_original: bool,
+    user_id: uuid.UUID | None = None,
+) -> AudioFile | None:
+    """Merge ``source`` into ``target`` after a user confirmed they are one recording (spec:
+    review, Same recording); returns the original that became superseded, if any.
+
+    Every track context of ``source`` moves to ``target`` and keeps what it showed (title and
+    artist become context values where they differ). One original stays active: the source's
+    with ``keep_source_original`` (the caller compared the effective quality), otherwise the
+    target's; the other is superseded, never deleted here. Identifiers the target lacks are
+    taken from the source; then the source is deleted.
+    """
+    source_active = await active_original(session, source.id)
+    target_active = await active_original(session, target.id)
+    superseded: AudioFile | None = None
+    if source_active is not None and target_active is not None:
+        loser, winner = (
+            (target_active, source_active)
+            if keep_source_original
+            else (source_active, target_active)
+        )
+        loser.original_status = OriginalStatus.SUPERSEDED
+        loser.superseded_at = utcnow()
+        loser.superseded_by_id = winner.id
+        await session.flush()
+        await _referenced(session, loser, -1)
+        await _quality_counted(session, loser, -1)
+        await _superseded_counted(session, loser, +1)
+        await _changed(session, SUPERSEDED_FILE, loser.id, ChangeOperation.INSERT)
+        superseded = loser
+    # All files of the source (the active one and earlier superseded ones) move along.
+    moved_files = list(
+        await session.scalars(select(AudioFile.id).where(AudioFile.recording_id == source.id))
+    )
+    await session.execute(
+        update(AudioFile)
+        .where(AudioFile.recording_id == source.id)
+        .values(recording_id=target.id)
+        .execution_options(synchronize_session=False)
+    )
+    await _rows_changed(session, "audio_file", moved_files)
+
+    # Track contexts keep their title and artist.
+    source_artist = await session.get_one(Artist, source.artist_id)
+    target_artist = await session.get_one(Artist, target.artist_id)
+    tracks = list(await session.scalars(select(Track).where(Track.recording_id == source.id)))
+    for track in tracks:
+        track.recording_id = target.id
+        if track.context_title is None and source.title != target.title:
+            track.context_title = source.title
+        if track.context_artist is None and source.artist_display != target.artist_display:
+            track.context_artist = source.artist_display
+        track.sort_title = sort_key(track.context_title or target.title)
+        track.sort_artist = (
+            sort_key(track.context_artist) if track.context_artist else target_artist.sort_name
+        )
+    if source_artist.id != target_artist.id:
+        source_artist.track_count -= len(tracks)
+        target_artist.track_count += len(tracks)
+        await _changed(session, "artist", source_artist.id)
+        await _changed(session, "artist", target_artist.id)
+    await session.flush()
+
+    # Identifiers the target lacks; the MusicBrainz ID is unique, so the source lets go first.
+    taken = {
+        name: getattr(source, name)
+        for name in ("isrc", "mb_recording_id", "acoust_id")
+        if getattr(target, name) is None and getattr(source, name) is not None
+    }
+    source_status = source.identification_status
+    source.mb_recording_id = None
+    await session.flush()
+    diff = _apply(target, taken)
+    if "mb_recording_id" in taken:
+        await adjust_counter(session, IDENTIFICATION_COUNTERS[target.identification_status], -1)
+        await adjust_counter(session, IDENTIFICATION_COUNTERS[source_status], +1)
+        target.identification_status = source_status
+        target.identification_checked_at = source.identification_checked_at
+        await register_external_ref(
+            session,
+            entity_type="recording",
+            entity_id=target.id,
+            mbid=taken["mb_recording_id"],
+            checked_at=source.identification_checked_at or utcnow(),
+        )
+        await _changed(session, IDENTIFICATION, IDENTIFICATION_SUMMARY_ID)
+    await unregister_external_ref(session, entity_type="recording", entity_id=source.id)
+    await session.execute(
+        update(Recording)
+        .where(Recording.identification_duplicate_of_id == source.id, Recording.id != target.id)
+        .values(identification_duplicate_of_id=target.id)
+        .execution_options(synchronize_session=False)
+    )
+
+    await adjust_counter(session, IDENTIFICATION_COUNTERS[source_status], -1)
+    await adjust_counter(session, Counter.RECORDINGS, -1)
+    await session.delete(source)
+    await session.flush()
+    await _changed(session, "recording", source.id, ChangeOperation.DELETE)
+    await _changed(session, "recording", target.id)
+    await _changed(session, IDENTIFICATION, IDENTIFICATION_SUMMARY_ID)
+    await _audit(
+        session,
+        "recording",
+        target.id,
+        "merge",
+        user_id,
+        {
+            "merged_recording": [str(source.id), None],
+            "superseded_original": [superseded.path if superseded else None, None],
+            **_public(diff),
+        },
+    )
+    await remove_if_orphaned(session, source_artist, user_id=user_id)
+    target_tracks = await session.scalars(select(Track.id).where(Track.recording_id == target.id))
+    await _rows_changed(session, "track", list(target_tracks))
+    return superseded
+
+
+async def separate_track(
+    session: AsyncSession,
+    track: Track,
+    *,
+    title: str,
+    artist: Artist,
+    duration_ms: int,
+    audio: AudioFileInfo,
+    isrc: str | None = None,
+    recording_id: uuid.UUID | None = None,
+    user_id: uuid.UUID | None = None,
+) -> Recording:
+    """Make ``track`` a recording of its own with ``audio`` as original, after a user decided
+    that its file is not the recording it was matched to (spec: review, Import matches with a
+    different title)."""
+    previous = await session.get_one(Recording, track.recording_id)
+    previous_artist = await session.get_one(Artist, previous.artist_id)
+    recording = Recording(
+        id=recording_id or uuid.uuid4(),
+        title=title,
+        artist_id=artist.id,
+        artist_display=artist.name,
+        duration_ms=duration_ms,
+        isrc=isrc,
+    )
+    session.add(recording)
+    await session.flush()
+    await adjust_counter(session, Counter.RECORDINGS, +1)
+    await adjust_counter(session, Counter.IDENTIFICATION_UNCHECKED, +1)
+    await _changed(session, "recording", recording.id, ChangeOperation.INSERT)
+    track.recording_id = recording.id
+    track.sort_title = sort_key(track.context_title or recording.title)
+    track.sort_artist = sort_key(track.context_artist) if track.context_artist else artist.sort_name
+    if previous_artist.id != artist.id:
+        previous_artist.track_count -= 1
+        artist.track_count += 1
+        await _changed(session, "artist", previous_artist.id)
+        await _changed(session, "artist", artist.id)
+    audio_file = _audio_file(recording.id, audio, track.id)
+    session.add(audio_file)
+    await session.flush()
+    await _referenced(session, audio_file, +1)
+    await _quality_counted(session, audio_file, +1)
+    await _changed(session, "audio_file", audio_file.id, ChangeOperation.INSERT)
+    await _changed(session, "track", track.id)
+    await _audit(
+        session,
+        "track",
+        track.id,
+        "separate",
+        user_id,
+        {"recording_id": [str(previous.id), str(recording.id)]},
+    )
+    return recording
+
+
 # --- identification -------------------------------------------------------------------------
 
 # Change entries of the identification summary (stream library.identification).
@@ -970,6 +1153,14 @@ async def recordings_by_name(
         .limit(limit)
     )
     return list(await session.scalars(query))
+
+
+async def track_of(
+    session: AsyncSession, release_id: uuid.UUID, recording_id: uuid.UUID
+) -> Track | None:
+    return await session.scalar(
+        select(Track).where(Track.release_id == release_id, Track.recording_id == recording_id)
+    )
 
 
 async def has_track(session: AsyncSession, release_id: uuid.UUID, recording_id: uuid.UUID) -> bool:

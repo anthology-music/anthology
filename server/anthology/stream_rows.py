@@ -17,6 +17,8 @@ from anthology.library.schemas import (
 )
 from anthology.library_import.schemas import LibraryImportRow
 from anthology.quality_analysis.schemas import QualitySummaryRow
+from anthology.review import schemas as review
+from anthology.review.schemas import ReviewItemRow
 
 ROW_SCHEMAS: dict[str, type[BaseModel]] = {
     "library.artists": LibraryArtistRow,
@@ -33,4 +35,19 @@ ROW_SCHEMAS: dict[str, type[BaseModel]] = {
     "library.maintenance.findings": MaintenanceFindingRow,
     "library_import.imports": LibraryImportRow,
     "quality_analysis.summary": QualitySummaryRow,
+    "review.items": ReviewItemRow,
+}
+
+# Typed content of row fields that differ per row kind (the evidence and proposal of each
+# review entry type); clients read them by the row's type.
+PART_SCHEMAS: dict[str, type[BaseModel]] = {
+    "review.recording_match.evidence": review.RecordingMatchEvidence,
+    "review.recording_match.proposal": review.RecordingMatchProposal,
+    "review.musicbrainz_suggestion.evidence": review.MusicBrainzSuggestionEvidence,
+    "review.musicbrainz_suggestion.proposal": review.MusicBrainzSuggestionProposal,
+    "review.import_title.evidence": review.ImportTitleEvidence,
+    "review.import_replacement.evidence": review.ImportReplacementEvidence,
+    "review.import.proposal": review.ImportProposal,
+    "review.quality_finding.evidence": review.QualityFindingEvidence,
+    "review.quality_finding.proposal": review.QualityFindingProposal,
 }

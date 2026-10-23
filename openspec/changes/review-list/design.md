@@ -39,7 +39,7 @@ review_counters
 
 `ReviewType`: `RECORDING_MATCH`, `MUSICBRAINZ_SUGGESTION`, `IMPORT_TITLE`, `IMPORT_REPLACEMENT`, `QUALITY_FINDING`, later `WORK_ASSIGNMENT`, `DOWNLOAD_REPLACEMENT`, `SHEET_OMR`. `ReviewOrigin`: `FUZZY_MATCH`, `MUSICBRAINZ`, `IMPORT`, `QUALITY_ANALYSIS`, later `PUBLISHER`, `LLM`, `SOURCE`, `OMR`. Confidence reuses high/medium/low.
 
-`summary_json` is written by the producer: subject label, current and proposed value as display text, so the list renders without joins into other domains. `evidence_json` holds the measurements (e.g. durations, fingerprint availability, finding values) and references (recording IDs, audio hashes for spectrograms). Per-type pydantic models validate proposal and evidence on write and read; API types are generated per type.
+`summary_json` is written by the producer: subject label, current and proposed value as display values, so the list renders without joins into other domains. `evidence_json` holds the measurements (e.g. durations, fingerprint similarity, finding values) and references (recording IDs, audio hashes for spectrograms). Per-type pydantic models (`review/schemas.py`) build proposal and evidence and parse them when deciding; their JSON schemas are published under `parts` of the sync message schema (`PART_SCHEMAS`), so the client reads them with generated types.
 
 `WorkCandidate` is replaced by `ReviewItem` of type `WORK_ASSIGNMENT` (its fields map one to one; the publication reference moves into the evidence). `ReviewStatus.AUTO_ACCEPTED` stays only for `Sheet.reviewStatus`.
 
@@ -52,9 +52,9 @@ Alternative considered: keep per-domain candidate tables and build a union view.
 - `still_applies(session, item) -> str | None` – None, or the reason why the proposal no longer applies;
 - `accept(session, item, choice, user_id)` and optionally `reject(session, item, user_id)` (most rejections change nothing besides the entry).
 
-Accept locks the entry, calls `still_applies`; a reason closes the entry as `obsolete` with that reason in `note`, otherwise `accept` runs in the same transaction. Work that touches files (placing a file, merging originals) runs in the decision job (see bulk decisions) and the entry stays `open` until the job item finished. A type without a registered handler (an optional service missing) is shown as "cannot be applied right now" and only accepts reject and defer.
+Accept and reject call `still_applies` (read-only); a reason closes the entry as `obsolete` with that reason in `note`. Otherwise `prepare` does the file work outside the transaction (it may also find the proposal stale, e.g. a changed source file), then `still_applies` runs again and `apply` changes the data in the decision's transaction; `finished` runs after the commit (e.g. removing a moved source). An exception in `apply` rolls the whole decision back and the entry stays open (no savepoints: SQLite's driver does not handle them reliably). Decisions with file work run in the decision job and the entry stays `open` until its item finished. A type without a registered handler (an optional service missing) is shown as "cannot be applied right now" and only accepts reject and defer.
 
-Stale entries are also closed when the subject changes: `review.subject_changed(session, subject_type, ids)` is called by the library service for deleted or merged recordings and changed titles, and re-validates the open entries of those subjects in the same transaction.
+Entries of removed subjects are closed with `review.close_subject` (a merged recording's other entries, a quality result that became conclusive); all other stale entries are found when they are decided. No current type proposes a value that an edit elsewhere could set, so no general change hook is needed yet; `tagging` adds one with its first such type.
 
 ### Suppression
 
@@ -75,18 +75,18 @@ Deferred entries leave the default view (`status=open`) and reappear under "defe
 ### Entry types of this change
 
 **`RECORDING_MATCH`** – subject: recording B, proposal: "same recording as A".
-- Origin `FUZZY_MATCH`: created after an import applied a `new` item that had name candidates (`fingerprint_candidates`: artist, title, duration ±2 s). Confidence medium when a fingerprint was missing and nothing could be compared; low when the fingerprints were compared and differ (usually another version: a remaster with different mastering, another mix, a re-recording). The evidence carries the fingerprint similarity, so the list can show "probably another version"; low-confidence entries are easy to filter out or reject in bulk.
+- Origin `FUZZY_MATCH`: created after an import applied a `new` item that had name candidates (`fingerprint_candidates`: artist, title, duration ±2 s). The classification stores the closest candidate on the import item (`name_match_recording_id` or `name_match_item_id` for an earlier file of the source, and `name_match_similarity`). Confidence medium when a fingerprint was missing and nothing could be compared; low when the fingerprints were compared and differ (usually another version: a remaster with different mastering, another mix, a re-recording). The evidence carries the fingerprint similarity, so the list can show "probably another version"; low-confidence entries are easy to filter out or reject in bulk.
 - Origin `MUSICBRAINZ` (confidence high): created when identification records `duplicate`.
 - Accept merges B into A (`library.merge_recordings`): B's tracks move to A, the better of the two active originals (effective quality, `ranking.compare`; inconclusive keeps A's) becomes A's active original, the other is superseded (`replace_original` semantics; a superseded managed file can be deleted later through the existing report, a referenced one never). Identifiers missing on A are taken from B, then B is deleted. `still_applies`: both recordings exist.
 - Reject: both stay separate; the key suppresses the pair.
 
 **`MUSICBRAINZ_SUGGESTION`** – subject: a recording with outcome `no_match`, proposal: MusicBrainz recording ID with title, artist and duration.
-- The identification job searches MusicBrainz (`/ws/2/recording?query=` with artist, title; background priority, cached and rate-limited like every lookup) for recordings without ISRC or fingerprint match and creates an entry when exactly one or the best result matches artist, title and duration ±2 s (confidence medium; low when several match).
+- The identification job searches MusicBrainz (`/ws/2/recording?query=` with artist, title; background priority, cached and rate-limited like every lookup) after the outcome `no_match` and after `not_possible` for lack of an AcoustID key (not for a missing file), and creates an entry when exactly one or the best result matches artist, title and duration ±2 s (confidence medium; low when several match). `ANTHOLOGY_MUSICBRAINZ_PUBLIC_URL` (default the public service) lets the end-to-end tests point the search at a closed port.
 - Accept assigns the ID with outcome `confirmed` (new `IdentificationStatus.CONFIRMED`, counted like the others) and registers the refresh; if the ID meanwhile belongs to another recording, the outcome becomes `duplicate` and a `RECORDING_MATCH` entry is created instead. Nothing is merged automatically.
 
 **`IMPORT_TITLE`** – subject: the track context created from a `needs_review` item, proposal: "same recording despite a different title".
 - Accept: confirms, nothing changes.
-- Reject: "separate recording": the file becomes a recording of its own, like a `new` item of its import (placed in the import's mode, verified; the track moves to the new recording). `still_applies`: the import item's source still has the recorded size, modification time and audio hash, otherwise the entry closes as obsolete with `source_changed`.
+- Reject: "separate recording": the file becomes a recording of its own, like a `new` item of its import (placed in the import's mode, verified; the track moves to the new recording, `library.separate_track`). `still_applies`: the track still belongs to the matched recording; `prepare` checks that the source still has the recorded size and modification time (hashing the audio again would decode the whole file), otherwise the entry closes as obsolete with `source_changed`.
 - Because reject changes data here, it is not suppressing in the usual sense, but the key still prevents a second entry.
 
 **`IMPORT_REPLACEMENT`** – subject: the recording, proposal: "replace the original with this file" for a `suspicious_quality` item. Evidence: both quality results and spectrograms.
@@ -95,12 +95,12 @@ Deferred entries leave the default view (`status=open`) and reappear under "defe
 
 **`QUALITY_FINDING`** – subject: an audio hash, created by `quality_analysis.store` for results that are not high-confidence, except `too_quiet` (nothing to judge). Confidence = the result's confidence. Evidence: finding and values, file facts, spectrogram.
 - Two answers (`choice`): `genuine` sets `confirmed_genuine` with the declared quality as effective quality; `upscaled` sets `upscaled` with the estimated tier from the cutoff (`nearest_bitrate` → lossy tier). Both are human decisions.
-- `quality_analyses` gains `decided_status`, `decided_by` and `decided_at`; `store` keeps a human decision when the analysis runs again (a full re-run included) and applies it to new files with the same audio hash. Re-running does not create a new entry for a decided hash.
+- `quality_analyses` gains `decided_status`, `decided_quality`, `decided_by` and `decided_at`; `store` and `apply_stored` keep a human decision when the analysis runs again (a full re-run included) and apply it to new files with the same audio hash; the ranking treats it as conclusive. Re-running does not create a new entry for a decided hash, and a result that became conclusive closes an open entry (`now_conclusive`). One entry per audio hash.
 - `still_applies`: at least one file with this audio hash exists.
 
 ### Spectrogram over HTTP
 
-`GET /api/v1/quality/{audio_hash}/spectrogram.png` (editors and admins) renders the active file's spectrogram with FFmpeg's `showspectrumpic` filter (LGPL, separate process, 30 seconds from the middle, 1024×512) on first request and caches it under `<data>/spectrograms/`. Media stays off the WebSocket. The client loads it with its access token and shows it as an object URL.
+`GET /api/v1/quality-analysis/{audio_hash}/spectrogram.png` (editors and admins) renders the spectrogram of the active file with this audio hash on first request (30 seconds from the middle, 1024×512) and caches it under `<data>/spectrograms/`. FFmpeg decodes the excerpt to PCM as for the analysis; numpy computes the spectrogram and the PNG is written with zlib. FFmpeg's `showspectrumpic` was considered, but the server's FFmpeg build (ADR 0020) has neither the filter nor a PNG encoder, and adding both (with zlib) would widen that build for one image. Media stays off the WebSocket. The client loads it with its access token and shows it as an object URL. Inconclusive replacements show the current original's spectrogram; the imported file is not in the library and has none.
 
 ### Client
 
@@ -119,4 +119,4 @@ Deferred entries leave the default view (`status=open`) and reappear under "defe
 
 `0014_review`: `review_items` with the indexes above, `review_counters`, the decision columns of `quality_analyses`.
 
-Results from before this change (import items `needs_review`/`suspicious_quality`, non-high-confidence analyses, `duplicate` outcomes) get their entries from a one-time `review_backfill` job. The app creates it at start-up when no job of this type exists; it reads the sources keyset-paged and inserts in batches through the same producer functions, so suppression applies. Name matches of earlier imports without fingerprint comparison and MusicBrainz suggestions are not backfilled: the next identification run creates the suggestions.
+Results from before this change (import items `needs_review`/`suspicious_quality`, non-high-confidence analyses, `duplicate` outcomes) get their entries from a one-time `review_backfill` job with one item per type (each handler's `backfill`). The app creates it at start-up when no job of this type exists and an admin owns it (a fresh installation creates it on a later start); it reads the sources keyset-paged and inserts in batches through the same producer functions, so suppression applies. Name matches of earlier imports without fingerprint comparison and MusicBrainz suggestions are not backfilled: the next identification run creates the suggestions.

@@ -24,7 +24,7 @@
 
 ## 5. Deferred
 
-- [ ] 5.1 (waits for `review-list`) Review entries for "suspicious quality"
+- [x] 5.1 (done with `review-list`) Review entries for "suspicious quality"
 
 ## 6. Documentation
 

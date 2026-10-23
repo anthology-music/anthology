@@ -36,7 +36,6 @@ from anthology.metadata_lookup.models import ExternalRef, LookupCache, LookupSch
 
 logger = logging.getLogger(__name__)
 
-PUBLIC_MUSICBRAINZ = "https://musicbrainz.org"
 COVER_ART_ARCHIVE = "https://coverartarchive.org"
 ACOUSTID = "https://api.acoustid.org"
 PROJECT_URL = "https://github.com/anthology-music/anthology"
@@ -526,7 +525,7 @@ class LookupService:
             else None
         )
         self.musicbrainz = MusicBrainz(
-            target("musicbrainz", PUBLIC_MUSICBRAINZ),
+            target("musicbrainz", settings.musicbrainz_public_url.rstrip("/")),
             mirror,
             self.cache,
             mirror_state,
@@ -600,3 +599,14 @@ async def register_external_ref(
     else:
         ref.mbid = mbid
         ref.last_checked_at = checked_at
+
+
+async def unregister_external_ref(
+    session: AsyncSession, *, entity_type: str, entity_id: uuid.UUID
+) -> None:
+    """Remove an entity from the periodic refresh (it was merged into another one)."""
+    await session.execute(
+        delete(ExternalRef).where(
+            ExternalRef.entity_type == entity_type, ExternalRef.entity_id == entity_id
+        )
+    )

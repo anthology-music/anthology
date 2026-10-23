@@ -486,6 +486,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/quality-analysis/{audio_hash}/spectrogram.png": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Spectrogram
+         * @description The spectrogram of an audio hash as evidence in the review list (spec: review, Quality
+         *     findings); rendered on first request and cached.
+         */
+        get: operations["get_spectrogram_api_v1_quality_analysis__audio_hash__spectrogram_png_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ready": {
         parameters: {
             query?: never;
@@ -497,6 +518,27 @@ export interface paths {
         get: operations["ready_api_v1_ready_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/review/decisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Decide
+         * @description Decide selected entries or all entries matching a rule. A single entry without file
+         *     work is decided directly; everything else runs as a job with progress.
+         */
+        post: operations["decide_api_v1_review_decisions_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -615,6 +657,11 @@ export interface components {
          * @enum {string}
          */
         BitrateSetting: "original" | "320" | "256" | "192" | "128";
+        /**
+         * Confidence
+         * @enum {string}
+         */
+        Confidence: "high" | "medium" | "low";
         /** DeletionStarted */
         DeletionStarted: {
             /** Job Id */
@@ -958,6 +1005,57 @@ export interface components {
             /** Refresh Token */
             refresh_token: string;
         };
+        /** ReviewDecisionIn */
+        ReviewDecisionIn: {
+            /** Choice */
+            choice?: string | null;
+            /**
+             * Decision
+             * @enum {string}
+             */
+            decision: "accept" | "reject" | "defer" | "reopen";
+            /** Ids */
+            ids?: string[] | null;
+            rule?: components["schemas"]["ReviewRule"] | null;
+        };
+        /**
+         * ReviewDecisionOut
+         * @description A decision made directly (``status``) or the job that makes it (``job_id``).
+         */
+        ReviewDecisionOut: {
+            /** Job Id */
+            job_id?: string | null;
+            /** Selected */
+            selected: number;
+            status?: components["schemas"]["ReviewStatus"] | null;
+        };
+        /**
+         * ReviewOrigin
+         * @enum {string}
+         */
+        ReviewOrigin: "fuzzy_match" | "musicbrainz" | "import" | "quality_analysis";
+        /**
+         * ReviewRule
+         * @description A selection rule: all entries matching the filter (spec: sync-protocol, Rule-based
+         *     selection).
+         */
+        ReviewRule: {
+            confidence?: components["schemas"]["Confidence"] | null;
+            origin?: components["schemas"]["ReviewOrigin"] | null;
+            /** @default open */
+            status: components["schemas"]["ReviewStatus"];
+            type?: components["schemas"]["ReviewType"] | null;
+        };
+        /**
+         * ReviewStatus
+         * @enum {string}
+         */
+        ReviewStatus: "open" | "accepted" | "rejected" | "deferred" | "obsolete";
+        /**
+         * ReviewType
+         * @enum {string}
+         */
+        ReviewType: "recording_match" | "musicbrainz_suggestion" | "import_title" | "import_replacement" | "quality_finding";
         /**
          * Role
          * @enum {string}
@@ -1938,6 +2036,37 @@ export interface operations {
             };
         };
     };
+    get_spectrogram_api_v1_quality_analysis__audio_hash__spectrogram_png_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                audio_hash: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     ready_api_v1_ready_get: {
         parameters: {
             query?: never;
@@ -1963,6 +2092,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Readiness"];
+                };
+            };
+        };
+    };
+    decide_api_v1_review_decisions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewDecisionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewDecisionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

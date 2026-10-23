@@ -13,6 +13,7 @@ export const useAuthStore = defineStore('auth', {
   getters: {
     signedIn: (state) => state.user !== null,
     isAdmin: (state) => state.user?.role === 'admin',
+    canEdit: (state) => state.user?.role === 'admin' || state.user?.role === 'editor',
   },
   actions: {
     bind() {
