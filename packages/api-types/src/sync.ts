@@ -14,6 +14,11 @@ export type QualityStatus = 'genuine' | 'suspicious' | 'upscaled' | 'confirmed_g
  * Who owns the bytes (spec: library, Managed and referenced originals).
  */
 export type StorageMode = 'managed' | 'referenced';
+export type MaintenanceTrigger = 'schedule' | 'manual';
+export type MaintenanceStatus = 'running' | 'done' | 'held' | 'reported' | 'failed';
+export type MaintenanceAction = 'delete' | 'report';
+export type FindingKind = 'orphan' | 'leftover' | 'missing';
+export type FindingOutcome = 'deleted' | 'listed' | 'referenced' | 'too_young' | 'outside' | 'gone' | 'failed';
 /**
  * Storage mode of an import (spec: library-import, Storage modes).
  */
@@ -37,6 +42,8 @@ export interface SyncProtocol {
     'library.superseded'?: LibrarySupersededRow;
     'library.identification'?: LibraryIdentificationRow;
     'library.storage'?: LibraryStorageRow;
+    'library.maintenance'?: MaintenanceRunRow;
+    'library.maintenance.findings'?: MaintenanceFindingRow;
     'library_import.imports'?: LibraryImportRow;
     'quality_analysis.summary'?: QualitySummaryRow;
   };
@@ -235,6 +242,47 @@ export interface LibraryStorageRow {
   key: unknown[];
   referenced_files: number;
   referenced_bytes: number;
+}
+/**
+ * A maintenance run with its result (spec: library, Maintenance result).
+ */
+export interface MaintenanceRunRow {
+  id: string;
+  key: unknown[];
+  job_id: string | null;
+  trigger: MaintenanceTrigger;
+  status: MaintenanceStatus;
+  action: MaintenanceAction;
+  grace_hours: number;
+  safety_share_percent: number | null;
+  safety_limit: number | null;
+  managed_files: number;
+  started_at: string;
+  finished_at: string | null;
+  error: string | null;
+  orphan_files: number;
+  orphan_bytes: number;
+  leftover_files: number;
+  leftover_bytes: number;
+  missing_files: number;
+  missing_bytes: number;
+  deleted_files: number;
+  deleted_bytes: number;
+  listed_files: number;
+  listed_bytes: number;
+}
+/**
+ * A file a maintenance run found, by path.
+ */
+export interface MaintenanceFindingRow {
+  id: string;
+  key: unknown[];
+  path: string;
+  kind: FindingKind;
+  size_bytes: number;
+  modified_at: string | null;
+  outcome: FindingOutcome | null;
+  detail: string | null;
 }
 /**
  * An import with its stored report (spec: library-import, Report confirmation).

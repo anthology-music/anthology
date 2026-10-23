@@ -49,14 +49,13 @@ _Last updated: 2026-10-23_
 - **Open, implemented in part:** `quality-analysis-core` (PR #22 merged). Open: review entries
   (`review-list`), source plausibility (`sources`), lossless reduction. The automatic analysis
   after imports was removed again (ADR 0022).
-- **In progress:** change `quality-based-replacement` on branch `feat/quality-based-replacement`:
-  quality comparison of duplicate candidates on import, replacement of managed and referenced
-  originals, per-run deletion of replaced managed originals (ADR 0021), deletion job and report
-  of replaced originals in the settings. Open: 5.1 (review entries, `review-list`).
-- **Planned:** change `system-maintenance` (UC-001, US-001 in `docs/requirements/`): scheduled
-  sweep of orphaned files and leftovers in `_originals`, missing originals, configurable in
-  Settings › Systempflege.
-- **Next:** `system-maintenance`, then `review-list`, `tag-editing` and `search` (see
+- **Open, implemented in part:** `quality-based-replacement` (PR #24 merged). Open: 5.1 (review
+  entries, `review-list`).
+- **In progress:** change `system-maintenance` on branch `feat/system-maintenance` (UC-001,
+  US-001 in `docs/requirements/`): schedules of recurring jobs (`job_schedules`, scheduler per
+  process), the maintenance job for orphans, leftovers and missing originals with grace period
+  and safety limit, Settings › Systempflege.
+- **Next:** `review-list`, `tag-editing` and `search` (see
   `docs/roadmap.md`).
   `effective-quality-duplicate-checks` covers CD import and sources only; it waits for them.
 

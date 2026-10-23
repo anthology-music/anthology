@@ -3,8 +3,9 @@
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from pydantic import model_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import make_url
 
@@ -35,6 +36,8 @@ class Settings(BaseSettings):
     jobs_throttle: Literal["gentle", "normal", "fast"] = "normal"
     jobs_interactive_slots: int = 2
     jobs_lease_seconds: float = 30.0
+    # IANA time zone of the installation; schedules (e.g. the maintenance) run in it.
+    time_zone: str = "UTC"
 
     tagger_url: str = "http://localhost:8410"
     tagger_batch_size: int = 200
@@ -70,6 +73,19 @@ class Settings(BaseSettings):
             url = make_url(self.database_url).set(password=password)
             self.database_url = url.render_as_string(hide_password=False)
         return self
+
+    @field_validator("time_zone")
+    @classmethod
+    def _known_time_zone(cls, value: str) -> str:
+        try:
+            ZoneInfo(value)
+        except (ZoneInfoNotFoundError, ValueError) as error:
+            raise ValueError(f"unknown time zone {value!r}") from error
+        return value
+
+    @property
+    def zone(self) -> ZoneInfo:
+        return ZoneInfo(self.time_zone)
 
     @property
     def source_service_urls(self) -> list[str]:

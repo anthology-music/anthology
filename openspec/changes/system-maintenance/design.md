@@ -30,11 +30,13 @@ Table `job_schedules`, one row per schedulable job type. Its fields:
 - `options` (JSON, validated by the job type);
 - `next_run_at`, `last_job_id`.
 
-The runner loop of every process checks due schedules each minute. A process claims a schedule with a compare-and-swap `UPDATE … SET next_run_at = <next> WHERE type = … AND next_run_at = <seen>`, the same pattern as the lookup schedule, so exactly one process creates the job. A schedule whose job is still unfinished skips the occurrence (A1).
+A scheduler task in every process (`anthology/jobs/schedules.py`, started beside the job runner) checks due schedules each minute. A process claims a schedule with a compare-and-swap `UPDATE … SET next_run_at = <next> WHERE type = … AND next_run_at = <seen>`, the same pattern as the lookup schedule, so exactly one process creates the job. A schedule whose job is still unfinished skips the occurrence (A1).
 
 Times are computed in `ANTHOLOGY_TIME_ZONE` (zoneinfo, default UTC) and stored in UTC. Daylight saving changes take the next valid local time.
 
-Job types register a `ScheduleSpec` (default schedule and options schema) with the registry. The first is `library_maintenance`.
+Job types register a `ScheduleSpec` (default schedule, options model and start function) with the registry. The first is `library_maintenance`. A missing row is recreated with the defaults.
+
+A scheduled job belongs to the admin who last saved the schedule, or else to the earliest active admin; without an admin (fresh installation) the occurrence is skipped. Time zones come from `zoneinfo` with the `tzdata` package (Apache-2.0) as fallback, so they work without system time zone data.
 
 ### Maintenance options
 
@@ -46,8 +48,7 @@ Options of `library_maintenance`, validated with pydantic:
 ### Maintenance run (library)
 
 Job `library_maintenance`:
-- Item 1 walks `_originals` (scandir in a thread, no symlinks followed). It writes candidates (path, size, mtime) of files older than the grace period into `maintenance_findings` for this run, 1,000 per transaction, idempotent by (run, path).
-- Classification: a file whose path is an `audio_files.path` is fine. Unique index lookup in batches of 1,000 paths. Otherwise it is a leftover if its name starts with `.` and ends with `.part` or starts with `.probe-`; else an orphan.
+- Item 1 walks `_originals` (scandir in a thread, no symlinks followed or listed) and classifies files older than the grace period in batches of 1,000: a file whose path is an `audio_files.path` is fine (unique index lookup per batch) and is not stored. Otherwise it is a leftover if its name starts with `.` and ends with `.part` or starts with `.probe-`, else an orphan. Only leftovers and orphans are written to `maintenance_findings` (path, size, mtime), one transaction per batch, idempotent by (run, path).
 - Item 2 reads managed audio files by path (keyset) and checks `os.path.exists` in a thread, in batches of 1,000; missing ones become findings of class `missing`.
 - Item 3 acts:
   - if the action is `delete` and the number of deletable findings is within the safety limit, each file is deleted after a final check: still no audio file entry with that path, still older than the grace period, still inside `_originals` (resolved path). Each finding records `deleted` or the reason it was kept.
@@ -58,7 +59,7 @@ Deletion uses a new library function `delete_orphan(path)`. It refuses paths out
 
 ### Result and stream
 
-- `maintenance_runs`: id, job, started, finished, status (`running`, `done`, `held`, `reported`, `failed`), action, counts and bytes per class and outcome.
+- `maintenance_runs`: id, job, trigger, started, finished, status (`running`, `done`, `held`, `reported`, `failed`), options, safety limit, counts and bytes per class and outcome (recounted from the findings after each step). The newest 30 runs are kept; a run left `running` by a cancelled job is closed as `failed` (`interrupted`) when the next run starts.
 - Stream `library.maintenance` (admins): the runs, newest first, with counts.
 - Stream `library.maintenance.findings` (admins, param `run_id`): findings by path, keyset.
 

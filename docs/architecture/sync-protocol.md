@@ -76,8 +76,14 @@ Seven streams for all signed-in users serve the library, plus a report and a sto
 | `library.identification` (editors, admins) | – | one summary row | 1 | recordings per identification outcome |
 | `library.storage` (admins) | – | one summary row | 1 | `referenced_files`, `referenced_bytes` (active referenced originals) |
 | `quality_analysis.summary` (editors, admins) | – | one summary row | 1 | active originals per quality status and unanalysed |
+| `library.maintenance` (admins) | – | started, id (newest first) | maintenance runs kept (the newest 30) | – |
+| `library.maintenance.findings` (admins) | `run_id` | path | the run's findings | the run's counts and sizes |
 
 The four library counters are `artists`, `releases`, `tracks` and `recordings`; all are maintained in the writing transaction. Track rows show the recording's active original with its effective quality and quality status (both null until analysed; the effective quality only after a high-confidence result); superseded files (kept after a better file replaced them; rows carry their `storage_mode`, and only managed ones can be deleted, ADR 0021) appear only in `library.superseded`. A change that alters what other rows show or sort by (e.g. an artist rename) writes one change entry per affected row, so each of them receives a delta. The filtered lists ignore changes of rows outside their filter; when a row leaves a filtered list, the library writes an extra entry of type `release.moved` or `track.moved`, which the list of the former parent answers with `remove`.
+
+## Library maintenance
+
+`library.maintenance` lists the maintenance runs (`MaintenanceRunRow`: trigger, status `running`/`done`/`held`/`reported`/`failed`, options, safety limit, and files and bytes per class – orphans, leftovers, missing originals – and per outcome – deleted, listed). Every step of a run writes one change entry for the run, so the row follows live. `library.maintenance.findings` lists one run's files (`MaintenanceFindingRow`: kind, size, outcome) by path; findings are written and updated in batches with one change entry per finding (`openspec/specs/library/spec.md`, Maintenance result). The schedule and options are read and changed over REST (`/api/v1/maintenance/schedule`).
 
 ## Library imports
 

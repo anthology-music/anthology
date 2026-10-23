@@ -66,6 +66,12 @@ In the standard pod `anthology-imports` and `anthology-library` are separate vol
 
 Referenced files can later be adopted into managed storage in Settings › Library (move, copy or reflink; each file is verified by checksum before anything changes at the source).
 
+## Time zone and system maintenance
+
+Schedules run in the installation's time zone: set `ANTHOLOGY_TIME_ZONE` to an IANA name such as `Europe/Berlin` (default `UTC`).
+
+The system maintenance (Settings › Systempflege, admins) runs daily at 03:00 by default. It deletes orphaned files and leftovers of interrupted transfers in `/data/library/_originals` that are older than the grace period (24 hours), and lists managed originals whose file is missing; referenced files outside `_originals` are never touched. If a run would delete more than the safety limit (1 % of the managed files, at least 10), it deletes nothing and waits for an admin's confirmation. This protects against a database restored from an older backup or a wrong library mount, where the newer originals would look orphaned: after a restore, check the next result before you confirm a deletion.
+
 ## Database password
 
 The password is a secret, never part of a unit file or environment variable: PostgreSQL reads it from `POSTGRES_PASSWORD_FILE`, the server from `ANTHOLOGY_DATABASE_PASSWORD_FILE` (it replaces the password in `ANTHOLOGY_DATABASE_URL`). PostgreSQL uses the secret only when it creates the database; to change it later, change it in PostgreSQL (`ALTER USER anthology PASSWORD …`) and in the secret.

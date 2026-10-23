@@ -12,6 +12,8 @@ from anthology.library.schemas import (
     LibraryStorageRow,
     LibrarySupersededRow,
     LibraryTrackRow,
+    MaintenanceFindingRow,
+    MaintenanceRunRow,
 )
 from anthology.library_import.schemas import LibraryImportRow
 from anthology.quality_analysis.schemas import QualitySummaryRow
@@ -27,6 +29,8 @@ ROW_SCHEMAS: dict[str, type[BaseModel]] = {
     "library.superseded": LibrarySupersededRow,
     "library.identification": LibraryIdentificationRow,
     "library.storage": LibraryStorageRow,
+    "library.maintenance": MaintenanceRunRow,
+    "library.maintenance.findings": MaintenanceFindingRow,
     "library_import.imports": LibraryImportRow,
     "quality_analysis.summary": QualitySummaryRow,
 }

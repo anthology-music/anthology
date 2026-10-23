@@ -1,4 +1,5 @@
-"""Artists, releases, recordings, track contexts, audio files and library counters (spec: library).
+"""Artists, releases, recordings, track contexts, audio files, library counters and maintenance
+runs (spec: library).
 
 Sort columns hold normalized keys (``service.sort_key``) and are denormalized onto the
 rows a list shows, so that every list is one index range scan.
@@ -12,11 +13,13 @@ from sqlalchemy import (
     BigInteger,
     Boolean,
     Date,
+    Float,
     ForeignKey,
     Index,
     Integer,
     String,
     Text,
+    UniqueConstraint,
     Uuid,
     text,
 )
@@ -326,3 +329,90 @@ class LibraryCounter(Base):
 
     name: Mapped[Counter] = mapped_column(str_enum(Counter, "name"), primary_key=True)
     value: Mapped[int] = mapped_column(BigInteger, default=0)
+
+
+# --- maintenance (spec: library, Orphaned files in managed storage) -------------------------
+
+
+class MaintenanceAction(enum.StrEnum):
+    DELETE = "delete"
+    REPORT = "report"
+
+
+class MaintenanceTrigger(enum.StrEnum):
+    SCHEDULE = "schedule"
+    MANUAL = "manual"
+
+
+class MaintenanceStatus(enum.StrEnum):
+    RUNNING = "running"
+    DONE = "done"
+    HELD = "held"  # more deletions than the safety limit allows: waits for confirmation
+    REPORTED = "reported"  # action "report only": findings listed
+    FAILED = "failed"
+
+
+class FindingKind(enum.StrEnum):
+    ORPHAN = "orphan"  # a file in managed storage no audio file refers to
+    LEFTOVER = "leftover"  # temporary file of an interrupted transfer or a link probe
+    MISSING = "missing"  # a managed audio file whose file does not exist
+
+
+class FindingOutcome(enum.StrEnum):
+    DELETED = "deleted"
+    LISTED = "listed"  # report only, held by the safety limit, or a missing original
+    # Kept by the final check before the deletion:
+    REFERENCED = "referenced"  # an audio file refers to it meanwhile
+    TOO_YOUNG = "too_young"  # changed within the grace period meanwhile
+    OUTSIDE = "outside"  # resolves to a path outside managed storage
+    GONE = "gone"  # no longer exists
+    FAILED = "failed"  # the deletion failed
+
+
+class MaintenanceRun(Base):
+    """One run of the library maintenance with its options and result counts."""
+
+    __tablename__ = "maintenance_runs"
+    __table_args__ = (Index("ix_maintenance_runs_started_at_id", "started_at", "id"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    job_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("jobs.id", ondelete="SET NULL"))
+    trigger: Mapped[MaintenanceTrigger] = mapped_column(str_enum(MaintenanceTrigger, "trigger"))
+    status: Mapped[MaintenanceStatus] = mapped_column(str_enum(MaintenanceStatus, "status"))
+    action: Mapped[MaintenanceAction] = mapped_column(str_enum(MaintenanceAction, "action"))
+    grace_hours: Mapped[int] = mapped_column(Integer)
+    # Null: safety limit switched off.
+    safety_share_percent: Mapped[float | None] = mapped_column(Float)
+    safety_limit: Mapped[int | None] = mapped_column(Integer)
+    managed_files: Mapped[int] = mapped_column(BigInteger, default=0)
+    started_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
+    finished_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
+    error: Mapped[str | None] = mapped_column(Text)
+    orphan_files: Mapped[int] = mapped_column(BigInteger, default=0)
+    orphan_bytes: Mapped[int] = mapped_column(BigInteger, default=0)
+    leftover_files: Mapped[int] = mapped_column(BigInteger, default=0)
+    leftover_bytes: Mapped[int] = mapped_column(BigInteger, default=0)
+    missing_files: Mapped[int] = mapped_column(BigInteger, default=0)
+    missing_bytes: Mapped[int] = mapped_column(BigInteger, default=0)
+    deleted_files: Mapped[int] = mapped_column(BigInteger, default=0)
+    deleted_bytes: Mapped[int] = mapped_column(BigInteger, default=0)
+    # Orphans and leftovers not deleted (listed or kept by the final check).
+    listed_files: Mapped[int] = mapped_column(BigInteger, default=0)
+    listed_bytes: Mapped[int] = mapped_column(BigInteger, default=0)
+
+
+class MaintenanceFinding(Base):
+    """A file a maintenance run found: orphaned, a leftover or a missing original."""
+
+    __tablename__ = "maintenance_findings"
+    __table_args__ = (UniqueConstraint("run_id", "path"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    run_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("maintenance_runs.id", ondelete="CASCADE"))
+    path: Mapped[str] = mapped_column(Text)
+    kind: Mapped[FindingKind] = mapped_column(str_enum(FindingKind, "kind"))
+    size_bytes: Mapped[int] = mapped_column(BigInteger, default=0)
+    modified_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
+    # Null until the run acts on the finding.
+    outcome: Mapped[FindingOutcome | None] = mapped_column(str_enum(FindingOutcome, "outcome"))
+    detail: Mapped[str | None] = mapped_column(Text)

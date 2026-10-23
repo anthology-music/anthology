@@ -17,8 +17,9 @@ from anthology.db import create_engine, create_sessionmaker
 from anthology.jobs import api as jobs_api
 from anthology.jobs.handlers import HandlerRegistry
 from anthology.jobs.runner import JobRunner
+from anthology.jobs.schedules import Scheduler, ScheduleRegistry
 from anthology.jobs.streams import JobItemsStream, JobsStream
-from anthology.library import adoption, identification, superseded
+from anthology.library import adoption, identification, maintenance, superseded
 from anthology.library import api as library_api
 from anthology.library.streams import STREAMS as LIBRARY_STREAMS
 from anthology.library_import import api as library_import_api
@@ -83,6 +84,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             lease_seconds=settings.jobs_lease_seconds,
         )
         app.state.job_runner = runner
+        scheduler = Scheduler(sessionmaker, app.state.schedules, settings.zone)
+        app.state.scheduler = scheduler
         tagger, tagger_monitor = _tagger(settings, sessionmaker)
         app.state.tagger = tagger
         app.state.tagger_monitor = tagger_monitor
@@ -102,9 +105,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
         app.state.job_handlers.get(superseded.JOB_TYPE).bind(superseded.Deleter(sessionmaker))
         app.state.job_handlers.get(adoption.JOB_TYPE).bind(adoption.Adopter(sessionmaker, settings))
+        app.state.job_handlers.get(maintenance.JOB_TYPE).bind(
+            maintenance.Maintainer(sessionmaker, settings)
+        )
         if settings.background_tasks:
             await background.start()
             await runner.start()
+            await scheduler.start()
             await tagger_monitor.start()
             if mirror_monitor is not None:
                 await mirror_monitor.start()
@@ -115,6 +122,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 await mirror_monitor.stop()
             await lookups.aclose()
             await tagger_monitor.stop()
+            await scheduler.stop()
             await runner.stop()
             await background.stop()
             await tagger.aclose()
@@ -123,6 +131,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(title="Anthology", version=__version__, lifespan=lifespan)
     app.state.streams = _streams(settings)
     app.state.job_handlers = _job_handlers(settings)
+    app.state.schedules = _schedules()
     app.include_router(health.router, prefix=API_PREFIX)
     app.include_router(users_api.router, prefix=API_PREFIX)
     app.include_router(sync_api.router, prefix=API_PREFIX)
@@ -182,6 +191,7 @@ def _job_handlers(settings: Settings) -> HandlerRegistry:
     registry.register(identification.IdentifyRecordingsHandler())
     registry.register(adoption.AdoptOriginalsHandler())
     registry.register(superseded.DeleteSupersededHandler())
+    registry.register(maintenance.MaintenanceHandler())
     registry.register(quality_analysis.AnalyzeQualityHandler())
     for handler in library_import_jobs.HANDLERS:
         registry.register(handler())
@@ -189,6 +199,12 @@ def _job_handlers(settings: Settings) -> HandlerRegistry:
         from anthology.jobs.demo import DemoJobHandler
 
         registry.register(DemoJobHandler())
+    return registry
+
+
+def _schedules() -> ScheduleRegistry:
+    registry = ScheduleRegistry()
+    registry.register(maintenance.SCHEDULE)
     return registry
 
 
