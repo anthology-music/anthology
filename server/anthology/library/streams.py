@@ -573,6 +573,7 @@ def _superseded_row(result_row) -> Row:
         path=audio_file.path,
         size_bytes=audio_file.size_bytes,
         format=audio_file.format,
+        storage_mode=audio_file.storage_mode,
         recording_id=str(recording.id),
         title=recording.title,
         artist=recording.artist_display,
@@ -584,7 +585,8 @@ def _superseded_row(result_row) -> Row:
 
 
 class SupersededFilesStream:
-    """Report of superseded referenced originals by path (admins only), with count and size."""
+    """Report of superseded originals by path (admins only), with counts and sizes in total and
+    of the managed ones (deletable)."""
 
     name = "library.superseded"
     entity_types = frozenset({service.SUPERSEDED_FILE})

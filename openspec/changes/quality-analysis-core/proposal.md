@@ -16,7 +16,7 @@ ADR 0012 and the `quality-analysis` spec make the effective quality the basis of
   - Only high-confidence results set the file's effective quality.
   - Others stay "suspicious" until the review list exists; their effective quality stays unknown.
   - Recordings released before 1980 are judged more tolerantly: a low cutoff alone makes them "suspicious" with low confidence, never "upscaled".
-- **Triggers:** editors and admins start the analysis from the library settings. It also starts automatically after a folder import that created originals, like identification.
+- **Triggers:** editors and admins start the analysis from the library settings. (The automatic start after imports was removed again by `quality-based-replacement`, ADR 0022.)
 - **Overview:** the library settings show the number of files per status (live). Track rows show an effective-quality badge once a file has a high-confidence result. A file with an unresolved result shows a "check" marker instead.
 - **Not part of this change:**
   - Review-list entries with spectrogram (`review-list`).
@@ -38,7 +38,7 @@ _None._
 
 ## Impact
 
-- **Domains:** quality-analysis (new server module `quality_analysis`, settings view in the client), library (effective quality applied through the library service, track rows), library-import (starts the analysis after an import).
+- **Domains:** quality-analysis (new server module `quality_analysis`, settings view in the client), library (effective quality applied through the library service, track rows), library-import (the automatic start after an import was removed again by `quality-based-replacement`, ADR 0022).
 - **Data model and migration:** `QualityAnalysis` per audio hash: status, confidence, finding, effective tier, cutoff, effective sample rate and bit depth, estimated bitrate, method version, analysed at. Counters per status. One Alembic migration; `docs/architecture/data-model.puml` updated.
 - **Dependencies:** `numpy` (BSD-3-Clause and permissive bundled licenses) for the spectra. The FFmpeg build gains the raw PCM output it needs (`pcm_f32le`/`pcm_s32le` encoders, `f32le`/`s32le` muxers), following the rule of ADR 0020.
 - **Non-functional requirements (2 s, 500,000 tracks):**

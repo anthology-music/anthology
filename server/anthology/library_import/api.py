@@ -85,6 +85,7 @@ async def start_import(
             mode=mode,
             same_mount=modes.same_mount,
             allow_tag_writes=body.allow_tag_writes,
+            delete_replaced=body.delete_replaced,
             created_by=current.user_id,
         )
     except service.ImportRunning as error:

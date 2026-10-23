@@ -28,7 +28,7 @@ The system SHALL deliver album, track number, album artist and cover from the tr
 - **AND** the embedded tags of the referenced file stay unchanged
 
 ### Requirement: Quality-based replacement
-The system SHALL replace the active original of a recording with a new file of the same recording when the new file has a higher effective quality (see quality-analysis), and SHALL keep all references and track contexts unchanged. If the active original is referenced, the new file SHALL become a managed original.
+The system SHALL replace the active original of a recording with a new file of the same recording when the new file has a higher effective quality (see quality-analysis), and SHALL keep all references and track contexts unchanged. If the active original is referenced and the new file was acquired (downloaded or ripped), the new file SHALL become a managed original; a folder import keeps the storage mode the admin chose for it (see library-import).
 
 #### Scenario: Better source arrives
 - **WHEN** a recording stored as Opus 160 from YouTube is acquired again as FLAC 16/44.1 from Tidal

@@ -18,7 +18,7 @@ from anthology.jobs import api as jobs_api
 from anthology.jobs.handlers import HandlerRegistry
 from anthology.jobs.runner import JobRunner
 from anthology.jobs.streams import JobItemsStream, JobsStream
-from anthology.library import adoption, identification
+from anthology.library import adoption, identification, superseded
 from anthology.library import api as library_api
 from anthology.library.streams import STREAMS as LIBRARY_STREAMS
 from anthology.library_import import api as library_import_api
@@ -100,6 +100,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.job_handlers.get(quality_analysis.JOB_TYPE).bind(
             quality_analysis.Analyzer(sessionmaker, settings)
         )
+        app.state.job_handlers.get(superseded.JOB_TYPE).bind(superseded.Deleter(sessionmaker))
         app.state.job_handlers.get(adoption.JOB_TYPE).bind(adoption.Adopter(sessionmaker, settings))
         if settings.background_tasks:
             await background.start()
@@ -180,6 +181,7 @@ def _job_handlers(settings: Settings) -> HandlerRegistry:
     registry = HandlerRegistry()
     registry.register(identification.IdentifyRecordingsHandler())
     registry.register(adoption.AdoptOriginalsHandler())
+    registry.register(superseded.DeleteSupersededHandler())
     registry.register(quality_analysis.AnalyzeQualityHandler())
     for handler in library_import_jobs.HANDLERS:
         registry.register(handler())

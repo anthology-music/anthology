@@ -56,6 +56,10 @@ class ImportResult(enum.StrEnum):
     NEEDS_REVIEW = "needs_review"
     BROKEN = "broken"
     SKIPPED = "skipped"  # unchanged since an earlier import of the same folder
+    # Better than the existing original of its recording (spec: Quality comparison).
+    REPLACES_LOWER_QUALITY = "replaces_lower_quality"
+    # A quality comparison was needed but not conclusive: no replacement.
+    SUSPICIOUS_QUALITY = "suspicious_quality"
 
 
 class LibraryImport(Base):
@@ -69,6 +73,8 @@ class LibraryImport(Base):
     # Source and library are on one mount (a move is a rename, nothing is added).
     same_mount: Mapped[bool] = mapped_column(Boolean, default=False)
     allow_tag_writes: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Delete replaced managed originals after verification (ADR 0021); else keep superseded.
+    delete_replaced: Mapped[bool] = mapped_column(Boolean, default=True)
     status: Mapped[ImportStatus] = mapped_column(str_enum(ImportStatus, "status"))
     report_json: Mapped[str | None] = mapped_column(Text)
     # The job working on the import now (scan, analysis or import).

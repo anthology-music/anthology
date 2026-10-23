@@ -18,6 +18,8 @@ const empty = { files: 0, bytes: 0 };
 const report = (overrides: Record<string, unknown> = {}) => ({
   categories: {
     new: { files: 1200, bytes: 40_000_000_000 },
+    replaces_lower_quality: { files: 0, bytes: 0 },
+    suspicious_quality: { files: 0, bytes: 0 },
     already_present: { files: 30, bytes: 900_000_000 },
     duplicate_in_source: { files: 4, bytes: 120_000_000 },
     needs_review: empty,
@@ -40,6 +42,7 @@ const importRow = (overrides: Record<string, unknown> = {}) => ({
   mode: 'copy',
   managed: true,
   allow_tag_writes: false,
+  delete_replaced: true,
   status: 'reported',
   report: report(),
   job_id: null,
@@ -206,8 +209,45 @@ describe('library import', () => {
     await vi.waitFor(() => expect(calls).toHaveLength(1));
     expect(calls[0]).toEqual({
       route: 'start',
-      body: { path: FOLDER, mode: 'copy', allow_tag_writes: false },
+      body: { path: FOLDER, mode: 'copy', allow_tag_writes: false, delete_replaced: true },
     });
+  });
+
+  it('keeps replaced originals when the deletion option is unchecked', async () => {
+    const { wrapper, calls } = await streamingPage('admin');
+    await openDialogAt(wrapper);
+
+    // Checked by default (ADR 0021).
+    const option = inBody('import-delete-replaced')!;
+    expect(option.getAttribute('aria-checked')).toBe('true');
+    option.click();
+    await flushPromises();
+    inBody('import-scan')!.click();
+    await vi.waitFor(() => expect(calls).toHaveLength(1));
+
+    expect(calls[0]!.body).toMatchObject({ delete_replaced: false });
+  });
+
+  it('states replacements and the deletion option in the report', async () => {
+    const { wrapper, socket } = await streamingPage('admin');
+    await vi.waitFor(() => expect(subscription(socket, 'library_import.imports')).toBeDefined());
+    const categories = {
+      ...report().categories,
+      replaces_lower_quality: { files: 3, bytes: 90_000_000 },
+      suspicious_quality: { files: 2, bytes: 60_000_000 },
+    };
+    sendImports(socket, [importRow({ delete_replaced: false, report: report({ categories }) })]);
+    await flushPromises();
+    await wrapper.find('[data-testid="import-import-1"] button').trigger('click');
+    await flushPromises();
+
+    expect(wrapper.find('[data-testid="import-category-replaces_lower_quality"]').text()).toContain(
+      '3 Dateien',
+    );
+    expect(wrapper.find('[data-testid="import-category-suspicious_quality"]').text()).toContain(
+      '2 Dateien',
+    );
+    expect(wrapper.find('[data-testid="import-replaced"]').text()).toContain('bleiben im Bericht');
   });
 
   it('hides link modes the folder does not allow', async () => {

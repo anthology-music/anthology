@@ -69,6 +69,14 @@
           :label="t('libraryImport.dialog.tagWrites')"
           data-testid="import-tag-writes"
         />
+        <q-checkbox
+          v-model="deleteReplaced"
+          :label="t('libraryImport.dialog.deleteReplaced')"
+          data-testid="import-delete-replaced"
+        />
+        <p class="text-muted import-dialog__hint">
+          {{ t('libraryImport.dialog.deleteReplacedHint') }}
+        </p>
       </q-card-section>
       <q-card-section v-else>
         <p class="text-muted">{{ t('libraryImport.dialog.chooseFolder') }}</p>
@@ -117,6 +125,8 @@ const { t } = useI18n();
 const listing = ref<Schemas['FolderListing'] | null>(null);
 const mode = ref<ImportMode | null>(null);
 const tagWrites = ref(false);
+// ADR 0021: replaced managed originals are deleted after verification unless unchecked.
+const deleteReplaced = ref(true);
 const starting = ref(false);
 const error = ref<ErrorCode | null>(null);
 
@@ -155,6 +165,7 @@ async function scan(): Promise<void> {
         path: listing.value.path,
         mode: mode.value,
         allow_tag_writes: REFERENCED_MODES.includes(mode.value) && tagWrites.value,
+        delete_replaced: deleteReplaced.value,
       },
     });
     if (failed || !data) {
@@ -220,6 +231,11 @@ async function scan(): Promise<void> {
   gap: var(--space-3);
   min-height: 44px;
   cursor: pointer;
+}
+
+.import-dialog__hint {
+  margin: 0;
+  font-size: var(--text-sm);
 }
 
 .import-dialog__mode input {

@@ -34,7 +34,7 @@
 
 ## 7. Deferred
 
-- [ ] 7.1 (waits for `quality-analysis`) Report categories "replaces lower quality" and "suspicious quality"; replacement on import
+- [x] 7.1 (waits for `quality-analysis`, done with `quality-based-replacement`) Report categories "replaces lower quality" and "suspicious quality"; replacement on import
 - [ ] 7.2 (waits for `review-list`) Review entries for "needs review" items
 
 ## 8. Documentation

@@ -13,7 +13,7 @@
 
 ## 3. Job and results
 
-- [x] 3.1 Job `analyze_quality` (keyset over unanalysed audio hashes, batches of 100, results per hash, method version, re-run), `POST /api/v1/quality-analysis` for editors and admins (409 while running), start after a folder import; verify with tests for batches, reuse of a stored result for equal audio, a repeated item, roles and the start after an import
+- [x] 3.1 Job `analyze_quality` (keyset over unanalysed audio hashes, batches of 100, results per hash, method version, re-run), `POST /api/v1/quality-analysis` for editors and admins (409 while running), start after a folder import (removed again by `quality-based-replacement`, ADR 0022); verify with tests for batches, reuse of a stored result for equal audio, a repeated item, roles and the start after an import
 - [x] 3.2 Apply results through the library service: effective quality and quality status on all files of the hash for high confidence, quality status only otherwise, change entries for the track rows; verify with service tests and a protocol test (track row delta with the new badge fields)
 - [x] 3.3 Stream `quality_analysis.summary` with maintained counters; verify with a protocol test (snapshot and delta after an analysis) and a counter consistency test
 

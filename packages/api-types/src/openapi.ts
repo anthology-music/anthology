@@ -277,6 +277,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/library/superseded/deletion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Superseded Deletion
+         * @description Delete all superseded managed originals whose replacement verifies (ADR 0021).
+         */
+        post: operations["start_superseded_deletion_api_v1_library_superseded_deletion_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me": {
         parameters: {
             query?: never;
@@ -531,6 +551,11 @@ export interface components {
          * @enum {string}
          */
         BitrateSetting: "original" | "320" | "256" | "192" | "128";
+        /** DeletionStarted */
+        DeletionStarted: {
+            /** Job Id */
+            job_id: string | null;
+        };
         /** DemoJobRequest */
         DemoJobRequest: {
             /**
@@ -686,6 +711,11 @@ export interface components {
              * @default false
              */
             allow_tag_writes: boolean;
+            /**
+             * Delete Replaced
+             * @default true
+             */
+            delete_replaced: boolean;
             mode?: components["schemas"]["ImportMode"] | null;
             /** Path */
             path: string;
@@ -1384,6 +1414,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_superseded_deletion_api_v1_library_superseded_deletion_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeletionStarted"];
                 };
             };
         };

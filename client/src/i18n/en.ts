@@ -191,6 +191,9 @@ const en: typeof de = {
       tagWrites: 'Anthology may write tags into these files',
       scan: 'Check folder',
       cancel: 'Close',
+      deleteReplaced: 'Delete replaced managed originals',
+      deleteReplacedHint:
+        'Applies to all replacements of this import. Files are deleted only after the new original is verified by checksum; referenced files are never deleted.',
       chooseFolder: 'Choose a folder below an import folder.',
     },
     report: {
@@ -202,6 +205,8 @@ const en: typeof de = {
         already_present: 'Already present',
         duplicate_in_source: 'Duplicate within source',
         needs_review: 'Needs review',
+        replaces_lower_quality: 'Replaces lower quality',
+        suspicious_quality: 'Suspicious quality',
         broken: 'Broken',
         skipped: 'Unchanged since the last import',
       },
@@ -209,6 +214,10 @@ const en: typeof de = {
       adds: 'Additional storage: {size}',
       managed: 'Anthology manages the originals.',
       referenced: 'The originals stay referenced: Anthology never moves, renames or deletes them.',
+      replacedDeleted:
+        '{n} originals will be replaced; replaced managed files are deleted after verification.',
+      replacedKept:
+        '{n} originals will be replaced; the replaced files stay in the report of replaced originals.',
       confirmHint: 'Nothing is moved, linked or copied until you confirm.',
       imported: 'Imported: {n}',
       failed: 'Failed: {n}',
@@ -222,6 +231,27 @@ const en: typeof de = {
       outside_roots: 'This folder is not below an import folder.',
       not_a_folder: 'This folder does not exist.',
       mode_not_possible: 'This storage mode is not possible for the folder.',
+      failed: 'That did not work. Please try again.',
+    },
+  },
+  superseded: {
+    title: 'Replaced originals',
+    hint: 'Files replaced by a better file of the same recording. Managed files can be deleted once the new original is verified by checksum.',
+    managed: 'Managed (deletable)',
+    referenced: 'Referenced',
+    neverDeleted: 'Never deleted; they stay where they are.',
+    summary: '{n} file ({size}) | {n} files ({size})',
+    modes: { managed: 'Managed', referenced: 'Referenced' },
+    delete: 'Delete replaced managed files',
+    confirmTitle: 'Delete replaced files?',
+    confirmText:
+      '{files} will be deleted permanently. Each file is deleted only after the new original is verified; referenced files stay.',
+    confirm: 'Delete',
+    cancel: 'Cancel',
+    messages: {
+      started: 'The deletion runs as a job (see Streaming).',
+      running: 'The deletion is already running.',
+      nothing: 'There is nothing to delete.',
       failed: 'That did not work. Please try again.',
     },
   },

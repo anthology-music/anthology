@@ -81,7 +81,10 @@ package "Library" {
     REFERENCED files are written only
     if tagWritesAllowed (opt-in);
     a replaced REFERENCED original
-    becomes SUPERSEDED and is kept.
+    becomes SUPERSEDED and is kept;
+    a replaced MANAGED original is deleted
+    after verification or kept SUPERSEDED
+    (per run, ADR 0021).
   end note
 
   class FileLocation {
@@ -389,6 +392,7 @@ package "Sources & Jobs" {
     +mode : ImportMode
     +sameMount : Boolean
     +allowTagWrites : Boolean
+    +deleteReplaced : Boolean
     +status : ImportStatus
     +reportJson : String [0..1]
     +error : String [0..1]
@@ -508,6 +512,7 @@ package "Sources & Jobs" {
     NEEDS_REVIEW
     BROKEN
     SKIPPED
+    SUSPICIOUS_QUALITY
   }
 }
 

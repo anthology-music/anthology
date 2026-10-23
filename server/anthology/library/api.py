@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from anthology.api.deps import AdminSession, require_role
 from anthology.db import get_session
-from anthology.library import adoption, identification
+from anthology.library import adoption, identification, superseded
 from anthology.library.storage import TransferMode
 from anthology.users.models import Role
 from anthology.users.service import SessionInfo
@@ -66,3 +66,18 @@ async def start_adoption(
         raise HTTPException(status.HTTP_409_CONFLICT, detail="adoption_running") from error
     await session.commit()
     return AdoptionStarted(job_id=str(job_id) if job_id else None)
+
+
+class DeletionStarted(BaseModel):
+    job_id: str | None
+
+
+@router.post("/library/superseded/deletion", status_code=status.HTTP_202_ACCEPTED)
+async def start_superseded_deletion(session: Session, current: AdminSession) -> DeletionStarted:
+    """Delete all superseded managed originals whose replacement verifies (ADR 0021)."""
+    try:
+        job_id = await superseded.start(session, created_by=current.user_id)
+    except superseded.DeletionRunning as error:
+        raise HTTPException(status.HTTP_409_CONFLICT, detail="deletion_running") from error
+    await session.commit()
+    return DeletionStarted(job_id=str(job_id) if job_id else None)

@@ -11,6 +11,10 @@ export type QualityTier = 'hires_lossless' | 'cd_lossless' | 'lossy_high' | 'los
  */
 export type QualityStatus = 'genuine' | 'suspicious' | 'upscaled' | 'confirmed_genuine';
 /**
+ * Who owns the bytes (spec: library, Managed and referenced originals).
+ */
+export type StorageMode = 'managed' | 'referenced';
+/**
  * Storage mode of an import (spec: library-import, Storage modes).
  */
 export type ImportMode = 'reference' | 'move' | 'reflink' | 'hardlink' | 'copy';
@@ -202,6 +206,7 @@ export interface LibrarySupersededRow {
   path: string;
   size_bytes: number;
   format: AudioFormat;
+  storage_mode: StorageMode;
   recording_id: string;
   title: string;
   artist: string;
@@ -241,6 +246,7 @@ export interface LibraryImportRow {
   mode: ImportMode;
   managed: boolean;
   allow_tag_writes: boolean;
+  delete_replaced: boolean;
   status: ImportStatus;
   report: {
     [k: string]: unknown;
