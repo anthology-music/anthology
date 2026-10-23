@@ -609,6 +609,21 @@ async def _create_user(
     return user
 
 
+async def active_admin(session: AsyncSession, preferred: uuid.UUID | None) -> uuid.UUID | None:
+    """``preferred`` if it is an active admin, else the earliest active admin (or None); the
+    owner of jobs the system starts on a schedule."""
+    if preferred is not None:
+        user = await session.get(User, preferred)
+        if user is not None and user.active and user.role == Role.ADMIN:
+            return user.id
+    return await session.scalar(
+        select(User.id)
+        .where(User.role == Role.ADMIN, User.active.is_(True))
+        .order_by(User.created_at, User.id)
+        .limit(1)
+    )
+
+
 async def _ensure_other_active_admin(session: AsyncSession, user_id: uuid.UUID) -> None:
     others = await session.scalar(
         select(func.count())

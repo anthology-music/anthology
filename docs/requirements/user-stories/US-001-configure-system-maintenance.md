@@ -48,6 +48,17 @@ UI name: "Systempflege" (Settings, admins only).
    - **when** I open the settings,
    - **then** Systempflege is not shown, and its API refuses my requests.
 
+## Requirements
+
+Change `system-maintenance`:
+
+- `jobs` – Scheduled maintenance (criteria 1, 6)
+- `jobs` – Maintenance configuration (criteria 1–4, 8)
+- `library` – Orphaned files in managed storage (criteria 2, 3)
+- `library` – Maintenance safety limit (criterion 4)
+- `library` – Missing originals (criterion 5)
+- `library` – Maintenance result (criterion 7)
+
 ## Notes
 
 - Defaults:

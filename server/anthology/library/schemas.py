@@ -1,6 +1,16 @@
 """Row schemas of the library streams (spec: library, Track rows by context)."""
 
-from anthology.library.models import AudioFormat, QualityStatus, QualityTier, StorageMode
+from anthology.library.models import (
+    AudioFormat,
+    FindingKind,
+    FindingOutcome,
+    MaintenanceAction,
+    MaintenanceStatus,
+    MaintenanceTrigger,
+    QualityStatus,
+    QualityTier,
+    StorageMode,
+)
 from anthology.sync.messages import StreamRow
 
 
@@ -71,3 +81,40 @@ class LibraryIdentificationRow(StreamRow):
     no_match: int
     duplicate: int
     not_possible: int
+
+
+class MaintenanceRunRow(StreamRow):
+    """A maintenance run with its result (spec: library, Maintenance result)."""
+
+    job_id: str | None
+    trigger: MaintenanceTrigger
+    status: MaintenanceStatus
+    action: MaintenanceAction
+    grace_hours: int
+    safety_share_percent: float | None
+    safety_limit: int | None
+    managed_files: int
+    started_at: str
+    finished_at: str | None
+    error: str | None
+    orphan_files: int
+    orphan_bytes: int
+    leftover_files: int
+    leftover_bytes: int
+    missing_files: int
+    missing_bytes: int
+    deleted_files: int
+    deleted_bytes: int
+    listed_files: int
+    listed_bytes: int
+
+
+class MaintenanceFindingRow(StreamRow):
+    """A file a maintenance run found, by path."""
+
+    path: str
+    kind: FindingKind
+    size_bytes: int
+    modified_at: str | None
+    outcome: FindingOutcome | None
+    detail: str | None

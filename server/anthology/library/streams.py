@@ -8,17 +8,19 @@ primary-key joins.
 import uuid
 from typing import Any
 
-from sqlalchemy import Select, select
+from sqlalchemy import Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
-from anthology.library import service
+from anthology.library import maintenance, service
 from anthology.library.models import (
     IDENTIFICATION_COUNTERS,
     REFERENCED_COUNTERS,
     SUPERSEDED_COUNTERS,
     Artist,
     AudioFile,
+    MaintenanceFinding,
+    MaintenanceRun,
     OriginalStatus,
     Recording,
     Release,
@@ -31,6 +33,8 @@ from anthology.library.schemas import (
     LibraryStorageRow,
     LibrarySupersededRow,
     LibraryTrackRow,
+    MaintenanceFindingRow,
+    MaintenanceRunRow,
 )
 from anthology.sync.feed import ChangeEvent
 from anthology.sync.streams import (
@@ -626,6 +630,142 @@ class SupersededFilesStream:
         return _remove(event.entity_id) if row is None else _upsert(_superseded_row(row))
 
 
+# --- maintenance -----------------------------------------------------------------------------
+
+RUN_KEY = (MaintenanceRun.started_at, MaintenanceRun.id)
+COUNTS = (
+    "orphan_files",
+    "orphan_bytes",
+    "leftover_files",
+    "leftover_bytes",
+    "missing_files",
+    "missing_bytes",
+    "deleted_files",
+    "deleted_bytes",
+    "listed_files",
+    "listed_bytes",
+)
+
+
+def _iso(value) -> str | None:
+    return value.isoformat() if value is not None else None
+
+
+def _run_row(run: MaintenanceRun) -> Row:
+    key = (run.started_at, run.id)
+    model = MaintenanceRunRow(
+        id=str(run.id),
+        key=[_iso(run.started_at), str(run.id)],
+        job_id=str(run.job_id) if run.job_id else None,
+        trigger=run.trigger,
+        status=run.status,
+        action=run.action,
+        grace_hours=run.grace_hours,
+        safety_share_percent=run.safety_share_percent,
+        safety_limit=run.safety_limit,
+        managed_files=run.managed_files,
+        started_at=_iso(run.started_at),
+        finished_at=_iso(run.finished_at),
+        error=run.error,
+        **{name: getattr(run, name) for name in COUNTS},
+    )
+    return Row(id=model.id, key=key, data=_data(model))
+
+
+class MaintenanceRunsStream:
+    """Maintenance runs with their results, newest first (admins only)."""
+
+    name = "library.maintenance"
+    entity_types = frozenset({maintenance.RUN})
+
+    def allowed(self, session: SessionInfo) -> bool:
+        return session.role == Role.ADMIN
+
+    def validate(self, params: dict[str, Any]) -> dict[str, Any]:
+        return _no_params(params)
+
+    async def meta(self, db: AsyncSession, ctx: StreamContext) -> Meta:
+        # Few rows (the newest runs are kept): counted directly.
+        total = await db.scalar(select(func.count()).select_from(MaintenanceRun))
+        return Meta(total=total or 0)
+
+    def key_query(self, ctx: StreamContext) -> KeyQuery:
+        return KeyQuery(query=select(MaintenanceRun), columns=RUN_KEY, descending=True)
+
+    async def rows(
+        self, db: AsyncSession, ctx: StreamContext, after: SortKey | None, limit: int
+    ) -> list[Row]:
+        result = await _page(db, self.key_query(ctx), select(MaintenanceRun), after, limit)
+        return [_run_row(run) for (run,) in result]
+
+    async def changes(
+        self, db: AsyncSession, ctx: StreamContext, event: ChangeEvent
+    ) -> list[RowChange]:
+        run = await db.get(MaintenanceRun, event.entity_id, populate_existing=True)
+        return _remove(event.entity_id) if run is None else _upsert(_run_row(run))
+
+
+def _finding_row(finding: MaintenanceFinding) -> Row:
+    model = MaintenanceFindingRow(
+        id=str(finding.id),
+        key=[finding.path],
+        path=finding.path,
+        kind=finding.kind,
+        size_bytes=finding.size_bytes,
+        modified_at=_iso(finding.modified_at),
+        outcome=finding.outcome,
+        detail=finding.detail,
+    )
+    return Row(id=model.id, key=(finding.path,), data=_data(model))
+
+
+class MaintenanceFindingsStream:
+    """The files one maintenance run found, by path (admins only); the totals come from the
+    run's counts."""
+
+    name = "library.maintenance.findings"
+    entity_types = frozenset({maintenance.FINDING})
+
+    def allowed(self, session: SessionInfo) -> bool:
+        return session.role == Role.ADMIN
+
+    def validate(self, params: dict[str, Any]) -> dict[str, Any]:
+        return _id_param(params, "run_id")
+
+    async def meta(self, db: AsyncSession, ctx: StreamContext) -> Meta:
+        run = await db.get(MaintenanceRun, ctx.params["run_id"], populate_existing=True)
+        if run is None:
+            return Meta(total=0)
+        counters = {name: getattr(run, name) for name in COUNTS}
+        total = run.orphan_files + run.leftover_files + run.missing_files
+        return Meta(total=total, counters=counters)
+
+    def key_query(self, ctx: StreamContext) -> KeyQuery:
+        return KeyQuery(
+            query=select(MaintenanceFinding).where(
+                MaintenanceFinding.run_id == ctx.params["run_id"]
+            ),
+            columns=(MaintenanceFinding.path,),
+        )
+
+    async def rows(
+        self, db: AsyncSession, ctx: StreamContext, after: SortKey | None, limit: int
+    ) -> list[Row]:
+        key_query = self.key_query(ctx)
+        result = await _page(db, key_query, key_query.query, after, limit)
+        return [_finding_row(finding) for (finding,) in result]
+
+    async def changes(
+        self, db: AsyncSession, ctx: StreamContext, event: ChangeEvent
+    ) -> list[RowChange]:
+        finding = await db.get(MaintenanceFinding, event.entity_id, populate_existing=True)
+        if finding is None:
+            return _remove(event.entity_id)
+        if finding.run_id != ctx.params["run_id"]:
+            return []
+        return _upsert(_finding_row(finding))
+
+
 def _data(model) -> dict[str, Any]:
     """Row fields without ``id`` and ``key`` (the protocol adds those from the row)."""
     return model.model_dump(mode="json", exclude={"id", "key"})
@@ -642,4 +782,6 @@ STREAMS = (
     SupersededFilesStream,
     IdentificationStream,
     StorageStream,
+    MaintenanceRunsStream,
+    MaintenanceFindingsStream,
 )

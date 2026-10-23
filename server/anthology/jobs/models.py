@@ -1,10 +1,21 @@
-"""Jobs, job items and maintained counters per status (spec: jobs)."""
+"""Jobs, job items, maintained counters per status and schedules of recurring jobs (spec: jobs)."""
 
 import enum
 import uuid
-from datetime import datetime
+from datetime import datetime, time
 
-from sqlalchemy import Float, ForeignKey, Index, Integer, String, Text, UniqueConstraint, Uuid
+from sqlalchemy import (
+    Boolean,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    Time,
+    UniqueConstraint,
+    Uuid,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from anthology.db import Base
@@ -89,3 +100,35 @@ class JobCounter(Base):
 
     status: Mapped[JobStatus] = mapped_column(str_enum(JobStatus, "status"), primary_key=True)
     count: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class ScheduleFrequency(enum.StrEnum):
+    DAILY = "daily"
+    WEEKLY = "weekly"
+
+
+class JobSchedule(Base):
+    """When a recurring job type runs next (spec: jobs, Scheduled maintenance).
+
+    Times of day are local to the installation's time zone; ``next_run_at`` is UTC and is
+    moved with a compare-and-swap update by the process that creates the job.
+    """
+
+    __tablename__ = "job_schedules"
+
+    type: Mapped[str] = mapped_column(String(64), primary_key=True)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    frequency: Mapped[ScheduleFrequency] = mapped_column(str_enum(ScheduleFrequency, "frequency"))
+    time_of_day: Mapped[time] = mapped_column(Time)
+    # 0 = Monday … 6 = Sunday; only for weekly schedules.
+    weekday: Mapped[int | None] = mapped_column(Integer)
+    options_json: Mapped[str] = mapped_column(Text, default="{}")
+    next_run_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
+    last_job_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("jobs.id", ondelete="SET NULL")
+    )
+    # Scheduled jobs are created on behalf of the admin who last changed the schedule.
+    updated_by: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL")
+    )
+    updated_at: Mapped[datetime | None] = mapped_column(UTCDateTime)

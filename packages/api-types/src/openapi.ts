@@ -297,6 +297,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/maintenance/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Maintenance
+         * @description Run the maintenance now with the configured options; 409 while a run is active.
+         */
+        post: operations["start_maintenance_api_v1_maintenance_runs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/maintenance/runs/{run_id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm Maintenance
+         * @description Delete the findings of a run the safety limit held back.
+         */
+        post: operations["confirm_maintenance_api_v1_maintenance_runs__run_id__confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/maintenance/schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Maintenance Schedule
+         * @description The maintenance schedule and options with the next run (admins).
+         */
+        get: operations["get_maintenance_schedule_api_v1_maintenance_schedule_get"];
+        /**
+         * Put Maintenance Schedule
+         * @description Change the maintenance schedule and options; they apply from the next run on.
+         */
+        put: operations["put_maintenance_schedule_api_v1_maintenance_schedule_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me": {
         parameters: {
             query?: never;
@@ -786,6 +850,60 @@ export interface components {
             /** Queued Requests */
             queued_requests: number;
         };
+        /**
+         * MaintenanceAction
+         * @enum {string}
+         */
+        MaintenanceAction: "delete" | "report";
+        /**
+         * MaintenanceOptions
+         * @description Options of the maintenance schedule (spec: jobs, Maintenance configuration).
+         */
+        MaintenanceOptions: {
+            /** @default delete */
+            action: components["schemas"]["MaintenanceAction"];
+            /**
+             * Grace Hours
+             * @default 24
+             */
+            grace_hours: number;
+            /**
+             * Safety Share Percent
+             * @default 1
+             */
+            safety_share_percent: number | null;
+        };
+        /** MaintenanceSchedule */
+        MaintenanceSchedule: {
+            /** Enabled */
+            enabled: boolean;
+            frequency: components["schemas"]["ScheduleFrequency"];
+            options: components["schemas"]["MaintenanceOptions"];
+            /** Time */
+            time: string;
+            /** Weekday */
+            weekday?: number | null;
+        };
+        /** MaintenanceScheduleOut */
+        MaintenanceScheduleOut: {
+            /** Enabled */
+            enabled: boolean;
+            frequency: components["schemas"]["ScheduleFrequency"];
+            /** Next Run At */
+            next_run_at: string | null;
+            options: components["schemas"]["MaintenanceOptions"];
+            /** Time */
+            time: string;
+            /** Time Zone */
+            time_zone: string;
+            /** Weekday */
+            weekday?: number | null;
+        };
+        /** MaintenanceStarted */
+        MaintenanceStarted: {
+            /** Job Id */
+            job_id: string;
+        };
         /** MeUpdate */
         MeUpdate: {
             /** Current Password */
@@ -845,6 +963,11 @@ export interface components {
          * @enum {string}
          */
         Role: "admin" | "editor" | "listener";
+        /**
+         * ScheduleFrequency
+         * @enum {string}
+         */
+        ScheduleFrequency: "daily" | "weekly";
         /**
          * ServiceState
          * @enum {string}
@@ -1434,6 +1557,110 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DeletionStarted"];
+                };
+            };
+        };
+    };
+    start_maintenance_api_v1_maintenance_runs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaintenanceStarted"];
+                };
+            };
+        };
+    };
+    confirm_maintenance_api_v1_maintenance_runs__run_id__confirm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaintenanceStarted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_maintenance_schedule_api_v1_maintenance_schedule_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaintenanceScheduleOut"];
+                };
+            };
+        };
+    };
+    put_maintenance_schedule_api_v1_maintenance_schedule_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MaintenanceSchedule"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaintenanceScheduleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

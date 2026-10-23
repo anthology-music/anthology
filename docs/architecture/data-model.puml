@@ -231,6 +231,81 @@ package "Library" {
 
   ServiceStatus --> ServiceState
 
+  class MaintenanceRun {
+    +id : UUID
+    +trigger : MaintenanceTrigger
+    +status : MaintenanceStatus
+    +action : MaintenanceAction
+    +graceHours : Integer
+    +safetySharePercent : Float [0..1]
+    +safetyLimit : Integer [0..1]
+    +managedFiles : Long
+    +startedAt : DateTime
+    +finishedAt : DateTime [0..1]
+    +error : String [0..1]
+    +orphanFiles / orphanBytes : Long
+    +leftoverFiles / leftoverBytes : Long
+    +missingFiles / missingBytes : Long
+    +deletedFiles / deletedBytes : Long
+    +listedFiles / listedBytes : Long
+  }
+  note right of MaintenanceRun
+    One run of the library maintenance
+    (UC-001). safetyLimit = max(10, share
+    of managedFiles); a run over it is HELD
+    until an admin confirms. The newest
+    runs are kept.
+  end note
+
+  enum MaintenanceStatus {
+    RUNNING
+    DONE
+    HELD
+    REPORTED
+    FAILED
+  }
+
+  enum MaintenanceAction {
+    DELETE
+    REPORT
+  }
+
+  class MaintenanceFinding {
+    +id : UUID
+    +path : String
+    +kind : FindingKind
+    +sizeBytes : Long
+    +modifiedAt : DateTime [0..1]
+    +outcome : FindingOutcome [0..1]
+    +detail : String [0..1]
+  }
+  note right of MaintenanceFinding
+    Unique per (run, path). Orphans and
+    leftovers lie in _originals only; missing
+    entries are only listed, never changed.
+  end note
+
+  enum FindingKind {
+    ORPHAN
+    LEFTOVER
+    MISSING
+  }
+
+  enum FindingOutcome {
+    DELETED
+    LISTED
+    REFERENCED
+    TOO_YOUNG
+    OUTSIDE
+    GONE
+    FAILED
+  }
+
+  MaintenanceRun --> MaintenanceStatus
+  MaintenanceRun --> MaintenanceAction
+  MaintenanceFinding --> FindingKind
+  MaintenanceFinding --> FindingOutcome
+
   enum ChangeScope {
     SHARED
     USER
@@ -350,6 +425,31 @@ package "Sources & Jobs" {
     Download options (media mode, max
     video resolution) live in paramsJson.
   end note
+
+  class JobSchedule {
+    +type : JobType
+    +enabled : Boolean
+    +frequency : ScheduleFrequency
+    +timeOfDay : Time
+    +weekday : Integer [0..1]
+    +optionsJson : String
+    +nextRunAt : DateTime [0..1]
+    +updatedAt : DateTime [0..1]
+  }
+  note right of JobSchedule
+    One row per recurring job type (first:
+    library_maintenance). Local times in
+    ANTHOLOGY_TIME_ZONE; nextRunAt (UTC) is
+    claimed by compare-and-swap, so one
+    process creates the job.
+  end note
+
+  enum ScheduleFrequency {
+    DAILY
+    WEEKLY
+  }
+
+  JobSchedule --> ScheduleFrequency
 
   class JobCounter {
     +status : JobStatus
@@ -1062,6 +1162,10 @@ Job "0..*" -- "1" User : created by >
 JobItem "0..*" -- "0..1" Recording : produced >
 Job "1" -- "0..1" CdImportSession
 Job "1" -- "0..1" LibraryImport
+JobSchedule "0..*" -- "0..1" Job : last job >
+JobSchedule "0..*" -- "0..1" User : updated by >
+MaintenanceRun "1" *-- "0..*" MaintenanceFinding
+MaintenanceRun "0..*" -- "0..1" Job : runs as >
 LibraryImport "1" *-- "0..*" ImportItem
 LibraryImport "0..*" -- "1" User : created by >
 ImportItem "0..*" -- "0..1" AudioFile : created >
