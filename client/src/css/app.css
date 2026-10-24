@@ -141,6 +141,27 @@ body {
   line-height: 1.2;
 }
 
+.library-section__heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.library-section__heading .library-section__title {
+  margin: 0;
+}
+
+.library-header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-left: auto;
+  align-self: center;
+}
+
 .library-row {
   display: flex;
   flex: 1;

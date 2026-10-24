@@ -29,6 +29,7 @@ export type ReviewType =
 export type ReviewOrigin = 'fuzzy_match' | 'musicbrainz' | 'import' | 'quality_analysis';
 export type Confidence = 'high' | 'medium' | 'low';
 export type ReviewStatus = 'open' | 'accepted' | 'rejected' | 'deferred' | 'obsolete';
+export type ChangeSetKind = 'edit' | 'undo';
 
 export interface SyncProtocol {
   client?: ClientMessage;
@@ -52,6 +53,7 @@ export interface SyncProtocol {
     'library_import.imports'?: LibraryImportRow;
     'quality_analysis.summary'?: QualitySummaryRow;
     'review.items'?: ReviewItemRow;
+    'tagging.changes'?: ChangeSetRow;
   };
   /**
    * Typed content of untyped row fields (e.g. review evidence).
@@ -371,6 +373,25 @@ export interface ReviewSummary {
   subject: string;
   current?: string | null;
   proposed?: string | null;
+}
+/**
+ * An entry of the change history (spec: tagging, Undo).
+ */
+export interface ChangeSetRow {
+  id: string;
+  key: unknown[];
+  kind: ChangeSetKind;
+  user_name: string | null;
+  summary: {
+    [k: string]: unknown;
+  };
+  items: number;
+  changed: number;
+  created_at: string;
+  job_id: string | null;
+  undo_of: string | null;
+  undone_by: string | null;
+  undoable: boolean;
 }
 export interface RecordingMatchEvidence {
   subject: RecordingSide;

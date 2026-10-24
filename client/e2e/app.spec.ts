@@ -229,3 +229,47 @@ test('a name match in the review list is merged on acceptance', async ({ page })
   await page.locator('[data-testid^="release-"]').filter({ hasText: 'Remaster 1999' }).click();
   await expect(page.locator('[data-testid^="track-"]')).toContainText(['Frühling']);
 });
+
+test('editing an album and undoing the edit from the history', async ({ page }) => {
+  await signIn(page);
+  const kassette = page
+    .locator('[data-testid^="release-"]')
+    .filter({ hasText: 'Kassette 1985' })
+    .first();
+  await kassette.click();
+  await expect(page.getByTestId('release-title')).toHaveText('Kassette 1985');
+
+  // All tracks of the album at once (sent as the list's rule), then the album itself.
+  await page.getByTestId('mode-edit').click();
+  await page.getByTestId('select-all').click();
+  await expect(page.getByTestId('edit-count')).toContainText('2 ausgewählt');
+  await page.getByTestId('edit-tags').click();
+  await page.getByTestId('tag-field-genres').fill('Blasmusik');
+  await page.getByTestId('tag-editor-apply').click();
+  await expect(page.getByTestId('edit-message')).toContainText('geändert');
+
+  await page.getByTestId('edit-release').click();
+  await expect(page.getByTestId('tag-field-title')).toHaveValue('Kassette 1985');
+  await page.getByTestId('tag-field-title').fill('Kassette 1986');
+  await page.getByTestId('tag-editor-apply').click();
+  await expect(page.getByTestId('release-title')).toHaveText('Kassette 1986');
+
+  // The newest change first; undoing it restores the title.
+  await page.getByRole('link', { name: 'Einstellungen' }).click();
+  const newest = page.locator('[data-testid^="change-"]').first();
+  await expect(newest).toContainText('Titel: Kassette 1986');
+  await expect(page.locator('[data-testid^="change-"]').nth(1)).toContainText('Genre: Blasmusik');
+  await newest.getByRole('button', { name: 'Rückgängig' }).click();
+  await expect(page.getByTestId('history-message')).toContainText('rückgängig');
+  await expect(page.locator('[data-testid^="change-"]').first()).toContainText('Rückgängig:', {
+    timeout: 30_000,
+  });
+
+  await page.getByRole('link', { name: 'Lokal' }).click();
+  await page
+    .locator('[data-testid^="release-"]')
+    .filter({ hasText: 'Kassette 1985' })
+    .first()
+    .click();
+  await expect(page.getByTestId('release-title')).toHaveText('Kassette 1985');
+});

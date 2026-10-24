@@ -35,7 +35,7 @@ _None_ – `tagging` exists (tagger interface, safe writes); this change adds th
 
 - **Domains:** tagging; uses library, review, jobs, users, metadata-lookup.
 - **Data model:** `FieldProvenance`, `ChangeSet` (with `AuditLog.changeSetId`), `TagWrite` (queue), `Recording.genres`/`composers`, `Release.label`; later `ReviewType.TAG_CONFLICT`. Migration `0015_tag_editing` (and one for the conflicts).
-- **API:** `POST /api/v1/tagging/edits` (preview and apply), `POST /api/v1/tagging/changes/{id}/undo`; streams `tagging.changes` (history) and later `tagging.conflicts`.
+- **API:** `POST /api/v1/tagging/edits` (selected tracks or a list rule, fields per level; preview and apply), `POST /api/v1/tagging/values` (current values for the editor), `POST /api/v1/tagging/changes/{id}/undo`; streams `tagging.changes` (history) and later `tagging.conflicts`.
 - **Docs:** `docs/architecture/data-model.puml`, `docs/architecture/sync-protocol.md`, `server/AGENTS.md`, `docs/agent-notes.md`.
 - **Code:** server module `server/anthology/tagging/`, client feature `client/src/features/tagging/`.
 - **Non-functional requirements (2 s, 500,000 tracks):** bulk edits run as jobs in keyset batches so that browsing stays within budget; provenance is stored only for values set after the import; file writes are throttled background work.

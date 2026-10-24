@@ -19,6 +19,7 @@ from anthology.library_import.schemas import LibraryImportRow
 from anthology.quality_analysis.schemas import QualitySummaryRow
 from anthology.review import schemas as review
 from anthology.review.schemas import ReviewItemRow
+from anthology.tagging.edits import ChangeSetRow
 
 ROW_SCHEMAS: dict[str, type[BaseModel]] = {
     "library.artists": LibraryArtistRow,
@@ -36,6 +37,7 @@ ROW_SCHEMAS: dict[str, type[BaseModel]] = {
     "library_import.imports": LibraryImportRow,
     "quality_analysis.summary": QualitySummaryRow,
     "review.items": ReviewItemRow,
+    "tagging.changes": ChangeSetRow,
 }
 
 # Typed content of row fields that differ per row kind (the evidence and proposal of each

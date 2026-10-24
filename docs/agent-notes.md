@@ -34,10 +34,9 @@ _Last updated: 2026-10-23_
 - **Library:** `library-core` is merged (PR #15). Decided with the maintainer: one artist per
   recording and one album artist per release, with the credited text kept as display text.
 - **Library views:** `library-views` is merged (PR #16).
-- **Open, implemented in part:** `managed-and-referenced-originals` (PR #17 merged; import modes
-  and adoption done with `library-import-folders`). Open: 2.3 (tag writes, with `tag-editing`).
-  Replacing a managed original is still refused: `effective-quality-duplicate-checks` can now
-  build on the verified transfers of `anthology/library/storage.py`.
+- **Archived:** `managed-and-referenced-originals` (PR #17); 2.3 (tag writes into referenced
+  files) was done with `tag-editing`. Replacing a managed original by a better acquisition is
+  covered by `effective-quality-duplicate-checks` (CD import and sources).
 - **Open, implemented in part:** `metadata-lookup` (PR #18 merged): license check, lookup clients
   with cache, cross-process rate limit, priorities, mirror with fallback and the status/estimate
   endpoint are done. Open: 2.4 (the refresh job applies changes through tagging, so it waits for
@@ -50,14 +49,14 @@ _Last updated: 2026-10-23_
 - **System maintenance:** `system-maintenance` is merged (PR #25): job schedules (`job_schedules`,
   scheduler task per process, installation time zone `ANTHOLOGY_TIME_ZONE`) and the library
   maintenance job with grace period and safety limit.
-- **In progress:** change `review-list` on branch `feat/review-list`: central review list
-  (`anthology/review/`, stream `review.items`, `POST /api/v1/review/decisions`, page `/review`)
-  with the library, import and quality producers. Decided with the maintainer: name matches
-  always become "same recording?" entries (medium without fingerprint comparison, low with
-  differing fingerprints); quality findings are decided "genuine" or "upscaled"; a different
-  title is confirmed or separated. Open: producers of works/publishers, sources and
-  sheet-music (3.6–3.8), so the change stays open after the merge.
-- **Next:** `tag-editing` and `search` (see `docs/roadmap.md`).
+- **Open, implemented in part:** `review-list` (PR #26 merged). Open: producers of
+  works/publishers, sources and sheet-music (3.6–3.8).
+- **In progress:** change `tag-editing` on branch `feat/tag-editing`, pull request 1 of 2
+  (editing, history and undo, provenance, file writes, edit mode). Decided with the maintainer:
+  genres per recording; changing the album of selected tracks moves them; two pull requests,
+  the second with tag conflicts, the conflict list and the MusicBrainz refresh. Open after
+  pull request 1: tasks 5.x and 3.3 (waits for transcoding and tagged copies).
+- **Next:** `tag-editing` pull request 2, then `search` (see `docs/roadmap.md`).
   `effective-quality-duplicate-checks` covers CD import and sources only; it waits for them.
 
 ## Working conventions

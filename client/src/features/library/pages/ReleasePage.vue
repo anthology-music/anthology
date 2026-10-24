@@ -43,16 +43,59 @@
             {{ release.edition }}
           </p>
         </div>
+        <div v-if="auth.canEdit" class="library-header__actions">
+          <EditModeSwitch v-model="editing" />
+          <q-btn
+            v-if="editing && release"
+            outline
+            no-caps
+            :label="t('tagging.editRelease')"
+            data-testid="edit-release"
+            @click="editingRelease = true"
+          />
+        </div>
       </header>
+      <EditBar v-if="editing" :selection="selection" />
+      <TagEditor
+        v-if="release"
+        :open="editingRelease"
+        :selection="{ rule: listRule }"
+        :count="release.track_count"
+        mode="release"
+        @close="editingRelease = false"
+      />
       <LibraryList
+        ref="list"
         stream="library.release.tracks"
         :params="{ release_id: releaseId }"
         :position-key="`library-release:${releaseId}`"
         :label="t('library.tracksOf', { title: release?.title ?? '' })"
         :empty="t('library.empty.releaseTracks')"
       >
-        <template #default="{ row }">
+        <template #default="{ row, position, rowAt }">
+          <SelectableRow
+            v-if="editing"
+            :id="String(row.id)"
+            :selected="selection.selected(String(row.id))"
+            :label="t('tagging.select', { name: String(row.title) })"
+            @toggle="
+              (shift) =>
+                selection.toggle(
+                  String(row.id),
+                  position,
+                  shift,
+                  (p) => rowAt(p) as { id: string } | undefined,
+                )
+            "
+          >
+            <TrackRow
+              :track="row as unknown as LibraryTrackRow"
+              context="release"
+              :disc-count="release?.disc_count ?? 1"
+            />
+          </SelectableRow>
           <TrackRow
+            v-else
             :track="row as unknown as LibraryTrackRow"
             context="release"
             :disc-count="release?.disc_count ?? 1"
@@ -65,8 +108,15 @@
 
 <script setup lang="ts">
 import type { LibraryReleaseRow, LibraryTrackRow } from '@anthology/api-types';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+
+import EditBar from '@/features/tagging/components/EditBar.vue';
+import EditModeSwitch from '@/features/tagging/components/EditModeSwitch.vue';
+import SelectableRow from '@/features/tagging/components/SelectableRow.vue';
+import TagEditor from '@/features/tagging/components/TagEditor.vue';
+import { type EditRule, useSelection } from '@/features/tagging/selection';
+import { useAuthStore } from '@/features/users/store';
 
 import LibraryBreadcrumb from '../components/LibraryBreadcrumb.vue';
 import LibraryList from '../components/LibraryList.vue';
@@ -82,6 +132,16 @@ const { count } = useCounts();
 const { entry: release, state } = useEntry<LibraryReleaseRow>('library.release', {
   release_id: props.releaseId,
 });
+
+const auth = useAuthStore();
+const editing = ref(false);
+const editingRelease = ref(false);
+const list = ref<InstanceType<typeof LibraryList> | null>(null);
+const listRule: EditRule = { list: 'release_tracks', release_id: props.releaseId };
+const selection = useSelection(
+  () => listRule,
+  () => list.value?.total() ?? null,
+);
 
 const extent = computed(() =>
   release.value

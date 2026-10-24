@@ -48,6 +48,8 @@ package "Library" {
     +title : String
     +artistDisplay : String
     +durationMs : Integer
+    +composers : String[]
+    +genres : String[]
     +changeSeq : Long
   }
 
@@ -138,6 +140,7 @@ package "Library" {
     +edition : String [0..1]
     +country : String [0..1]
     +releaseDate : Date [0..1]
+    +label : String [0..1]
     +discCount : Integer
   }
 
@@ -551,6 +554,7 @@ package "Sources & Jobs" {
     PUBLISHER_SEARCH
     REVIEW_BULK
     TAGGING_BULK
+    TAGGING_UNDO
     METADATA_REFRESH
     IDENTIFY_RECORDINGS
     OMR
@@ -794,14 +798,23 @@ package "Users & Devices" {
 
   class ChangeSet {
     +id : UUID
+    +kind : ChangeSetKind
+    +summaryJson : String
     +ruleJson : String [0..1]
+    +items : Integer
     +createdAt : DateTime
-    +undoneAt : DateTime [0..1]
   }
   note right of ChangeSet
     One edit operation (single or bulk);
-    undo writes old values from AuditLog.
+    undo writes old values from AuditLog
+    (rows with changeSetId) and is a
+    change set itself.
   end note
+
+  enum ChangeSetKind {
+    EDIT
+    UNDO
+  }
 
   class FieldProvenance {
     +entityType : String
@@ -810,6 +823,23 @@ package "Users & Devices" {
     +source : ProvenanceSource
     +setAt : DateTime
   }
+  note right of FieldProvenance
+    Only for values set after the import:
+    a value without a row counts as IMPORT.
+  end note
+
+  class TagWrite {
+    +audioFileId : UUID
+    +requestedAt : DateTime
+    +attempts : Integer
+    +lastError : String [0..1]
+    +claimedUntil : DateTime [0..1]
+  }
+  note right of TagWrite
+    Queue of pending file writes, one
+    row per file (coalescing); tags are
+    built from the database at write time.
+  end note
 
   enum ProvenanceSource {
     MANUAL
@@ -1261,6 +1291,7 @@ ChangeSet "1" -- "0..*" AuditLog : groups >
 ChangeSet "0..*" -- "1" User : made by >
 ChangeSet "0..*" -- "0..1" Job : bulk job >
 ChangeSet "0..1" -- "0..1" ChangeSet : undo of >
+TagWrite "0..1" -- "1" AudioFile : writes >
 FieldProvenance "0..*" -- "0..1" User : set by >
 
 @enduml
