@@ -239,6 +239,7 @@ async def create_release(
     edition: str | None = None,
     country: str | None = None,
     release_date: date | None = None,
+    label: str | None = None,
     disc_count: int = 1,
     mb_release_id: uuid.UUID | None = None,
     mb_release_group_id: uuid.UUID | None = None,
@@ -261,6 +262,7 @@ async def create_release(
         edition=edition,
         country=country,
         release_date=release_date,
+        label=label,
         disc_count=disc_count,
         track_count=0,
         sort_title=sort_key(title),
@@ -491,6 +493,7 @@ async def update_release(
     edition: str | None = _UNSET,
     country: str | None = _UNSET,
     release_date: date | None = _UNSET,
+    label: str | None = _UNSET,
     disc_count: int = _UNSET,
     mb_release_id: uuid.UUID | None = _UNSET,
     user_id: uuid.UUID | None = None,
@@ -504,6 +507,7 @@ async def update_release(
             "edition": edition,
             "country": country,
             "release_date": release_date,
+            "label": label,
             "disc_count": disc_count,
             "mb_release_id": mb_release_id,
         }.items()
@@ -556,6 +560,8 @@ async def update_recording(
     isrc: str | None = _UNSET,
     mb_recording_id: uuid.UUID | None = _UNSET,
     acoust_id: uuid.UUID | None = _UNSET,
+    composers: list[str] = _UNSET,
+    genres: list[str] = _UNSET,
     user_id: uuid.UUID | None = None,
 ) -> None:
     """Change a recording; all its track contexts follow (unless they override a value)."""
@@ -568,6 +574,8 @@ async def update_recording(
             "isrc": isrc,
             "mb_recording_id": mb_recording_id,
             "acoust_id": acoust_id,
+            "composers": list(composers) if composers is not _UNSET else _UNSET,
+            "genres": list(genres) if genres is not _UNSET else _UNSET,
         }.items()
         if value is not _UNSET
     }
@@ -645,6 +653,96 @@ async def update_track(
     await session.flush()
     await _changed(session, "track", track.id)
     await _audit(session, "track", track.id, "update", user_id, diff)
+
+
+async def find_or_create_release(
+    session: AsyncSession,
+    title: str,
+    album_artist: Artist,
+    *,
+    like: Release | None = None,
+    user_id: uuid.UUID | None = None,
+) -> Release:
+    """The release with this title (sort key) and album artist, or a new one that takes the
+    other values (year, label, type) from ``like``."""
+    found = await session.scalar(
+        select(Release)
+        .where(Release.sort_title == sort_key(title), Release.album_artist_id == album_artist.id)
+        .order_by(Release.id)
+        .limit(1)
+    )
+    if found is not None:
+        return found
+    group_type = ReleaseGroupType.ALBUM
+    if like is not None:
+        group = await session.get(ReleaseGroup, like.release_group_id)
+        group_type = group.type if group is not None else group_type
+    return await create_release(
+        session,
+        title=title,
+        album_artist=album_artist,
+        group_type=group_type,
+        release_date=like.release_date if like is not None else None,
+        label=like.label if like is not None else None,
+        user_id=user_id,
+    )
+
+
+async def move_track(
+    session: AsyncSession, track: Track, release: Release, *, user_id: uuid.UUID | None = None
+) -> None:
+    """Move a track context to another release (spec: tagging, Moving tracks by album); its
+    position stays. A release left without tracks is removed."""
+    old = await session.get_one(Release, track.release_id)
+    if old.id == release.id:
+        return
+    track.release_id = release.id
+    track.sort_album = release.sort_title
+    old.track_count -= 1
+    release.track_count += 1
+    release.disc_count = max(release.disc_count, track.disc_number)
+    await session.flush()
+    await _changed(session, TRACK_MOVED, track.id)
+    await _changed(session, "track", track.id)
+    await _changed(session, "release", old.id)
+    await _changed(session, "release", release.id)
+    await _audit(
+        session,
+        "track",
+        track.id,
+        "move",
+        user_id,
+        {"release_id": [str(old.id), str(release.id)]},
+    )
+    if old.track_count == 0:
+        await remove_release(session, old, user_id=user_id)
+
+
+async def remove_release(
+    session: AsyncSession, release: Release, *, user_id: uuid.UUID | None = None
+) -> None:
+    """Remove a release without tracks, its release group if no other release uses it, and an
+    album artist left without releases or recordings."""
+    if await session.scalar(select(exists().where(Track.release_id == release.id))):
+        raise ValueError("release still has tracks")
+    album_artist = await session.get_one(Artist, release.album_artist_id)
+    group_id = release.release_group_id
+    await session.delete(release)
+    album_artist.release_count -= 1
+    await session.flush()
+    await adjust_counter(session, Counter.RELEASES, -1)
+    await _changed(session, "release", release.id, ChangeOperation.DELETE)
+    await _changed(session, "artist", album_artist.id)
+    await _audit(
+        session, "release", release.id, "delete", user_id, {"title": [release.title, None]}
+    )
+    if not await session.scalar(select(exists().where(Release.release_group_id == group_id))):
+        group = await session.get(ReleaseGroup, group_id)
+        if group is not None:
+            await session.delete(group)
+            await session.flush()
+            await _changed(session, "release_group", group_id, ChangeOperation.DELETE)
+    await remove_if_orphaned(session, album_artist, user_id=user_id)
 
 
 async def remove_if_orphaned(
@@ -1062,6 +1160,27 @@ async def record_identification(
         await _audit(session, "recording", recording.id, "identify", user_id, _public(diff))
 
 
+async def clear_identification(
+    session: AsyncSession, recording: Recording, *, user_id: uuid.UUID | None = None
+) -> None:
+    """Remove a recording's MusicBrainz ID (an editor cleared it); it is checked again."""
+    previous = recording.identification_status
+    if previous != IdentificationStatus.UNCHECKED:
+        await adjust_counter(session, IDENTIFICATION_COUNTERS[previous], -1)
+        await adjust_counter(session, IDENTIFICATION_COUNTERS[IdentificationStatus.UNCHECKED], +1)
+    diff = _apply(recording, {"mb_recording_id": None})
+    recording.identification_status = IdentificationStatus.UNCHECKED
+    recording.identification_checked_at = None
+    recording.identification_note = None
+    recording.identification_duplicate_of_id = None
+    await session.flush()
+    await unregister_external_ref(session, entity_type="recording", entity_id=recording.id)
+    await _changed(session, "recording", recording.id)
+    await _changed(session, IDENTIFICATION, IDENTIFICATION_SUMMARY_ID)
+    if diff:
+        await _audit(session, "recording", recording.id, "identify", user_id, _public(diff))
+
+
 async def store_fingerprint(
     session: AsyncSession, audio_file: AudioFile, fingerprint: str, duration_s: int
 ) -> None:
@@ -1101,6 +1220,22 @@ async def adopt_original(
 # --- lookups for imports and acquisition ------------------------------------------------------
 
 DURATION_TOLERANCE_MS = 2_000
+
+
+async def file_rewritten(
+    session: AsyncSession, audio_file: AudioFile, *, size_bytes: int, content_hash: str | None
+) -> None:
+    """Record a file whose tags were written: new size and content hash, the audio data (and
+    so the audio hash) is unchanged."""
+    delta = size_bytes - audio_file.size_bytes
+    audio_file.size_bytes = size_bytes
+    audio_file.content_hash = content_hash
+    await session.flush()
+    if delta and audio_file.original_status == OriginalStatus.ACTIVE:
+        if audio_file.storage_mode == StorageMode.REFERENCED:
+            await adjust_counter(session, Counter.REFERENCED_BYTES, delta)
+            await _changed(session, STORAGE, STORAGE_SUMMARY_ID)
+    await _changed(session, "audio_file", audio_file.id)
 
 
 async def original_by_audio_hash(session: AsyncSession, audio_hash: str) -> AudioFile | None:

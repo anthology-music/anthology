@@ -10,6 +10,7 @@ import uuid
 from datetime import date, datetime
 
 from sqlalchemy import (
+    JSON,
     BigInteger,
     Boolean,
     Date,
@@ -185,6 +186,7 @@ class Release(Base):
     sort_title: Mapped[str] = mapped_column(sort_text(SORT))
     sort_album_artist: Mapped[str] = mapped_column(sort_text(SORT))
     mb_release_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, unique=True)
+    label: Mapped[str | None] = mapped_column(String(NAME))
 
 
 class Recording(Base):
@@ -206,6 +208,9 @@ class Recording(Base):
     )
     artist_display: Mapped[str] = mapped_column(String(NAME))
     duration_ms: Mapped[int] = mapped_column(Integer)
+    # Plain text lists (spec: tagging, Field levels); persons come with works.
+    composers: Mapped[list[str]] = mapped_column(JSON, default=list)
+    genres: Mapped[list[str]] = mapped_column(JSON, default=list)
     isrc: Mapped[str | None] = mapped_column(String(12), index=True)
     mb_recording_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, unique=True)
     acoust_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, index=True)

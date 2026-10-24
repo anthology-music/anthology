@@ -10,6 +10,7 @@ import enum
 import json
 import uuid
 from collections.abc import Iterable
+from contextvars import ContextVar
 from datetime import datetime
 from typing import Any
 
@@ -60,7 +61,7 @@ class AuditLog(Base):
     action: Mapped[str] = mapped_column(String(64))
     diff_json: Mapped[str] = mapped_column(Text, default="{}")
     user_id: Mapped[uuid.UUID | None] = mapped_column(Uuid)
-    change_set_id: Mapped[uuid.UUID | None] = mapped_column(Uuid)
+    change_set_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, index=True)
     at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
 
 
@@ -121,6 +122,10 @@ async def record_changes(
     return len(rows)
 
 
+# The change set (tagging) that audit rows written in this context belong to.
+current_change_set: ContextVar[uuid.UUID | None] = ContextVar("current_change_set", default=None)
+
+
 async def record_audit(
     session: AsyncSession,
     *,
@@ -137,5 +142,6 @@ async def record_audit(
             action=action,
             user_id=user_id,
             diff_json=json.dumps(diff or {}, default=str, sort_keys=True),
+            change_set_id=current_change_set.get(),
         )
     )

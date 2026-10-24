@@ -5,11 +5,12 @@ not part of production images). Seeding is an offline developer action: it write
 log entries, so connected clients should reconnect afterwards.
 """
 
+import json
 import uuid
 from typing import Any
 
 from anthology_library_generator import generate
-from sqlalchemy import Table, bindparam, delete, func, insert, select, text, update
+from sqlalchemy import JSON, Table, bindparam, delete, func, insert, select, text, update
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
 from anthology.db.types import utcnow
@@ -137,6 +138,7 @@ class _Loader:
             edition=release.edition,
             country=None,
             release_date=release.release_date,
+            label=None,
             disc_count=release.disc_count,
             track_count=len(release.tracks),
             sort_title=release_sort,
@@ -156,6 +158,8 @@ class _Loader:
                 artist_id=recording.artist_id,
                 artist_display=recording.artist_display,
                 duration_ms=recording.duration_ms,
+                composers=[],
+                genres=[],
                 isrc=None,
                 mb_recording_id=None,
                 acoust_id=None,
@@ -230,9 +234,14 @@ async def _insert(connection: AsyncConnection, table: Table, rows: list[dict[str
     if connection.dialect.name == "postgresql":
         raw = await connection.get_raw_connection()
         columns = [column.name for column in table.columns]
+        # COPY takes JSON columns as text.
+        as_json = {column.name for column in table.columns if isinstance(column.type, JSON)}
         await raw.driver_connection.copy_records_to_table(
             table.name,
-            records=[tuple(row[name] for name in columns) for row in rows],
+            records=[
+                tuple(json.dumps(row[name]) if name in as_json else row[name] for name in columns)
+                for row in rows
+            ],
             columns=columns,
         )
         return

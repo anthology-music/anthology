@@ -563,6 +563,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tagging/changes/{change_set_id}/undo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Undo
+         * @description Undo a change set as a job; fields changed again since are skipped and reported.
+         */
+        post: operations["undo_api_v1_tagging_changes__change_set_id__undo_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tagging/edits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Edit
+         * @description Edit fields of selected tracks or of the tracks of a list; ``preview`` only counts.
+         */
+        post: operations["edit_api_v1_tagging_edits_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tagging/values": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Values
+         * @description The fields of selected tracks per level for the tag editor: shared values, or mixed.
+         */
+        post: operations["values_api_v1_tagging_values_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/users": {
         parameters: {
             query?: never;
@@ -756,6 +816,70 @@ export interface components {
          */
         DeviceType: "web" | "desktop" | "mobile";
         /**
+         * EditIn
+         * @description Fields per level for selected tracks (``ids``) or the tracks of a list (``rule``):
+         *     recording fields apply to the tracks' recordings, release fields to their releases (after
+         *     track moves), track fields to the tracks.
+         */
+        EditIn: {
+            /** Fields */
+            fields: {
+                [key: string]: {
+                    [key: string]: unknown;
+                };
+            };
+            /** Ids */
+            ids?: string[] | null;
+            /**
+             * Preview
+             * @default false
+             */
+            preview: boolean;
+            rule?: components["schemas"]["EditRule"] | null;
+        };
+        /**
+         * EditOut
+         * @description The count (preview), the change set of a direct edit, or the job of a bulk edit.
+         */
+        EditOut: {
+            /** Change Set Id */
+            change_set_id?: string | null;
+            /** Changed */
+            changed?: number | null;
+            /** Items */
+            items: number;
+            /** Job Id */
+            job_id?: string | null;
+        };
+        /**
+         * EditRule
+         * @description The tracks of a library list: one release, one artist's releases, or all tracks.
+         */
+        EditRule: {
+            /** Artist Id */
+            artist_id?: string | null;
+            /**
+             * List
+             * @enum {string}
+             */
+            list: "release_tracks" | "artist_tracks" | "tracks";
+            /** Release Id */
+            release_id?: string | null;
+        };
+        /**
+         * FieldValue
+         * @description One field of a selection: its value if all items share it, otherwise ``mixed``.
+         */
+        FieldValue: {
+            /**
+             * Mixed
+             * @default false
+             */
+            mixed: boolean;
+            /** Value */
+            value?: unknown;
+        };
+        /**
          * FolderListing
          * @description One level of folders below the import roots, with the modes the folder allows.
          */
@@ -874,6 +998,11 @@ export interface components {
          * @enum {string}
          */
         JobStatus: "queued" | "running" | "paused" | "done" | "failed" | "cancelled";
+        /**
+         * Level
+         * @enum {string}
+         */
+        Level: "recording" | "release" | "track";
         /** LoginRequest */
         LoginRequest: {
             device: components["schemas"]["DeviceIn"];
@@ -1114,6 +1243,13 @@ export interface components {
             token_type: string;
             user: components["schemas"]["UserOut"];
         };
+        /** UndoOut */
+        UndoOut: {
+            /** Change Set Id */
+            change_set_id: string;
+            /** Job Id */
+            job_id: string | null;
+        };
         /** UserCreate */
         UserCreate: {
             /** Display Name */
@@ -1176,6 +1312,26 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /**
+         * ValuesIn
+         * @description The current values of selected tracks per level, for the tag editor.
+         */
+        ValuesIn: {
+            /** Ids */
+            ids?: string[] | null;
+            rule?: components["schemas"]["EditRule"] | null;
+        };
+        /** ValuesOut */
+        ValuesOut: {
+            /** Fields */
+            fields: {
+                [key: string]: {
+                    [key: string]: components["schemas"]["FieldValue"];
+                };
+            };
+            /** Items */
+            items: number;
         };
     };
     responses: never;
@@ -2169,6 +2325,103 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TokenResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    undo_api_v1_tagging_changes__change_set_id__undo_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                change_set_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UndoOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    edit_api_v1_tagging_edits_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EditIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EditOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    values_api_v1_tagging_values_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ValuesIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValuesOut"];
                 };
             };
             /** @description Validation Error */

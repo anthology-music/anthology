@@ -8,7 +8,7 @@
       :initial-position="initialPosition"
     >
       <template #default="{ row, position }">
-        <slot :row="row" :position="position" />
+        <slot :row="row" :position="position" :row-at="rowAt" />
       </template>
     </VirtualList>
   </div>
@@ -32,7 +32,13 @@ const props = defineProps<{
   empty: string;
 }>();
 
-defineSlots<{ default(props: { row: Record<string, unknown>; position: number }): unknown }>();
+defineSlots<{
+  default(props: {
+    row: Record<string, unknown>;
+    position: number;
+    rowAt: (position: number) => Record<string, unknown> | undefined;
+  }): unknown;
+}>();
 
 const positions = useLibraryPositions();
 const initialPosition = positions.position(props.positionKey);
@@ -40,6 +46,9 @@ const initialPosition = positions.position(props.positionKey);
 const start = Math.max(0, initialPosition - 50);
 const subscription = useSubscription(props.stream, props.params ?? {}, [start, start + 100]);
 const list = ref<InstanceType<typeof VirtualList> | null>(null);
+// Loaded rows by position (e.g. for selecting a range with shift-click).
+const rowAt = (position: number) => subscription.value.rows.get(position);
+defineExpose({ total: () => subscription.value.total });
 
 onBeforeUnmount(() => {
   if (list.value) positions.remember(props.positionKey, list.value.firstVisible());

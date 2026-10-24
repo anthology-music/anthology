@@ -9,7 +9,7 @@
 
 - [x] 2.1 Add `storage_mode` and `original_status` to the audio file model and the Alembic migration, including a partial unique index on `(recording_id) WHERE original_status = 'ACTIVE'`; verify with a test that inserting a second active original for a recording fails on PostgreSQL and SQLite
 - [x] 2.2 Add a library guard that refuses any move, rename or delete of a `REFERENCED` file and any write unless `tagWritesAllowed` is set (never for `SUPERSEDED`); verify with unit tests for each operation and both opt-in states
-- [ ] 2.3 (waits for `tag-editing`) Write the home context's complete tags into referenced files with `tagWritesAllowed` after tag changes; verify with a test that the file's tags match the home context and the file is not moved
+- [x] 2.3 (done with `tag-editing`) Write the home context's complete tags into referenced files with `tagWritesAllowed` after tag changes; verify with a test that the file's tags match the home context and the file is not moved
 
 ## 3. Replacement and superseding
 

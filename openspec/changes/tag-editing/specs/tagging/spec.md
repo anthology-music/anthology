@@ -7,12 +7,24 @@ Let editors correct and complete metadata individually or in bulk, propagate cha
 ## ADDED Requirements
 
 ### Requirement: Field levels
-Metadata SHALL be stored on the level it belongs to: recording (title, artist, ISRC, composer), release (album title, album artist, year, label, genre, cover) and track context (track number, disc number); an edit on a level SHALL apply in every context that uses it.
+Metadata SHALL be stored on the level it belongs to: recording (title, artist, ISRC, MusicBrainz recording ID, composers, genres), release (album title, album artist, year, label; cover see covers) and track context (track number, disc number, context title and artist); an edit on a level SHALL apply in every context that uses it. Composers and genres MAY hold several values.
 
 #### Scenario: Album title changed once
 - **WHEN** an editor changes the title of an album with twelve tracks
 - **THEN** all twelve tracks show the new album title in that album's context
 - **AND** the same recordings in other albums keep their album titles
+
+### Requirement: Moving tracks by album
+Changing the album or album artist of selected tracks SHALL move them to the album with that title and album artist, creating it if none exists; renaming an album SHALL be an edit of the album itself.
+
+#### Scenario: Tracks moved to another album
+- **WHEN** an editor sets the album "Polarnacht (Deluxe)" for two tracks of "Polarnacht"
+- **THEN** both tracks belong to "Polarnacht (Deluxe)" by the same album artist
+- **AND** the other tracks of "Polarnacht" stay where they are
+
+#### Scenario: Genre per recording
+- **WHEN** an editor sets the genre "Marsch" for one track of an album
+- **THEN** only that recording has the genre, in every album it appears on
 
 ### Requirement: Single and bulk edits
 Editors and admins SHALL be able to edit fields of one item or of all items matching a selection rule; a bulk edit SHALL show the number of affected items before it is confirmed and SHALL run as a job with live progress.
@@ -43,11 +55,15 @@ When the tagger service is unavailable, edits SHALL still be stored in the datab
 - **AND** the file is written once the tagger is back
 
 ### Requirement: Field provenance
-The system SHALL record for every metadata field whether its value was set manually (with user and time) or by an automatic source (e.g. MusicBrainz, import, source service, publisher).
+The system SHALL record for every metadata field whether its value was set manually (with user and time) or by an automatic source (e.g. MusicBrainz, import, source service, publisher); a value without such a record SHALL count as imported.
 
 #### Scenario: Manual edit recorded
 - **WHEN** an editor changes the year of an album
 - **THEN** the field is recorded as set manually by that editor at that time
+
+#### Scenario: Value from an import
+- **WHEN** a field has a value from a folder import and was never edited
+- **THEN** it counts as imported and is protected from automatic updates
 
 ### Requirement: Automatic updates and tag conflicts
 An automatic update SHALL apply directly to fields that were neither set manually nor imported from an existing collection; if it proposes a different value for such a protected field, it MUST NOT overwrite the field and SHALL create a tag conflict that shows the current value, the proposed value and the source.

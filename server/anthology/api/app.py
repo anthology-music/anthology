@@ -43,7 +43,11 @@ from anthology.sync.feed import ChangeFeed
 from anthology.sync.hub import Hub
 from anthology.sync.services_stream import ServicesStream
 from anthology.sync.streams import StreamRegistry
+from anthology.tagging import api as tagging_api
+from anthology.tagging import jobs as tagging_jobs
+from anthology.tagging.streams import STREAMS as TAGGING_STREAMS
 from anthology.tagging.tagger_client import TaggerClient, check_tagger
+from anthology.tagging.writer import TagWriter
 from anthology.users import api as users_api
 from anthology.users.service import SessionCache, TokenSettings
 from anthology.users.streams import MyDevicesStream, UsersStream
@@ -96,6 +100,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         tagger, tagger_monitor = _tagger(settings, sessionmaker)
         app.state.tagger = tagger
         app.state.tagger_monitor = tagger_monitor
+        tag_writer = TagWriter(sessionmaker, tagger)
+        app.state.tag_writer = tag_writer
         lookups, mirror_monitor = _lookups(settings, sessionmaker)
         app.state.lookups = lookups
         identify = app.state.job_handlers.get(identification.JOB_TYPE)
@@ -121,6 +127,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.reviewer = reviewer
         app.state.job_handlers.get(review_jobs.JOB_TYPE).bind(reviewer)
         app.state.job_handlers.get(review_jobs.BACKFILL_JOB).bind(reviewer)
+        for job_type in (tagging_jobs.UNDO_JOB, tagging_jobs.BULK_JOB):
+            app.state.job_handlers.get(job_type).bind(sessionmaker)
         if settings.background_tasks:
             async with sessionmaker() as session, session.begin():
                 await review_jobs.ensure_backfill(session, app.state.review_handlers)
@@ -128,6 +136,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             await runner.start()
             await scheduler.start()
             await tagger_monitor.start()
+            await tag_writer.start()
             if mirror_monitor is not None:
                 await mirror_monitor.start()
         try:
@@ -136,6 +145,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             if mirror_monitor is not None:
                 await mirror_monitor.stop()
             await lookups.aclose()
+            await tag_writer.stop()
             await tagger_monitor.stop()
             await scheduler.stop()
             await runner.stop()
@@ -157,6 +167,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(library_import_api.router, prefix=API_PREFIX)
     app.include_router(quality_analysis_api.router, prefix=API_PREFIX)
     app.include_router(review_api.router, prefix=API_PREFIX)
+    app.include_router(tagging_api.router, prefix=API_PREFIX)
     if settings.web_dir is not None:
         mount_web(app, settings.web_dir)  # last: its fallback must not shadow API routes
     return app
@@ -212,6 +223,8 @@ def _job_handlers(settings: Settings) -> HandlerRegistry:
     registry.register(quality_analysis.AnalyzeQualityHandler())
     registry.register(review_jobs.ReviewDecisionHandler())
     registry.register(review_jobs.ReviewBackfillHandler())
+    registry.register(tagging_jobs.TaggingUndoHandler())
+    registry.register(tagging_jobs.TaggingBulkHandler())
     for handler in library_import_jobs.HANDLERS:
         registry.register(handler())
     if settings.dev_demo:
@@ -246,7 +259,12 @@ def _streams(settings: Settings, review_handlers: review.HandlerRegistry) -> Str
     registry.register(JobsStream())
     registry.register(JobItemsStream())
     registry.register(ServicesStream())
-    for stream in (*LIBRARY_STREAMS, *LIBRARY_IMPORT_STREAMS, *QUALITY_ANALYSIS_STREAMS):
+    for stream in (
+        *LIBRARY_STREAMS,
+        *LIBRARY_IMPORT_STREAMS,
+        *QUALITY_ANALYSIS_STREAMS,
+        *TAGGING_STREAMS,
+    ):
         registry.register(stream())
     for review_stream in review_streams.streams(review_handlers):
         registry.register(review_stream)

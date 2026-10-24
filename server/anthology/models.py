@@ -10,6 +10,7 @@ from anthology.library_import import models as library_import
 from anthology.metadata_lookup import models as metadata_lookup
 from anthology.quality_analysis import models as quality_analysis
 from anthology.review import models as review
+from anthology.tagging import models as tagging
 from anthology.users import models as users
 
 __all__ = [
@@ -21,5 +22,6 @@ __all__ = [
     "quality_analysis",
     "review",
     "services",
+    "tagging",
     "users",
 ]
