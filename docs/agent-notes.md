@@ -52,7 +52,7 @@ _Last updated: 2026-10-26_
 - **Open, implemented in part:** `tag-editing` (PR #27 and #28). Decided with the maintainer:
   genres per recording; changing the album of selected tracks moves them. Only 3.3 is open
   (waits for transcoding and tagged copies). `metadata-lookup` is archived with its refresh.
-- **In progress:** change `search` on branch `feat/search` (one pull request). Decided with the
+- **Archived:** `search` (branch `feat/search`, one pull request). Decided with the
   maintainer: library items only (artists, albums, tracks; album and artist context); works,
   videos, playlists and their filters join with their domains (`docs/roadmap.md`); offline
   search moved to `offline-sync`; the server is the only parser of the syntax.
