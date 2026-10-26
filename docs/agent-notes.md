@@ -108,5 +108,8 @@ _Last updated: 2026-10-26_
   `synchronize_session=False` leave loaded entities stale.
 - Search performance at 500,000 tracks depends on narrow document rows and partial GIN indexes
   per item type; check `tests/test_search_performance.py` after changing documents or queries.
+- Apps created in server tests get lookups pointed at a closed port (autouse fixture
+  `offline_lookups` in `tests/conftest.py`); before, a job in a test could reach the real
+  MusicBrainz and time out in CI.
 - The local FFmpeg must have the `chromaprint` and `hash` muxers (build the `ffmpeg` stage of
   `server/Containerfile` with `podman build --target ffmpeg` and copy `ffmpeg`/`ffprobe` out).
