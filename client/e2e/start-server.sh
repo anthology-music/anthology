@@ -19,5 +19,6 @@ uv run alembic downgrade base
 uv run alembic upgrade head
 uv run anthology dev seed-demo --rows "${ANTHOLOGY_E2E_DEMO_ROWS:-500000}"
 uv run anthology dev seed-library --tracks "${ANTHOLOGY_E2E_LIBRARY_TRACKS:-20000}"
+uv run anthology dev seed-conflicts --releases 2
 uv run python ../client/e2e/import-folder.py "$ANTHOLOGY_IMPORT_ROOTS"
 exec uv run uvicorn anthology.api.app:create_app --factory --port "${ANTHOLOGY_E2E_SERVER_PORT:-8490}"

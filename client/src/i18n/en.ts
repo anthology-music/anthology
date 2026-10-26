@@ -8,6 +8,7 @@ const en: typeof de = {
     local: 'Local',
     works: 'Works',
     review: 'Review list',
+    conflicts: 'Conflicts',
     settings: 'Settings',
     demo: 'Demo list',
     main: 'Main navigation',
@@ -599,6 +600,28 @@ const en: typeof de = {
     undone: 'Undone',
     undo: 'Undo',
     undoStarted: 'The change is being undone (job).',
+  },
+  conflicts: {
+    title: 'Conflicts',
+    description:
+      'Automatic values, e.g. from MusicBrainz, for fields that you or an import set. Only your decision changes them.',
+    groups: 'Groups',
+    groupBy: 'Group by',
+    by: { release: 'Album', artist: 'Artist', field: 'Field', source: 'Source' },
+    all: 'All',
+    count: '{n} conflict | {n} conflicts',
+    empty: 'No open conflicts.',
+    accept: 'Accept',
+    reject: 'Keep',
+    acceptOne: 'Accept',
+    keep: 'Keep',
+    acceptGroup: 'Accept all {n}',
+    rejectGroup: 'Keep all {n}',
+    confirm: {
+      accept: 'Accept the proposed values of all {n} conflicts of this group?',
+      reject:
+        'Keep the current values of all {n} conflicts of this group? The proposals do not come back.',
+    },
   },
   user: { signedOut: 'Not signed in' },
   pages: {

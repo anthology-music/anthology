@@ -31,9 +31,15 @@ from anthology.library.models import (
     StorageMode,
     Track,
 )
-from anthology.tagging import writes
+from anthology.tagging import conflicts, writes
 from anthology.tagging.fields import BASE_FIELDS, Level, plain, validate
-from anthology.tagging.models import ChangeSet, ChangeSetKind, FieldProvenance, ProvenanceSource
+from anthology.tagging.models import (
+    PROTECTED,
+    ChangeSet,
+    ChangeSetKind,
+    FieldProvenance,
+    ProvenanceSource,
+)
 
 EDIT = "tag_edit"
 
@@ -65,6 +71,30 @@ class Edit:
 class Outcome:
     changed: int = 0
     files: set[uuid.UUID] = field(default_factory=set)
+    # Tag conflicts created for protected fields (automatic sources).
+    conflicts: int = 0
+
+
+# Edits by people: never conflicts (an accepted conflict counts as set by the accepting user).
+MANUAL_SOURCES = frozenset({ProvenanceSource.MANUAL, ProvenanceSource.REVIEW})
+
+
+def _empty(value: Any) -> bool:
+    return value is None or value == [] or value == ""
+
+
+async def _protected(
+    session: AsyncSession, level: Level, entity_id: uuid.UUID, changes: dict[str, list[Any]]
+) -> list[str]:
+    """Fields an automatic source must not overwrite: set manually, imported or by a
+    decision; a value without a provenance record was imported (spec: Field provenance)."""
+    rows = await provenance(session, level, entity_id)
+    protected = []
+    for name, (old, _new) in changes.items():
+        row = rows.get(name)
+        if (row.source in PROTECTED) if row is not None else not _empty(old):
+            protected.append(name)
+    return protected
 
 
 # --- change sets ------------------------------------------------------------------------------
@@ -177,6 +207,21 @@ async def apply(
         }
         if not changes:
             continue
+        if source not in MANUAL_SOURCES:
+            conflicting = await _protected(session, edit.level, entity.id, changes)
+            if conflicting:
+                outcome.conflicts += len(
+                    await conflicts.propose(
+                        session,
+                        edit.level,
+                        entity,
+                        {name: changes.pop(name) for name in conflicting},
+                        source,
+                    )
+                )
+                values = {name: value for name, value in values.items() if name in changes}
+            if not changes:
+                continue
         await _write(session, edit.level, entity, values, changes, user_id=user_id)
         await _provenance(session, edit.level, entity.id, changes, source, user_id)
         await record_audit(
@@ -208,6 +253,7 @@ async def apply_to_tracks(
     def add(outcome: Outcome) -> None:
         total.changed += outcome.changed
         total.files |= outcome.files
+        total.conflicts += outcome.conflicts
 
     if fields.get(Level.TRACK):
         add(

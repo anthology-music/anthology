@@ -12,7 +12,7 @@
 - [x] 2.1 Create `server/anthology/metadata_lookup/` with clients, token-bucket limiters, priority queue and persistent cache; verify with tests using a fake clock and recorded responses (rate, priority, cache hit, back-off)
 - [x] 2.2 Implement mirror configuration, health check and per-request fallback; verify with tests for mirror up, down and unsupported request
 - [x] 2.3 Implement the queue duration estimate and the mirror recommendation; verify with a test for the 24-hour threshold
-- [ ] 2.4 (waits for `tag-editing`) Implement the `METADATA_REFRESH` job through the tagging service; verify with tests that unprotected fields update and protected fields create conflicts
+- [x] 2.4 (done with `tag-editing`) Implement the `METADATA_REFRESH` job through the tagging service; verify with tests that unprotected fields update and protected fields create conflicts
 
 ## Workflow follow-up
 

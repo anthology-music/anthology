@@ -78,6 +78,14 @@ Only edits of fields that end up in the file enter a file (base fields for manag
 
 Entries are `ReviewItem`s of type `TAG_CONFLICT` (subject: the entity; proposal: field, value, source); `review.items` leaves them out and `tagging.conflicts` lists only them, with filters and group counts by field, release, artist and source (stored on the entry as `group_*` columns, indexed). Decisions reuse the review decisions and bulk job; accepting applies the value with origin `review`. The MusicBrainz refresh (`metadata-lookup` 2.4) is the first automatic source; differences between imported tags and MusicBrainz arise from it, because imported values are protected.
 
+Implemented in pull request 2:
+
+- Conflicts are entries of the review module (`tag_conflict`, origin `musicbrainz`, confidence medium), suppressed per subject, field and value; the group columns are filled on insert. A value counts as imported (protected) only if it is not empty: an automatic source may fill an empty field.
+- `tagging.conflicts` is the review stream with the type fixed; its total is counted with the group filter, its status counts come from the review counters. The groups (release, artist, field, source) with labels and counts come from `GET /api/v1/tagging/conflicts/groups` (at most 200, largest first); the client reloads them every few seconds.
+- An accepted conflict is applied without a change set: it is recorded as the decision in the review list (user, time) and in the audit log, not in the change history.
+- The MusicBrainz refresh is the job `metadata_refresh`, scheduled daily at 04:00, for identified recordings not checked for 30 days (title and artist from the recording's credit). Releases are not identified yet, so they are not refreshed; with a mirror the job runs the same way (no separate "changed since replication" query yet).
+- `anthology dev seed-conflicts` creates conflicts for generated libraries (end-to-end tests).
+
 ### Client
 
 - Edit mode (`client/src/features/tagging/`) on album pages and the track list, per mockup `Lokal-Editieren`: switch Hören/Editieren, a checkbox per row, select all, shift-click for a range, "whole list" sends the list's rule; a sticky bar with the count; the tag editor shows the fields of the selection (mixed values as "verschiedene Werte", unchanged unless edited) and confirms bulk edits with the count.

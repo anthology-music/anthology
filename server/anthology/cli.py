@@ -27,12 +27,20 @@ def main(argv: list[str] | None = None) -> int:
     library.add_argument("--tracks", type=int, default=500_000)
     library.add_argument("--reset", action="store_true", help="replace an existing library")
 
+    conflicts = dev_commands.add_parser(
+        "seed-conflicts",
+        help="create tag conflicts for the first albums (requires ANTHOLOGY_DEV_DEMO=true)",
+    )
+    conflicts.add_argument("--releases", type=int, default=3)
+
     args = parser.parse_args(argv)
     settings = get_settings()
     if args.command == "dev" and args.dev_command == "seed-demo":
         return seed_demo(settings, args.rows, args.reset)
     if args.command == "dev" and args.dev_command == "seed-library":
         return seed_library(settings, args.tracks, args.reset)
+    if args.command == "dev" and args.dev_command == "seed-conflicts":
+        return seed_conflicts(settings, args.releases)
     return 2  # pragma: no cover - argparse rejects unknown commands
 
 
@@ -84,6 +92,26 @@ def seed_library(settings: Settings, tracks: int, reset: bool) -> int:
         return 1
     summary = ", ".join(f"{value} {name}" for name, value in counters.items())
     print(f"library ready: {summary}; reconnect clients to see it")
+    return 0
+
+
+def seed_conflicts(settings: Settings, releases: int) -> int:
+    if not settings.dev_demo:
+        print(
+            "refusing to seed: set ANTHOLOGY_DEV_DEMO=true (developer installations only)",
+            file=sys.stderr,
+        )
+        return 1
+    from anthology.tagging.seed import seed_conflicts as seed
+
+    async def run() -> int:
+        engine = create_engine(settings)
+        try:
+            return await seed(engine, releases)
+        finally:
+            await engine.dispose()
+
+    print(f"tag conflicts ready: {asyncio.run(run())}")
     return 0
 
 

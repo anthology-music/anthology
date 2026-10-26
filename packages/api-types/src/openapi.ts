@@ -583,6 +583,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tagging/conflicts/groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Conflict Groups
+         * @description Groups of tag conflicts with their counts, largest first (spec: Conflict list).
+         */
+        get: operations["conflict_groups_api_v1_tagging_conflicts_groups_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/tagging/edits": {
         parameters: {
             query?: never;
@@ -722,6 +742,18 @@ export interface components {
          * @enum {string}
          */
         Confidence: "high" | "medium" | "low";
+        /**
+         * ConflictGroup
+         * @description A group of open tag conflicts: the field, release, artist or source and its count.
+         */
+        ConflictGroup: {
+            /** Count */
+            count: number;
+            /** Label */
+            label: string;
+            /** Value */
+            value: string;
+        };
         /** DeletionStarted */
         DeletionStarted: {
             /** Job Id */
@@ -1169,8 +1201,16 @@ export interface components {
          *     selection).
          */
         ReviewRule: {
+            /** Artist Id */
+            artist_id?: string | null;
             confidence?: components["schemas"]["Confidence"] | null;
+            /** Field */
+            field?: string | null;
             origin?: components["schemas"]["ReviewOrigin"] | null;
+            /** Release Id */
+            release_id?: string | null;
+            /** Source */
+            source?: string | null;
             /** @default open */
             status: components["schemas"]["ReviewStatus"];
             type?: components["schemas"]["ReviewType"] | null;
@@ -1184,7 +1224,7 @@ export interface components {
          * ReviewType
          * @enum {string}
          */
-        ReviewType: "recording_match" | "musicbrainz_suggestion" | "import_title" | "import_replacement" | "quality_finding";
+        ReviewType: "recording_match" | "musicbrainz_suggestion" | "import_title" | "import_replacement" | "quality_finding" | "tag_conflict";
         /**
          * Role
          * @enum {string}
@@ -2356,6 +2396,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UndoOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    conflict_groups_api_v1_tagging_conflicts_groups_get: {
+        parameters: {
+            query: {
+                by: "field" | "release" | "artist" | "source";
+                status?: components["schemas"]["ReviewStatus"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConflictGroup"][];
                 };
             };
             /** @description Validation Error */

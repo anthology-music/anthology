@@ -38,6 +38,7 @@ from anthology.review.models import (
 
 # Change entries of the review list (stream review.items).
 ITEM = "review_item"
+INSERT_BATCH = 1_000
 
 
 class Decision:
@@ -103,6 +104,8 @@ class Proposal:
     evidence: dict[str, Any] = field(default_factory=dict)
     # What makes two suggestions equal (default: subject and proposal).
     suppression: str | None = None
+    # Group columns (``field``, ``release_id``, ``artist_id``, ``source``) of a tag conflict.
+    groups: dict[str, Any] = field(default_factory=dict)
 
     def key(self) -> str:
         value = self.suppression or (
@@ -134,6 +137,10 @@ async def propose(session: AsyncSession, proposals: Iterable[Proposal]) -> list[
             "suppression_key": proposal.key(),
             "status": ReviewStatus.OPEN,
             "created_at": now,
+            "group_field": proposal.groups.get("field"),
+            "group_release_id": proposal.groups.get("release_id"),
+            "group_artist_id": proposal.groups.get("artist_id"),
+            "group_source": proposal.groups.get("source"),
         }
         for proposal in proposals
     ]
@@ -142,17 +149,20 @@ async def propose(session: AsyncSession, proposals: Iterable[Proposal]) -> list[
     # One entry per key within the batch as well.
     rows = list({row["suppression_key"]: row for row in rows}.values())
     insert = _insert(session)
-    statement = (
-        insert(ReviewItem)
-        .values(rows)
-        .on_conflict_do_nothing(
-            # The predicate of the partial unique index, literally (PostgreSQL matches it).
-            index_elements=["suppression_key"],
-            index_where=text(SUPPRESSING_SQL),
+    created = []
+    # Statements stay below the parameter limit of PostgreSQL (32,767).
+    for start in range(0, len(rows), INSERT_BATCH):
+        statement = (
+            insert(ReviewItem)
+            .values(rows[start : start + INSERT_BATCH])
+            .on_conflict_do_nothing(
+                # The predicate of the partial unique index, literally (PostgreSQL matches it).
+                index_elements=["suppression_key"],
+                index_where=text(SUPPRESSING_SQL),
+            )
+            .returning(ReviewItem.id, ReviewItem.type, ReviewItem.origin, ReviewItem.confidence)
         )
-        .returning(ReviewItem.id, ReviewItem.type, ReviewItem.origin, ReviewItem.confidence)
-    )
-    created = list(await session.execute(statement))
+        created.extend(await session.execute(statement))
     counts: dict[tuple, int] = {}
     for _id, type_, origin, confidence in created:
         key = (ReviewType(type_), ReviewOrigin(origin), Confidence(confidence), ReviewStatus.OPEN)
@@ -458,31 +468,64 @@ async def close_subject(
 # --- filters ----------------------------------------------------------------------------------
 
 
+# Types listed elsewhere: tag conflicts have their own list (spec: review, Central review list).
+SEPARATE_TYPES = frozenset({ReviewType.TAG_CONFLICT})
+GROUPS = ("field", "release_id", "artist_id", "source")
+
+
 @dataclass(frozen=True)
 class Filter:
-    """A selection of the list: the subscription parameters and the rule of bulk decisions."""
+    """A selection of the list: the subscription parameters and the rule of bulk decisions.
+    Without a type, types with their own list are left out; the group filters apply to tag
+    conflicts."""
 
     status: ReviewStatus = ReviewStatus.OPEN
     type: ReviewType | None = None
     origin: ReviewOrigin | None = None
     confidence: Confidence | None = None
+    field: str | None = None
+    release_id: uuid.UUID | None = None
+    artist_id: uuid.UUID | None = None
+    source: str | None = None
 
     def where(self) -> ColumnElement[bool]:
         conditions = [ReviewItem.status == self.status]
         if self.type is not None:
             conditions.append(ReviewItem.type == self.type)
+        else:
+            conditions.append(ReviewItem.type.not_in(SEPARATE_TYPES))
         if self.origin is not None:
             conditions.append(ReviewItem.origin == self.origin)
         if self.confidence is not None:
             conditions.append(ReviewItem.confidence == self.confidence)
+        for name, column in self._groups():
+            value = getattr(self, name)
+            if value is not None:
+                conditions.append(column == value)
         return and_(*conditions)
 
+    @staticmethod
+    def _groups():
+        return (
+            ("field", ReviewItem.group_field),
+            ("release_id", ReviewItem.group_release_id),
+            ("artist_id", ReviewItem.group_artist_id),
+            ("source", ReviewItem.group_source),
+        )
+
     def matches(self, item: ReviewItem) -> bool:
+        type_matches = (
+            item.type == self.type if self.type is not None else item.type not in SEPARATE_TYPES
+        )
         return (
             item.status == self.status
-            and self.type in (None, item.type)
+            and type_matches
             and self.origin in (None, item.origin)
             and self.confidence in (None, item.confidence)
+            and all(
+                getattr(self, name) in (None, getattr(item, column.key))
+                for name, column in self._groups()
+            )
         )
 
     def params(self) -> dict[str, str | None]:
@@ -491,33 +534,43 @@ class Filter:
             "type": self.type.value if self.type else None,
             "origin": self.origin.value if self.origin else None,
             "confidence": self.confidence.value if self.confidence else None,
+            **{
+                name: str(getattr(self, name)) if getattr(self, name) is not None else None
+                for name in GROUPS
+            },
         }
 
     @classmethod
     def of(cls, params: dict[str, Any]) -> "Filter":
         """Parse parameters; raises ValueError for unknown values."""
-        unknown = set(params) - {"status", "type", "origin", "confidence"}
+        unknown = set(params) - {"status", "type", "origin", "confidence", *GROUPS}
         if unknown:
             raise ValueError(f"unknown parameters: {sorted(unknown)}")
 
-        def value(name: str, enum_class):
+        def value(name: str, kind):
             raw = params.get(name)
-            return enum_class(raw) if raw is not None else None
+            return kind(raw) if raw is not None else None
 
         return cls(
             status=value("status", ReviewStatus) or ReviewStatus.OPEN,
             type=value("type", ReviewType),
             origin=value("origin", ReviewOrigin),
             confidence=value("confidence", Confidence),
+            field=value("field", str),
+            release_id=value("release_id", lambda raw: uuid.UUID(str(raw))),
+            artist_id=value("artist_id", lambda raw: uuid.UUID(str(raw))),
+            source=value("source", str),
         )
 
 
 def filter_counts(rows: Iterable[ReviewCounter], selection: Filter) -> tuple[int, dict[str, int]]:
     """Total of the selection, and counts per status (other filters applied) and per type
-    (other filters applied) for the filter bar."""
+    (other filters applied) for the filter bar; types with their own list are left out."""
     total = 0
     by: dict[str, int] = {}
     for row in rows:
+        if row.type in SEPARATE_TYPES and selection.type != row.type:
+            continue
         same_type = selection.type in (None, row.type)
         same_origin = selection.origin in (None, row.origin)
         same_confidence = selection.confidence in (None, row.confidence)

@@ -1,5 +1,6 @@
 """Schemas of the review list: rows, decisions and the typed content of each entry type."""
 
+import uuid
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field, model_validator
@@ -51,6 +52,11 @@ class ReviewRule(BaseModel):
     type: ReviewType | None = None
     origin: ReviewOrigin | None = None
     confidence: Confidence | None = None
+    # Groups of the conflict list (tag conflicts).
+    field: str | None = None
+    release_id: uuid.UUID | None = None
+    artist_id: uuid.UUID | None = None
+    source: str | None = None
 
 
 class ReviewDecisionIn(BaseModel):
@@ -161,3 +167,18 @@ class QualityFindingEvidence(BaseModel):
     bitrate_kbps: int | None
     files: int
     recording: RecordingSide | None = None
+
+
+class TagConflictProposal(BaseModel):
+    """Set ``field`` (a tagging field of the entry's level) to ``value``."""
+
+    field: str
+    value: Any
+
+
+class TagConflictEvidence(BaseModel):
+    level: str
+    field: str
+    # The value when the conflict arose (the entry is stale once it changed).
+    current: Any
+    source: str

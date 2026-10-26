@@ -19,6 +19,8 @@ class ReviewType(enum.StrEnum):
     IMPORT_TITLE = "import_title"  # an import match with a different title
     IMPORT_REPLACEMENT = "import_replacement"  # an inconclusive quality comparison of an import
     QUALITY_FINDING = "quality_finding"  # an analysis result without high confidence
+    # An automatic value for a protected field (tagging); listed in the conflict list only.
+    TAG_CONFLICT = "tag_conflict"
 
 
 class ReviewOrigin(enum.StrEnum):
@@ -58,6 +60,10 @@ class ReviewItem(Base):
         Index("ix_review_items_list", "status", "confidence_rank", "created_at", "id"),
         Index("ix_review_items_type", "status", "type", "confidence_rank", "created_at", "id"),
         Index("ix_review_items_subject", "subject_type", "subject_id"),
+        # Groups of the conflict list (tag conflicts only).
+        Index("ix_review_items_group_field", "status", "type", "group_field"),
+        Index("ix_review_items_group_release", "status", "type", "group_release_id"),
+        Index("ix_review_items_group_artist", "status", "type", "group_artist_id"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
@@ -82,6 +88,12 @@ class ReviewItem(Base):
         ForeignKey("users.id", ondelete="SET NULL"), index=True
     )
     decided_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
+    # What the conflict list groups by: the field, the release and artist it belongs to and the
+    # source of the proposal (null for other types).
+    group_field: Mapped[str | None] = mapped_column(String(32))
+    group_release_id: Mapped[uuid.UUID | None] = mapped_column(Uuid)
+    group_artist_id: Mapped[uuid.UUID | None] = mapped_column(Uuid)
+    group_source: Mapped[str | None] = mapped_column(String(32))
 
 
 class ReviewCounter(Base):

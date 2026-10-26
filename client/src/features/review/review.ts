@@ -68,7 +68,7 @@ export type DecisionResult =
 
 /** Decide entries by ID (multi-select) or by rule; file work and bulk decisions run as a job. */
 export async function decide(
-  selection: { ids: string[] } | { rule: ReviewFilter },
+  selection: { ids: string[] } | { rule: ReviewFilter | Schemas['ReviewRule'] },
   decision: Decision,
   choice: string | null = null,
 ): Promise<DecisionResult> {

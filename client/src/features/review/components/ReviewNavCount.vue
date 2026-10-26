@@ -15,10 +15,11 @@ import { useI18n } from 'vue-i18n';
 import { useCounts } from '@/features/library/numbers';
 import { useSubscription } from '@/sync/useSubscription';
 
-/** The number of open review entries in the navigation (counts only, no rows). */
+/** The number of open entries of a list in the navigation (counts only, no rows). */
+const props = withDefaults(defineProps<{ stream?: string }>(), { stream: 'review.items' });
 const { t } = useI18n();
 const { number } = useCounts();
-const subscription = useSubscription('review.items', { status: 'open' }, [0, 0]);
+const subscription = useSubscription(props.stream, { status: 'open' }, [0, 0]);
 </script>
 
 <style scoped>

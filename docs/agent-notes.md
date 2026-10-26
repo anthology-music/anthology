@@ -37,10 +37,8 @@ _Last updated: 2026-10-23_
 - **Archived:** `managed-and-referenced-originals` (PR #17); 2.3 (tag writes into referenced
   files) was done with `tag-editing`. Replacing a managed original by a better acquisition is
   covered by `effective-quality-duplicate-checks` (CD import and sources).
-- **Open, implemented in part:** `metadata-lookup` (PR #18 merged): license check, lookup clients
-  with cache, cross-process rate limit, priorities, mirror with fallback and the status/estimate
-  endpoint are done. Open: 2.4 (the refresh job applies changes through tagging, so it waits for
-  `tag-editing`). A message broker was considered for the limiter and rejected (see its design).
+- **Archived:** `metadata-lookup` (PR #18; the refresh 2.4 was done with `tag-editing`). A
+  message broker was considered for the limiter and rejected (see its design).
 - **Archived:** `recording-identification` (PR #20), `library-import-folders` (PR #21) and
   `quality-based-replacement` (PR #24); their last tasks were done with `review-list`.
 - **Open, implemented in part:** `quality-analysis-core` (PR #22 merged). Open: source
@@ -51,12 +49,12 @@ _Last updated: 2026-10-23_
   maintenance job with grace period and safety limit.
 - **Open, implemented in part:** `review-list` (PR #26 merged). Open: producers of
   works/publishers, sources and sheet-music (3.6–3.8).
-- **In progress:** change `tag-editing` on branch `feat/tag-editing`, pull request 1 of 2
-  (editing, history and undo, provenance, file writes, edit mode). Decided with the maintainer:
-  genres per recording; changing the album of selected tracks moves them; two pull requests,
-  the second with tag conflicts, the conflict list and the MusicBrainz refresh. Open after
-  pull request 1: tasks 5.x and 3.3 (waits for transcoding and tagged copies).
-- **Next:** `tag-editing` pull request 2, then `search` (see `docs/roadmap.md`).
+- **In progress:** change `tag-editing` on branch `feat/tag-editing`, pull request 2 of 2 (tag
+  conflicts, conflict list, MusicBrainz refresh; pull request 1 merged as PR #27). Decided with
+  the maintainer: genres per recording; changing the album of selected tracks moves them.
+  After the merge only 3.3 is open (waits for transcoding and tagged copies), so the change
+  stays open. `metadata-lookup` is complete with its refresh (2.4) and is archived.
+- **Next:** `search` (see `docs/roadmap.md`).
   `effective-quality-duplicate-checks` covers CD import and sources only; it waits for them.
 
 ## Working conventions

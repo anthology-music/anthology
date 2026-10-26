@@ -28,6 +28,7 @@ from anthology.library_import import jobs as library_import_jobs
 from anthology.library_import import review as library_import_review
 from anthology.library_import.streams import STREAMS as LIBRARY_IMPORT_STREAMS
 from anthology.metadata_lookup import api as metadata_lookup_api
+from anthology.metadata_lookup import refresh as metadata_refresh
 from anthology.metadata_lookup.service import LookupService, check_mirror
 from anthology.quality_analysis import api as quality_analysis_api
 from anthology.quality_analysis import review as quality_review
@@ -45,7 +46,8 @@ from anthology.sync.services_stream import ServicesStream
 from anthology.sync.streams import StreamRegistry
 from anthology.tagging import api as tagging_api
 from anthology.tagging import jobs as tagging_jobs
-from anthology.tagging.streams import STREAMS as TAGGING_STREAMS
+from anthology.tagging import review as tagging_review
+from anthology.tagging import streams as tagging_streams
 from anthology.tagging.tagger_client import TaggerClient, check_tagger
 from anthology.tagging.writer import TagWriter
 from anthology.users import api as users_api
@@ -127,6 +129,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.reviewer = reviewer
         app.state.job_handlers.get(review_jobs.JOB_TYPE).bind(reviewer)
         app.state.job_handlers.get(review_jobs.BACKFILL_JOB).bind(reviewer)
+        app.state.job_handlers.get(metadata_refresh.JOB_TYPE).bind(
+            metadata_refresh.Refresher(sessionmaker, lookups)
+        )
         for job_type in (tagging_jobs.UNDO_JOB, tagging_jobs.BULK_JOB):
             app.state.job_handlers.get(job_type).bind(sessionmaker)
         if settings.background_tasks:
@@ -225,6 +230,7 @@ def _job_handlers(settings: Settings) -> HandlerRegistry:
     registry.register(review_jobs.ReviewBackfillHandler())
     registry.register(tagging_jobs.TaggingUndoHandler())
     registry.register(tagging_jobs.TaggingBulkHandler())
+    registry.register(metadata_refresh.MetadataRefreshHandler())
     for handler in library_import_jobs.HANDLERS:
         registry.register(handler())
     if settings.dev_demo:
@@ -237,6 +243,7 @@ def _job_handlers(settings: Settings) -> HandlerRegistry:
 def _schedules() -> ScheduleRegistry:
     registry = ScheduleRegistry()
     registry.register(maintenance.SCHEDULE)
+    registry.register(metadata_refresh.SCHEDULE)
     return registry
 
 
@@ -247,6 +254,7 @@ def _review_handlers() -> review.HandlerRegistry:
         *library_review.HANDLERS,
         *library_import_review.HANDLERS,
         *quality_review.HANDLERS,
+        *tagging_review.HANDLERS,
     ):
         registry.register(handler())
     return registry
@@ -263,11 +271,13 @@ def _streams(settings: Settings, review_handlers: review.HandlerRegistry) -> Str
         *LIBRARY_STREAMS,
         *LIBRARY_IMPORT_STREAMS,
         *QUALITY_ANALYSIS_STREAMS,
-        *TAGGING_STREAMS,
     ):
         registry.register(stream())
-    for review_stream in review_streams.streams(review_handlers):
-        registry.register(review_stream)
+    for handler_stream in (
+        *review_streams.streams(review_handlers),
+        *tagging_streams.streams(review_handlers),
+    ):
+        registry.register(handler_stream)
     if settings.dev_demo:
         from anthology.sync.demo import DemoItemsStream
 

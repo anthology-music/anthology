@@ -80,6 +80,7 @@ Seven streams for all signed-in users serve the library, plus a report and a sto
 | `library.maintenance.findings` (admins) | `run_id` | path | the run's findings | the run's counts and sizes |
 | `review.items` (editors, admins) | `status`, `type`, `origin`, `confidence` | confidence, created, id | entries matching the filter | `status.*`, `type.*` |
 | `tagging.changes` (editors, admins) | – | created, id (newest first) | change sets | `pending_writes`, `failed_writes` |
+| `tagging.conflicts` (editors, admins) | `status`, `field`, `release_id`, `artist_id`, `source` | confidence, created, id | conflicts matching the filter | `status.*` |
 
 The four library counters are `artists`, `releases`, `tracks` and `recordings`; all are maintained in the writing transaction. Track rows show the recording's active original with its effective quality and quality status (both null until analysed; the effective quality only after a high-confidence result); superseded files (kept after a better file replaced them; rows carry their `storage_mode`, and only managed ones can be deleted, ADR 0021) appear only in `library.superseded`. A change that alters what other rows show or sort by (e.g. an artist rename) writes one change entry per affected row, so each of them receives a delta. The filtered lists ignore changes of rows outside their filter; when a row leaves a filtered list, the library writes an extra entry of type `release.moved` or `track.moved`, which the list of the former parent answers with `remove`.
 
@@ -94,6 +95,8 @@ The stream `review.items` (editors and admins) lists the entries of the review l
 ## Tag editing
 
 Edits are made over REST (`POST /api/v1/tagging/edits`: selected tracks or a list rule, fields per level – recording, release, track –, `preview` for the count; up to 50 tracks directly, more as the job `tagging_bulk`), and the tag editor reads the current values with `POST /api/v1/tagging/values` (`openspec/specs/tagging/spec.md`). The rows of the affected lists follow by the library's change entries (a recording edit reaches its tracks in every context, a release edit its album row and tracks, a move `track.moved`). The stream `tagging.changes` lists the change sets newest first (`ChangeSetRow`: kind `edit`/`undo`, user, summary of the fields, items and changed, whether it can still be undone); every change set and every change of the queue of file writes (counters `pending_writes`, `failed_writes`) writes one change entry. Undo: `POST /api/v1/tagging/changes/{id}/undo` (job `tagging_undo`, with the skipped fields in its result).
+
+Tag conflicts (automatic values for protected fields) are review entries of type `tag_conflict` (`ReviewItemRow`, proposal `TagConflictProposal`: field and value); `review.items` leaves them out and `tagging.conflicts` lists only them, filtered by one group. The groups with their counts come over REST (`GET /api/v1/tagging/conflicts/groups?by=release|artist|field|source`, largest first); decisions and group decisions use `POST /api/v1/review/decisions` with a rule such as `{ "type": "tag_conflict", "release_id": … }`.
 
 ## Library imports
 

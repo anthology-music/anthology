@@ -30,10 +30,10 @@ Pull request 1: tasks 1–4. Pull request 2: task 5. The change is archived afte
 
 ## 5. Tag conflicts (pull request 2)
 
-- [ ] 5.1 Conflict branch of the edit service: automatic origins apply to unprotected fields and create `TAG_CONFLICT` entries for protected ones; migration for the type and the group columns; verify with tests for both cases and that a rejected proposal is not raised again
-- [ ] 5.2 `tagging.conflicts` stream with filters and group counts by field, release, artist and source; `review.items` without tag conflicts; decisions and group decisions through the review module; verify with protocol tests and a group accept recorded as set by the accepting editor
-- [ ] 5.3 MusicBrainz refresh job through the edit service (closes `metadata-lookup` 2.4), which also turns differences of imported tags into conflicts; verify with a faked MusicBrainz that unprotected fields update and protected fields create conflicts
-- [ ] 5.4 Client conflict list with grouping, multi-select and group actions, navigation entry with the open count; verify with component tests and an E2E test accepting a group
+- [x] 5.1 Conflict branch of the edit service: automatic origins apply to unprotected fields and create `TAG_CONFLICT` entries for protected ones; migration for the type and the group columns; verify with tests for both cases and that a rejected proposal is not raised again
+- [x] 5.2 `tagging.conflicts` stream with filters and group counts by field, release, artist and source; `review.items` without tag conflicts; decisions and group decisions through the review module; verify with protocol tests and a group accept recorded as set by the accepting editor
+- [x] 5.3 MusicBrainz refresh job through the edit service (closes `metadata-lookup` 2.4), which also turns differences of imported tags into conflicts; verify with a faked MusicBrainz that unprotected fields update and protected fields create conflicts
+- [x] 5.4 Client conflict list with grouping, multi-select and group actions, navigation entry with the open count; verify with component tests and an E2E test accepting a group
 
 ## 6. Documentation
 

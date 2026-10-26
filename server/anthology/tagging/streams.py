@@ -7,6 +7,10 @@ from typing import Any
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from anthology.review import service as review
+from anthology.review.models import ReviewItem, ReviewType
+from anthology.review.service import Filter, HandlerRegistry
+from anthology.review.streams import ReviewItemsStream
 from anthology.sync.feed import ChangeEvent
 from anthology.sync.streams import (
     KeyQuery,
@@ -111,4 +115,29 @@ def _row(item: ChangeSet, names: dict[uuid.UUID, str]) -> Row:
     )
 
 
-STREAMS = (ChangesStream,)
+class ConflictsStream(ReviewItemsStream):
+    """Tag conflicts of one status, optionally of one field, release, artist or source; counts
+    per status come from the review counters, the total of the group from the index."""
+
+    name = "tagging.conflicts"
+
+    def validate(self, params: dict[str, Any]) -> dict[str, Any]:
+        try:
+            selection = Filter.of({**params, "type": ReviewType.TAG_CONFLICT.value})
+        except ValueError as error:
+            raise StreamError("invalid_params", str(error)) from error
+        return selection.params()
+
+    async def meta(self, db: AsyncSession, ctx: StreamContext) -> Meta:
+        selection = Filter.of(ctx.params)
+        total = (
+            await db.scalar(select(func.count()).select_from(ReviewItem).where(selection.where()))
+            or 0
+        )
+        _, counters = review.filter_counts(await review.counts(db), Filter(type=selection.type))
+        counters = {name: value for name, value in counters.items() if name.startswith("status.")}
+        return Meta(total=total, counters=counters)
+
+
+def streams(handlers: HandlerRegistry) -> tuple:
+    return (ChangesStream(), ConflictsStream(handlers))

@@ -1,17 +1,26 @@
 """REST routes of editing (spec: tagging, Single and bulk edits; Undo)."""
 
 import uuid
-from typing import Annotated
+from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from anthology.api.deps import require_role
 from anthology.db import get_session
-from anthology.library.models import Recording, Release, Track
+from anthology.library.models import Artist, Recording, Release, Track
+from anthology.review.models import ReviewItem, ReviewStatus, ReviewType
 from anthology.tagging import jobs, service
-from anthology.tagging.edits import EditIn, EditOut, FieldValue, UndoOut, ValuesIn, ValuesOut
+from anthology.tagging.edits import (
+    ConflictGroup,
+    EditIn,
+    EditOut,
+    FieldValue,
+    UndoOut,
+    ValuesIn,
+    ValuesOut,
+)
 from anthology.tagging.fields import InvalidFields, Level, plain, validate
 from anthology.users.models import Role
 from anthology.users.service import SessionInfo
@@ -136,3 +145,52 @@ async def undo(session: Session, current: Editor, change_set_id: uuid.UUID) -> U
     return UndoOut(
         change_set_id=str(undone.id), job_id=str(undone.job_id) if undone.job_id else None
     )
+
+
+GROUP_COLUMNS = {
+    "field": ReviewItem.group_field,
+    "release": ReviewItem.group_release_id,
+    "artist": ReviewItem.group_artist_id,
+    "source": ReviewItem.group_source,
+}
+MAX_GROUPS = 200
+
+
+@router.get("/tagging/conflicts/groups")
+async def conflict_groups(
+    session: Session,
+    _current: Editor,
+    by: Literal["field", "release", "artist", "source"],
+    status_: Annotated[ReviewStatus, Query(alias="status")] = ReviewStatus.OPEN,
+) -> list[ConflictGroup]:
+    """Groups of tag conflicts with their counts, largest first (spec: Conflict list)."""
+    column = GROUP_COLUMNS[by]
+    rows = list(
+        await session.execute(
+            select(column, func.count())
+            .where(
+                ReviewItem.type == ReviewType.TAG_CONFLICT,
+                ReviewItem.status == status_,
+                column.is_not(None),
+            )
+            .group_by(column)
+            .order_by(func.count().desc(), column)
+            .limit(MAX_GROUPS)
+        )
+    )
+    labels: dict[Any, str] = {}
+    values = [value for value, _ in rows]
+    if by == "release" and values:
+        releases = await session.execute(
+            select(Release.id, Release.album_artist_display, Release.title).where(
+                Release.id.in_(values)
+            )
+        )
+        labels = {rid: f"{artist} - {title}" for rid, artist, title in releases}
+    elif by == "artist" and values:
+        artists = await session.execute(select(Artist.id, Artist.name).where(Artist.id.in_(values)))
+        labels = {artist_id: name for artist_id, name in artists}
+    return [
+        ConflictGroup(value=str(value), label=labels.get(value, str(value)), count=count)
+        for value, count in rows
+    ]
