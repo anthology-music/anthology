@@ -273,3 +273,23 @@ test('editing an album and undoing the edit from the history', async ({ page }) 
     .click();
   await expect(page.getByTestId('release-title')).toHaveText('Kassette 1985');
 });
+
+test('accepting a group in the conflict list', async ({ page }) => {
+  await signIn(page);
+  await page.getByRole('link', { name: /Konflikte/ }).click();
+  await expect(page).toHaveURL(/\/conflicts$/);
+
+  // The generated conflicts: " (Remaster)" titles from MusicBrainz for the first two albums.
+  const firstGroup = page.locator('[data-testid^="group-"]:not([data-testid="group-all"])').first();
+  await expect(firstGroup).toBeVisible();
+  await firstGroup.click();
+  const rows = page.locator('.conflict-row').filter({ hasText: '(Remaster)' });
+  await expect(rows.first()).toBeVisible();
+  await page.getByTestId('conflicts-accept-group').click();
+  await page.getByTestId('conflicts-confirm').click();
+  await expect(page.getByTestId('conflicts-message')).toBeVisible();
+  // The group's conflicts are decided: it is empty and leaves the group list.
+  await expect(page.getByTestId('conflicts-empty')).toBeVisible({ timeout: 30_000 });
+  await page.getByTestId('group-all').click();
+  await expect(page.getByTestId('conflicts-total')).not.toContainText('0 Konflikte');
+});

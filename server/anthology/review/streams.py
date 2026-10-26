@@ -46,9 +46,12 @@ class ReviewItemsStream:
 
     def validate(self, params: dict[str, Any]) -> dict[str, Any]:
         try:
-            return Filter.of(params).params()
+            selection = Filter.of(params)
         except ValueError as error:
             raise StreamError("invalid_params", str(error)) from error
+        if selection.type in service.SEPARATE_TYPES:
+            raise StreamError("invalid_params", "tag conflicts are listed in tagging.conflicts")
+        return selection.params()
 
     async def meta(self, db: AsyncSession, ctx: StreamContext) -> Meta:
         total, counters = service.filter_counts(await service.counts(db), Filter.of(ctx.params))

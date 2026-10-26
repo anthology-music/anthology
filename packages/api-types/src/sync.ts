@@ -25,7 +25,12 @@ export type FindingOutcome = 'deleted' | 'listed' | 'referenced' | 'too_young' |
 export type ImportMode = 'reference' | 'move' | 'reflink' | 'hardlink' | 'copy';
 export type ImportStatus = 'scanning' | 'reported' | 'importing' | 'done' | 'cancelled' | 'failed';
 export type ReviewType =
-  'recording_match' | 'musicbrainz_suggestion' | 'import_title' | 'import_replacement' | 'quality_finding';
+  | 'recording_match'
+  | 'musicbrainz_suggestion'
+  | 'import_title'
+  | 'import_replacement'
+  | 'quality_finding'
+  | 'tag_conflict';
 export type ReviewOrigin = 'fuzzy_match' | 'musicbrainz' | 'import' | 'quality_analysis';
 export type Confidence = 'high' | 'medium' | 'low';
 export type ReviewStatus = 'open' | 'accepted' | 'rejected' | 'deferred' | 'obsolete';
@@ -54,6 +59,7 @@ export interface SyncProtocol {
     'quality_analysis.summary'?: QualitySummaryRow;
     'review.items'?: ReviewItemRow;
     'tagging.changes'?: ChangeSetRow;
+    'tagging.conflicts'?: ReviewItemRow;
   };
   /**
    * Typed content of untyped row fields (e.g. review evidence).
@@ -68,6 +74,8 @@ export interface SyncProtocol {
     'review.import.proposal'?: ImportProposal;
     'review.quality_finding.evidence'?: QualityFindingEvidence;
     'review.quality_finding.proposal'?: QualityFindingProposal;
+    'review.tag_conflict.evidence'?: TagConflictEvidence;
+    'review.tag_conflict.proposal'?: TagConflictProposal;
   };
 }
 export interface Hello {
@@ -470,4 +478,17 @@ export interface QualityFindingEvidence {
 }
 export interface QualityFindingProposal {
   upscaled_quality: string | null;
+}
+export interface TagConflictEvidence {
+  level: string;
+  field: string;
+  current: unknown;
+  source: string;
+}
+/**
+ * Set ``field`` (a tagging field of the entry's level) to ``value``.
+ */
+export interface TagConflictProposal {
+  field: string;
+  value: unknown;
 }

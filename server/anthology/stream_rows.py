@@ -38,6 +38,7 @@ ROW_SCHEMAS: dict[str, type[BaseModel]] = {
     "quality_analysis.summary": QualitySummaryRow,
     "review.items": ReviewItemRow,
     "tagging.changes": ChangeSetRow,
+    "tagging.conflicts": ReviewItemRow,
 }
 
 # Typed content of row fields that differ per row kind (the evidence and proposal of each
@@ -52,4 +53,6 @@ PART_SCHEMAS: dict[str, type[BaseModel]] = {
     "review.import.proposal": review.ImportProposal,
     "review.quality_finding.evidence": review.QualityFindingEvidence,
     "review.quality_finding.proposal": review.QualityFindingProposal,
+    "review.tag_conflict.evidence": review.TagConflictEvidence,
+    "review.tag_conflict.proposal": review.TagConflictProposal,
 }

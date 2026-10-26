@@ -18,6 +18,7 @@
             <q-icon :name="item.icon" size="20px" aria-hidden="true" />
             <span class="sidebar__label">{{ t(`nav.${item.name}`) }}</span>
             <ReviewNavCount v-if="item.name === 'review'" />
+            <ReviewNavCount v-if="item.name === 'conflicts'" stream="tagging.conflicts" />
           </router-link>
         </nav>
 
@@ -82,6 +83,7 @@ const navigation = [
   { name: 'local', icon: 'library_music' },
   { name: 'works', icon: 'queue_music' },
   { name: 'review', icon: 'fact_check', editors: true },
+  { name: 'conflicts', icon: 'compare_arrows', editors: true },
   { name: 'settings', icon: 'settings' },
   ...(import.meta.env.DEV ? [{ name: 'demo', icon: 'science' } as const] : []),
 ] as const;

@@ -98,3 +98,11 @@ class ChangeSetRow(StreamRow):
     undone_by: str | None
     # Not undone yet.
     undoable: bool
+
+
+class ConflictGroup(BaseModel):
+    """A group of open tag conflicts: the field, release, artist or source and its count."""
+
+    value: str
+    label: str
+    count: int

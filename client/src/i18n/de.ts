@@ -6,6 +6,7 @@ export default {
     local: 'Lokal',
     works: 'Werke',
     review: 'Prüfliste',
+    conflicts: 'Konflikte',
     settings: 'Einstellungen',
     demo: 'Demo-Liste',
     main: 'Hauptnavigation',
@@ -602,6 +603,28 @@ export default {
     undone: 'Rückgängig gemacht',
     undo: 'Rückgängig',
     undoStarted: 'Die Änderung wird rückgängig gemacht (Auftrag).',
+  },
+  conflicts: {
+    title: 'Konflikte',
+    description:
+      'Automatische Werte, z. B. von MusicBrainz, für Felder, die du oder ein Import gesetzt habt. Erst deine Entscheidung ändert sie.',
+    groups: 'Gruppen',
+    groupBy: 'Gruppieren nach',
+    by: { release: 'Album', artist: 'Künstler', field: 'Feld', source: 'Quelle' },
+    all: 'Alle',
+    count: '{n} Konflikt | {n} Konflikte',
+    empty: 'Keine offenen Konflikte.',
+    accept: 'Übernehmen',
+    reject: 'Behalten',
+    acceptOne: 'Übernehmen',
+    keep: 'Behalten',
+    acceptGroup: 'Alle {n} übernehmen',
+    rejectGroup: 'Alle {n} behalten',
+    confirm: {
+      accept: 'Die vorgeschlagenen Werte aller {n} Konflikte dieser Gruppe übernehmen?',
+      reject:
+        'Die aktuellen Werte aller {n} Konflikte dieser Gruppe behalten? Die Vorschläge kommen nicht wieder.',
+    },
   },
   user: { signedOut: 'Nicht angemeldet' },
   pages: {
