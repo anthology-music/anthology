@@ -9,6 +9,7 @@ from sqlalchemy.engine import Connection
 import anthology.models  # noqa: F401  (registers all tables)
 from anthology.core.config import get_settings
 from anthology.db import Base, create_engine
+from anthology.search.models import ENGINE_SPECIFIC
 
 config = context.config
 if config.config_file_name is not None:
@@ -18,10 +19,11 @@ target_metadata = Base.metadata
 
 
 def include_name(name, type_, parent_names) -> bool:
-    """Only manage tables of ``Base.metadata`` (e.g. ignore the developer demo table)."""
+    """Only manage tables of ``Base.metadata`` (e.g. ignore the developer demo table) and
+    leave the engine-specific search columns and indexes alone."""
     if type_ == "table":
         return name in target_metadata.tables
-    return True
+    return name not in ENGINE_SPECIFIC
 
 
 def _database_url() -> str:

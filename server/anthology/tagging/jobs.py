@@ -12,6 +12,7 @@ from anthology.jobs import service as jobs
 from anthology.jobs.handlers import ItemContext, ItemResult
 from anthology.jobs.models import PriorityClass
 from anthology.library.models import Recording, Track
+from anthology.search import service as search
 from anthology.tagging import service, writes
 from anthology.tagging.fields import Level
 from anthology.tagging.models import ChangeSet, ChangeSetKind
@@ -191,11 +192,23 @@ def _skip(row: AuditLog, name: str, value: Any, reason: str) -> dict[str, Any]:
 # --- bulk edits -------------------------------------------------------------------------------
 
 
-def selection(*, ids: list[uuid.UUID] | None = None, rule: dict | None = None) -> Select:
-    """The IDs of the selected tracks (one column)."""
+def selection(
+    *, ids: list[uuid.UUID] | None = None, rule: dict | None = None, postgresql: bool = False
+) -> Select:
+    """The IDs of the selected tracks (one column); ``postgresql`` selects the search syntax
+    of the engine for search rules."""
     if ids is not None:
         return select(Track.id).where(Track.id.in_(ids))
     tracks = select(Track.id)
+    if rule["list"] == "search":
+        release_id, artist_id = rule.get("release_id"), rule.get("artist_id")
+        found = search.selection(
+            rule["q"],
+            postgresql=postgresql,
+            release_id=uuid.UUID(release_id) if release_id else None,
+            artist_id=uuid.UUID(artist_id) if artist_id else None,
+        )
+        return tracks.where(Track.id.in_(found))
     if rule["list"] == "release_tracks":
         tracks = tracks.where(Track.release_id == uuid.UUID(rule["release_id"]))
     elif rule["list"] == "artist_tracks":
@@ -214,7 +227,8 @@ async def start_bulk(
     change_set_id: uuid.UUID,
     user_id: uuid.UUID,
 ) -> uuid.UUID:
-    starts, _count = await batch_starts(session, selection(ids=ids, rule=rule))
+    query = selection(ids=ids, rule=rule, postgresql=search.postgresql(session))
+    starts, _count = await batch_starts(session, query)
     job = await jobs.create_job(
         session,
         type_=BULK_JOB,
@@ -255,7 +269,8 @@ class TaggingBulkHandler:
         params = ctx.params
         fields = {Level(level): values for level, values in params["fields"].items()}
         ids = [uuid.UUID(item) for item in params["ids"]] if params["ids"] is not None else None
-        column = selection(ids=ids, rule=params["rule"]).subquery().c[0]
+        postgresql = self._sessionmaker.kw["bind"].dialect.name == "postgresql"
+        column = selection(ids=ids, rule=params["rule"], postgresql=postgresql).subquery().c[0]
         change_set_id = uuid.UUID(params["change_set"])
         async with self._sessionmaker() as session, session.begin():
             batch = list(

@@ -211,4 +211,29 @@ describe('cache', () => {
     expect(subscription.total).toBeNull();
     cache.close();
   });
+
+  it('keeps uncached subscriptions out of the cache', async () => {
+    cacheCounter += 1;
+    const cache = new SyncCache(`test-cache-${cacheCounter}`);
+    await cache.putMeta({
+      subKey: 'user-1|search.tracks|{"q":"x"}',
+      total: 5,
+      counters: {},
+      seq: 3,
+    });
+    const { client, connection, sockets } = setup({ cache });
+    connection.start();
+    await live(sockets);
+
+    const subscription = client.subscribe('search.tracks', { q: 'x' }, [0, 50], { cache: false });
+    await vi.waitFor(() => expect(sockets.latest().last('subscribe')).toBeDefined());
+    sockets.latest().receive(meta(subscription.id, 1, 9));
+    sockets.latest().receive(chunk(subscription.id, 0, 0, [row('a', 'anna')]));
+    await vi.waitFor(() => expect(subscription.rows.size).toBe(1));
+
+    expect(sockets.latest().last('subscribe')?.data.since ?? null).toBeNull();
+    expect(await cache.loadRows(subscription.cacheKey, 0, 50)).toEqual([]);
+    expect((await cache.loadMeta(subscription.cacheKey))?.seq).toBe(3);
+    cache.close();
+  });
 });

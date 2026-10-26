@@ -11,6 +11,7 @@ from anthology.api.deps import require_role
 from anthology.db import get_session
 from anthology.library.models import Artist, Recording, Release, Track
 from anthology.review.models import ReviewItem, ReviewStatus, ReviewType
+from anthology.search import service as search
 from anthology.tagging import jobs, service
 from anthology.tagging.edits import (
     ConflictGroup,
@@ -43,11 +44,11 @@ def _ids(values: list[str]) -> list[uuid.UUID]:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, detail="invalid_id") from error
 
 
-def _selection(body: EditIn | ValuesIn):
+def _selection(session: AsyncSession, body: EditIn | ValuesIn):
     ids = _ids(body.ids) if body.ids is not None else None
     rule = body.rule.model_dump() if body.rule is not None else None
     try:
-        return ids, rule, jobs.selection(ids=ids, rule=rule)
+        return ids, rule, jobs.selection(ids=ids, rule=rule, postgresql=search.postgresql(session))
     except ValueError as error:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, detail="invalid_id") from error
 
@@ -61,7 +62,7 @@ async def edit(session: Session, current: Editor, body: EditIn) -> EditOut:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, detail=error.message) from error
     if not values:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, detail="no fields")
-    ids, rule, query = _selection(body)
+    ids, rule, query = _selection(session, body)
     count = await session.scalar(select(func.count()).select_from(query.subquery())) or 0
     if body.preview or count == 0:
         return EditOut(items=count)
@@ -106,7 +107,7 @@ async def edit(session: Session, current: Editor, body: EditIn) -> EditOut:
 @router.post("/tagging/values")
 async def values(session: Session, _current: Editor, body: ValuesIn) -> ValuesOut:
     """The fields of selected tracks per level for the tag editor: shared values, or mixed."""
-    *_, query = _selection(body)
+    *_, query = _selection(session, body)
     count = await session.scalar(select(func.count()).select_from(query.subquery())) or 0
     fields: dict[Level, dict[str, FieldValue]] = {level: {} for level in Level}
     for track in await session.scalars(

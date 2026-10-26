@@ -29,6 +29,7 @@ Collected decisions to revisit or features deferred on purpose; each needs its o
 | Protection against password guessing (increasing delay per user name and IP, no permanent lock-out) | change `users-and-devices` | |
 | Binary encoding of the sync protocol | change `sync-protocol-details` | negotiated via protocol version |
 | Smart playlists (saved search plus play count, last played) | change `personal-data` | uses the search syntax |
+| Works, videos and playlists in the search (items, filters `arranger`, `publisher`, `work`, `grade`, `source`, `favorite`, playlist/folder/work contexts) | change `search` | the changes that build works, video, sources and personal data extend the `search` spec |
 | Offline video | change `offline-sync` | per-device resolution limit applies |
 | Purchase stores as sources | change `external-source-services` | via the source service interface |
 

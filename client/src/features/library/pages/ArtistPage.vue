@@ -22,6 +22,13 @@
             {{ count('releases', artist.release_count) }} ·
             {{ count('tracks', artist.track_count) }}
           </p>
+          <router-link
+            v-if="artist"
+            :to="{ name: 'search', query: { q: '', artist_id: artistId, in: artist.name } }"
+            data-testid="search-in-artist"
+          >
+            <q-icon name="search" aria-hidden="true" /> {{ t('search.inArtist') }}
+          </router-link>
         </div>
       </header>
       <LibraryList

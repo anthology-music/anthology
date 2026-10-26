@@ -39,6 +39,9 @@ ROW_SCHEMAS: dict[str, type[BaseModel]] = {
     "review.items": ReviewItemRow,
     "tagging.changes": ChangeSetRow,
     "tagging.conflicts": ReviewItemRow,
+    "search.artists": LibraryArtistRow,
+    "search.releases": LibraryReleaseRow,
+    "search.tracks": LibraryTrackRow,
 }
 
 # Typed content of row fields that differ per row kind (the evidence and proposal of each

@@ -38,6 +38,9 @@ from anthology.review import api as review_api
 from anthology.review import jobs as review_jobs
 from anthology.review import service as review
 from anthology.review import streams as review_streams
+from anthology.search import api as search_api
+from anthology.search import jobs as search_jobs
+from anthology.search import streams as search_streams
 from anthology.sync import api as sync_api
 from anthology.sync.background import ChangeBackground
 from anthology.sync.feed import ChangeFeed
@@ -132,11 +135,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.job_handlers.get(metadata_refresh.JOB_TYPE).bind(
             metadata_refresh.Refresher(sessionmaker, lookups)
         )
-        for job_type in (tagging_jobs.UNDO_JOB, tagging_jobs.BULK_JOB):
+        for job_type in (tagging_jobs.UNDO_JOB, tagging_jobs.BULK_JOB, search_jobs.JOB_TYPE):
             app.state.job_handlers.get(job_type).bind(sessionmaker)
         if settings.background_tasks:
             async with sessionmaker() as session, session.begin():
                 await review_jobs.ensure_backfill(session, app.state.review_handlers)
+                await search_jobs.ensure_index(session)
             await background.start()
             await runner.start()
             await scheduler.start()
@@ -173,6 +177,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(quality_analysis_api.router, prefix=API_PREFIX)
     app.include_router(review_api.router, prefix=API_PREFIX)
     app.include_router(tagging_api.router, prefix=API_PREFIX)
+    app.include_router(search_api.router, prefix=API_PREFIX)
     if settings.web_dir is not None:
         mount_web(app, settings.web_dir)  # last: its fallback must not shadow API routes
     return app
@@ -231,6 +236,7 @@ def _job_handlers(settings: Settings) -> HandlerRegistry:
     registry.register(tagging_jobs.TaggingUndoHandler())
     registry.register(tagging_jobs.TaggingBulkHandler())
     registry.register(metadata_refresh.MetadataRefreshHandler())
+    registry.register(search_jobs.SearchReindexHandler())
     for handler in library_import_jobs.HANDLERS:
         registry.register(handler())
     if settings.dev_demo:
@@ -276,6 +282,7 @@ def _streams(settings: Settings, review_handlers: review.HandlerRegistry) -> Str
     for handler_stream in (
         *review_streams.streams(review_handlers),
         *tagging_streams.streams(review_handlers),
+        *search_streams.streams(not settings.is_sqlite),
     ):
         registry.register(handler_stream)
     if settings.dev_demo:

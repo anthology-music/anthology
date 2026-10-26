@@ -17,7 +17,7 @@ across sessions goes here, so every agent and every maintainer sees the same sta
 
 ## Current state
 
-_Last updated: 2026-10-23_
+_Last updated: 2026-10-26_
 
 - **Milestone 1 (Foundation)** is implemented: server skeleton, sync protocol with progressive
   loading, users and devices, jobs (core and view), client foundation with sign-in, sync layer and
@@ -49,12 +49,14 @@ _Last updated: 2026-10-23_
   maintenance job with grace period and safety limit.
 - **Open, implemented in part:** `review-list` (PR #26 merged). Open: producers of
   works/publishers, sources and sheet-music (3.6–3.8).
-- **In progress:** change `tag-editing` on branch `feat/tag-editing`, pull request 2 of 2 (tag
-  conflicts, conflict list, MusicBrainz refresh; pull request 1 merged as PR #27). Decided with
-  the maintainer: genres per recording; changing the album of selected tracks moves them.
-  After the merge only 3.3 is open (waits for transcoding and tagged copies), so the change
-  stays open. `metadata-lookup` is complete with its refresh (2.4) and is archived.
-- **Next:** `search` (see `docs/roadmap.md`).
+- **Open, implemented in part:** `tag-editing` (PR #27 and #28). Decided with the maintainer:
+  genres per recording; changing the album of selected tracks moves them. Only 3.3 is open
+  (waits for transcoding and tagged copies). `metadata-lookup` is archived with its refresh.
+- **In progress:** change `search` on branch `feat/search` (one pull request). Decided with the
+  maintainer: library items only (artists, albums, tracks; album and artist context); works,
+  videos, playlists and their filters join with their domains (`docs/roadmap.md`); offline
+  search moved to `offline-sync`; the server is the only parser of the syntax.
+- **Next:** see `docs/roadmap.md` (milestone 2: Streaming and Local views with listening).
   `effective-quality-duplicate-checks` covers CD import and sources only; it waits for them.
 
 ## Working conventions
@@ -101,5 +103,10 @@ _Last updated: 2026-10-23_
   `drop schema public cascade; create schema public;`.
 - Link probes and hardlinks need source and target in one mount: Linux refuses `link()` and
   reflinks across mount points (`EXDEV`), even on the same disk. Tests simulate `EXDEV`.
+- SQLAlchemy `before_commit` handlers may run synchronous SQL under the asyncio extension
+  (the search index uses it); select columns, not entities, there: bulk updates with
+  `synchronize_session=False` leave loaded entities stale.
+- Search performance at 500,000 tracks depends on narrow document rows and partial GIN indexes
+  per item type; check `tests/test_search_performance.py` after changing documents or queries.
 - The local FFmpeg must have the `chromaprint` and `hash` muxers (build the `ffmpeg` stage of
   `server/Containerfile` with `podman build --target ffmpeg` and copy `ffmpeg`/`ffprobe` out).

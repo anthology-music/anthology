@@ -7,6 +7,7 @@ import anthology.models  # noqa: F401  (registers all tables)
 from anthology.core.config import Settings
 from anthology.db import Base
 from anthology.db.migrations import current_revisions, downgrade, head_revisions, upgrade
+from anthology.search.models import ENGINE_SPECIFIC
 
 
 # Rows left by earlier tests would block the downgrade (SQLite recreates tables in batch mode).
@@ -27,7 +28,9 @@ async def test_migrations_match_models(engine: AsyncEngine) -> None:
                 "compare_type": True,
                 # like migrations/env.py: only tables of Base.metadata (not the demo table)
                 "include_name": lambda name, type_, _parents: (
-                    type_ != "table" or name in Base.metadata.tables
+                    name in Base.metadata.tables
+                    if type_ == "table"
+                    else name not in ENGINE_SPECIFIC
                 ),
             },
         )
