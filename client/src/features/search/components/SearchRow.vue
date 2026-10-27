@@ -5,7 +5,12 @@
     :release="row as unknown as LibraryReleaseRow"
     show-artist
   />
-  <TrackRow v-else :track="row as unknown as LibraryTrackRow" context="library" />
+  <PlayableTrackRow
+    v-else
+    :track="row as unknown as LibraryTrackRow"
+    context="library"
+    :rule="rule ?? null"
+  />
 </template>
 
 <script setup lang="ts">
@@ -13,10 +18,12 @@ import type { LibraryArtistRow, LibraryReleaseRow, LibraryTrackRow } from '@anth
 
 import ArtistRow from '@/features/library/components/ArtistRow.vue';
 import ReleaseRow from '@/features/library/components/ReleaseRow.vue';
-import TrackRow from '@/features/library/components/TrackRow.vue';
+import PlayableTrackRow from '@/features/playback/components/PlayableTrackRow.vue';
+import type { PlayRule } from '@/features/playback/store';
 
 import type { ItemType } from '../query';
 
-/** A search result shown with the library's row of its type. */
-defineProps<{ type: ItemType; row: Record<string, unknown> }>();
+/** A search result shown with the library's row of its type; tracks play the results
+ * (``rule``) from this track. */
+defineProps<{ type: ItemType; row: Record<string, unknown>; rule?: PlayRule | null }>();
 </script>

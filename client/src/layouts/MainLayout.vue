@@ -53,6 +53,10 @@
     <q-page-container>
       <router-view />
     </q-page-container>
+
+    <q-footer v-if="auth.user" class="main-footer">
+      <PlayerBar />
+    </q-footer>
   </q-layout>
 </template>
 
@@ -63,6 +67,7 @@ import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 
 import ConnectionState from '@/components/ConnectionState.vue';
+import PlayerBar from '@/features/playback/components/PlayerBar.vue';
 import ReviewNavCount from '@/features/review/components/ReviewNavCount.vue';
 import { useAuthStore } from '@/features/users/store';
 import { useSyncStore } from '@/sync/store';

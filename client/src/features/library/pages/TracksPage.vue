@@ -30,7 +30,12 @@
         >
           <TrackRow :track="row as unknown as LibraryTrackRow" context="library" />
         </SelectableRow>
-        <TrackRow v-else :track="row as unknown as LibraryTrackRow" context="library" />
+        <PlayableTrackRow
+          v-else
+          :track="row as unknown as LibraryTrackRow"
+          context="library"
+          :rule="{ list: 'tracks' }"
+        />
       </template>
     </LibraryList>
   </section>
@@ -41,6 +46,7 @@ import type { LibraryTrackRow } from '@anthology/api-types';
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import PlayableTrackRow from '@/features/playback/components/PlayableTrackRow.vue';
 import EditBar from '@/features/tagging/components/EditBar.vue';
 import EditModeSwitch from '@/features/tagging/components/EditModeSwitch.vue';
 import SelectableRow from '@/features/tagging/components/SelectableRow.vue';

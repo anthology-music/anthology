@@ -97,7 +97,7 @@
         uncached
       >
         <template #default="{ row }">
-          <SearchRow :type="type" :row="row" />
+          <SearchRow :type="type" :row="row" :rule="playRule" />
         </template>
       </LibraryList>
       <TagEditor
@@ -167,6 +167,7 @@ const context = computed<SearchContext>(() => ({
 const hasContext = computed(() => Boolean(context.value.release_id || context.value.artist_id));
 const params = computed(() => searchParams(q.value, context.value));
 const paramsKey = computed(() => JSON.stringify(params.value));
+const playRule = computed(() => searchRule(q.value, context.value));
 
 // --- tokens and chips ---------------------------------------------------------------------
 

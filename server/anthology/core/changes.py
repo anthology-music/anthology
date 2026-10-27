@@ -115,6 +115,7 @@ async def record_changes(
     entity_ids: Iterable[uuid.UUID],
     operation: ChangeOperation,
     scope: ChangeScope,
+    owner_user_id: uuid.UUID | None = None,
 ) -> int:
     """Bulk variant of ``record_change`` for many rows (one insert, one notification).
 
@@ -127,6 +128,7 @@ async def record_changes(
             "entity_id": entity_id,
             "operation": operation,
             "scope": scope,
+            "owner_user_id": owner_user_id,
             "changed_at": now,
         }
         for entity_id in dict.fromkeys(entity_ids)

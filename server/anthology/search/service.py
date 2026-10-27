@@ -2,7 +2,7 @@
 
 import uuid
 
-from sqlalchemy import Select, select
+from sqlalchemy import ColumnElement, Select, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from anthology.search.matching import Matcher
@@ -27,6 +27,22 @@ def selection(
         parse(q), Scope.of(release_id, artist_id), item_type
     )
     return select(SearchDocument.item_id).where(*conditions)
+
+
+def ordered(
+    q: str,
+    *,
+    postgresql: bool,
+    item_type: str = TRACK,
+    release_id: uuid.UUID | None = None,
+    artist_id: uuid.UUID | None = None,
+) -> tuple[Select, list[ColumnElement]]:
+    """All matching items (one column, uncapped) and the result order (e.g. to play them)."""
+    matcher = Matcher(postgresql)
+    query = parse(q)
+    conditions = matcher.conditions(query, Scope.of(release_id, artist_id), item_type)
+    order = [matcher.bucket(query), SearchDocument.sort_key, SearchDocument.item_id]
+    return select(SearchDocument.item_id).where(*conditions), order
 
 
 async def find(

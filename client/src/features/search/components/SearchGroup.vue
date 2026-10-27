@@ -16,7 +16,7 @@
     <p v-if="subscription.total === 0" class="text-muted">{{ t('search.none') }}</p>
     <ul v-else class="search-group__rows">
       <li v-for="row in rows" :key="String(row.id)">
-        <SearchRow :type="type" :row="row" />
+        <SearchRow :type="type" :row="row" :rule="playRule" />
       </li>
     </ul>
   </section>
@@ -43,6 +43,13 @@ const subscription = useSubscription(STREAMS[props.type], props.params, [0, PREV
   cache: false,
 });
 const shown = useResultCount(subscription);
+// Playing a track plays the search results from it.
+const playRule = {
+  list: 'search' as const,
+  q: (props.params.q as string | undefined) ?? '',
+  release_id: (props.params.release_id as string | undefined) ?? null,
+  artist_id: (props.params.artist_id as string | undefined) ?? null,
+};
 const rows = computed(() =>
   [...Array(Math.min(PREVIEW, subscription.value.total ?? 0)).keys()]
     .map((position) => subscription.value.rows.get(position))

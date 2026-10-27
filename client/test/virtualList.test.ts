@@ -1,4 +1,4 @@
-import type { ServerMessage } from '@anthology/api-types';
+import type { ClientMessage, ServerMessage } from '@anthology/api-types';
 import { flushPromises } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -29,8 +29,14 @@ async function demoPage() {
   socket.open();
   await vi.waitFor(() => expect(socket.last('hello')).toBeDefined());
   socket.receive(welcome());
-  await vi.waitFor(() => expect(socket.last('subscribe')).toBeDefined());
-  const sub = socket.last('subscribe')!.sub;
+  // The demo list's subscription (the player subscribes to its state as well).
+  const demo = () =>
+    socket.sent.find(
+      (message): message is Extract<ClientMessage, { type: 'subscribe' }> =>
+        message.type === 'subscribe' && message.data.stream === 'demo.items',
+    );
+  await vi.waitFor(() => expect(demo()).toBeDefined());
+  const sub = demo()!.sub;
   const send = (message: ServerMessage) => socket.receive(message);
   return { wrapper, socket, sub, send };
 }

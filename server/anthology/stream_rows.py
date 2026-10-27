@@ -16,6 +16,7 @@ from anthology.library.schemas import (
     MaintenanceRunRow,
 )
 from anthology.library_import.schemas import LibraryImportRow
+from anthology.playback.schemas import PlayQueueEntryRow, PlayQueueStateRow
 from anthology.quality_analysis.schemas import QualitySummaryRow
 from anthology.review import schemas as review
 from anthology.review.schemas import ReviewItemRow
@@ -42,6 +43,8 @@ ROW_SCHEMAS: dict[str, type[BaseModel]] = {
     "search.artists": LibraryArtistRow,
     "search.releases": LibraryReleaseRow,
     "search.tracks": LibraryTrackRow,
+    "playback.queue": PlayQueueEntryRow,
+    "playback.state": PlayQueueStateRow,
 }
 
 # Typed content of row fields that differ per row kind (the evidence and proposal of each

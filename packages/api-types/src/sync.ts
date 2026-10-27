@@ -63,6 +63,8 @@ export interface SyncProtocol {
     'search.artists'?: LibraryArtistRow;
     'search.releases'?: LibraryReleaseRow;
     'search.tracks'?: LibraryTrackRow;
+    'playback.queue'?: PlayQueueEntryRow;
+    'playback.state'?: PlayQueueStateRow;
   };
   /**
    * Typed content of untyped row fields (e.g. review evidence).
@@ -403,6 +405,32 @@ export interface ChangeSetRow {
   undo_of: string | null;
   undone_by: string | null;
   undoable: boolean;
+}
+/**
+ * One entry of the queue with its track's library row.
+ */
+export interface PlayQueueEntryRow {
+  id: string;
+  key: unknown[];
+  position: number;
+  track: LibraryTrackRow;
+}
+/**
+ * The queue of this device: its generation (the entries list to subscribe), the current
+ * entry with its track, the position and whether it plays.
+ */
+export interface PlayQueueStateRow {
+  id: string;
+  key: unknown[];
+  generation: string;
+  current_entry_id: string | null;
+  current: LibraryTrackRow | null;
+  next_entry_id: string | null;
+  position_ms: number;
+  playing: boolean;
+  entries: number;
+  shortened: boolean;
+  updated_at: string;
 }
 export interface RecordingMatchEvidence {
   subject: RecordingSide;

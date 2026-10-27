@@ -449,6 +449,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/media/originals/{audio_file_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Media Original
+         * @description The bytes of an active original, with range requests (spec: playback, Playback on this
+         *     device). Every signed-in user may play every library item; the grant is checked by
+         *     ``MediaAccess`` (signature, expiry, revocation).
+         */
+        get: operations["media_original_api_v1_media_originals__audio_file_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/metadata-lookup/status": {
         parameters: {
             query?: never;
@@ -460,6 +482,121 @@ export interface paths {
         get: operations["lookup_status_api_v1_metadata_lookup_status_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/playback/queue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start
+         * @description Play tracks (spec: playback, Starting playback).
+         */
+        post: operations["start_api_v1_playback_queue_post"];
+        /** Clear */
+        delete: operations["clear_api_v1_playback_queue_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/playback/queue/entries/{entry_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove */
+        delete: operations["remove_api_v1_playback_queue_entries__entry_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/playback/queue/entries/{entry_id}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move */
+        post: operations["move_api_v1_playback_queue_entries__entry_id__move_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/playback/skip": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Skip
+         * @description Next (``by`` = 1) or previous (-1) entry of the queue, from its start.
+         */
+        post: operations["skip_api_v1_playback_skip_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/playback/state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set State
+         * @description The client's report of the current entry, its position and whether it plays.
+         */
+        put: operations["set_state_api_v1_playback_state_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/playback/urls": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Urls
+         * @description Signed URLs of the originals of queue entries (valid for an hour).
+         */
+        post: operations["urls_api_v1_playback_urls_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -752,6 +889,11 @@ export interface components {
             /** Job Id */
             job_id: string | null;
         };
+        /**
+         * AudioFormat
+         * @enum {string}
+         */
+        AudioFormat: "flac" | "wav" | "aiff" | "alac" | "mp3" | "aac" | "opus" | "vorbis";
         /**
          * BitrateSetting
          * @enum {string}
@@ -1144,6 +1286,24 @@ export interface components {
             /** New Password */
             new_password?: string | null;
         };
+        /** MediaUrl */
+        MediaUrl: {
+            /** Entry Id */
+            entry_id: string;
+            /** Expires At */
+            expires_at: string | null;
+            format: components["schemas"]["AudioFormat"] | null;
+            /** Url */
+            url: string | null;
+        };
+        /**
+         * MoveIn
+         * @description The entry to move behind; None moves to the front.
+         */
+        MoveIn: {
+            /** After */
+            after?: string | null;
+        };
         /** Page[DeviceOut] */
         Page_DeviceOut_: {
             /** Items */
@@ -1310,6 +1470,59 @@ export interface components {
             /** Required */
             required: boolean;
         };
+        /** SkipIn */
+        SkipIn: {
+            /**
+             * By
+             * @enum {integer}
+             */
+            by: 1 | -1;
+            /**
+             * Playing
+             * @default true
+             */
+            playing: boolean;
+        };
+        /** SkipOut */
+        SkipOut: {
+            /** Current Entry Id */
+            current_entry_id: string | null;
+        };
+        /**
+         * StartIn
+         * @description Tracks to play (``ids`` in their order, or the tracks of a list ``rule`` in the list's
+         *     order): ``replace`` the queue and start at ``start``, insert them after the current entry
+         *     (``next``) or at the end (``append``).
+         */
+        StartIn: {
+            /** Ids */
+            ids?: string[] | null;
+            /**
+             * Mode
+             * @default replace
+             * @enum {string}
+             */
+            mode: "replace" | "next" | "append";
+            rule?: components["schemas"]["EditRule"] | null;
+            /** Start */
+            start?: string | null;
+        };
+        /** StartOut */
+        StartOut: {
+            /** Entries */
+            entries: number;
+            /** Shortened */
+            shortened: boolean;
+        };
+        /** StateIn */
+        StateIn: {
+            /** Current Entry Id */
+            current_entry_id: string | null;
+            /** Playing */
+            playing: boolean;
+            /** Position Ms */
+            position_ms: number;
+        };
         /**
          * Theme
          * @enum {string}
@@ -1344,6 +1557,11 @@ export interface components {
             change_set_id: string;
             /** Job Id */
             job_id: string | null;
+        };
+        /** UrlsIn */
+        UrlsIn: {
+            /** Entry Ids */
+            entry_ids: string[];
         };
         /** UserCreate */
         UserCreate: {
@@ -2234,6 +2452,37 @@ export interface operations {
             };
         };
     };
+    media_original_api_v1_media_originals__audio_file_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                audio_file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     lookup_status_api_v1_metadata_lookup_status_get: {
         parameters: {
             query?: never;
@@ -2250,6 +2499,216 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LookupStatusOut"];
+                };
+            };
+        };
+    };
+    start_api_v1_playback_queue_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StartOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    clear_api_v1_playback_queue_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    remove_api_v1_playback_queue_entries__entry_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    move_api_v1_playback_queue_entries__entry_id__move_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MoveIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    skip_api_v1_playback_skip_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SkipIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SkipOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_state_api_v1_playback_state_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    urls_api_v1_playback_urls_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UrlsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaUrl"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
