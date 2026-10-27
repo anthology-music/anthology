@@ -42,6 +42,18 @@
           <p v-if="release?.edition" class="text-muted library-header__meta">
             {{ release.edition }}
           </p>
+          <q-btn
+            v-if="release && release.track_count"
+            unelevated
+            rounded
+            no-caps
+            color="primary"
+            icon="play_arrow"
+            :label="t('playback.playAlbum')"
+            class="library-header__play"
+            data-testid="play-release"
+            @click="player.playList(listRule)"
+          />
           <router-link
             v-if="release"
             :to="{ name: 'search', query: { q: '', release_id: releaseId, in: release.title } }"
@@ -101,10 +113,11 @@
               :disc-count="release?.disc_count ?? 1"
             />
           </SelectableRow>
-          <TrackRow
+          <PlayableTrackRow
             v-else
             :track="row as unknown as LibraryTrackRow"
             context="release"
+            :rule="listRule"
             :disc-count="release?.disc_count ?? 1"
           />
         </template>
@@ -118,6 +131,8 @@ import type { LibraryReleaseRow, LibraryTrackRow } from '@anthology/api-types';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import PlayableTrackRow from '@/features/playback/components/PlayableTrackRow.vue';
+import { usePlayerStore } from '@/features/playback/store';
 import EditBar from '@/features/tagging/components/EditBar.vue';
 import EditModeSwitch from '@/features/tagging/components/EditModeSwitch.vue';
 import SelectableRow from '@/features/tagging/components/SelectableRow.vue';
@@ -141,6 +156,7 @@ const { entry: release, state } = useEntry<LibraryReleaseRow>('library.release',
 });
 
 const auth = useAuthStore();
+const player = usePlayerStore();
 const editing = ref(false);
 const editingRelease = ref(false);
 const list = ref<InstanceType<typeof LibraryList> | null>(null);

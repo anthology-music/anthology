@@ -8,12 +8,12 @@
 ## 2. Signed URLs (server)
 
 - [x] 2.1 Implement URL signing and verification with key generation and rotation; verify with tests for valid, expired, tampered and rotated-key URLs
-- [ ] 2.2 Protect all media endpoints (originals, transcodes, tagged copies, HLS playlists and segments) with signed URLs including range requests; verify with API tests per endpoint
+- [ ] 2.2 Protect all media endpoints (originals, transcodes, tagged copies, HLS playlists and segments) with signed URLs including range requests; verify with API tests per endpoint (originals done with `local-playback`; transcodes, tagged copies and HLS wait for their endpoints)
 - [x] 2.3 Add the revocation check with cache invalidation on device sign-out and user deactivation; verify with tests that requests fail immediately after each
 
 ## 3. Clients and outputs
 
-- [ ] 3.1 Request and refresh signed URLs for the play queue in the client; verify with a unit test that URLs are refreshed before expiry
+- [x] 3.1 Request and refresh signed URLs for the play queue in the client; verify with a unit test that URLs are refreshed before expiry
 - [ ] 3.2 Issue output-bound URLs with queue-length expiry (max 24 h) and refresh unplayed items in the Raumfeld adapter; verify with adapter tests using a fake clock
 
 ## 4. WebSocket token renewal

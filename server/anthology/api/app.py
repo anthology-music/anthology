@@ -30,6 +30,8 @@ from anthology.library_import.streams import STREAMS as LIBRARY_IMPORT_STREAMS
 from anthology.metadata_lookup import api as metadata_lookup_api
 from anthology.metadata_lookup import refresh as metadata_refresh
 from anthology.metadata_lookup.service import LookupService, check_mirror
+from anthology.playback import api as playback_api
+from anthology.playback import streams as playback_streams
 from anthology.quality_analysis import api as quality_analysis_api
 from anthology.quality_analysis import review as quality_review
 from anthology.quality_analysis import service as quality_analysis
@@ -178,6 +180,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(review_api.router, prefix=API_PREFIX)
     app.include_router(tagging_api.router, prefix=API_PREFIX)
     app.include_router(search_api.router, prefix=API_PREFIX)
+    app.include_router(playback_api.router, prefix=API_PREFIX)
     if settings.web_dir is not None:
         mount_web(app, settings.web_dir)  # last: its fallback must not shadow API routes
     return app
@@ -277,6 +280,7 @@ def _streams(settings: Settings, review_handlers: review.HandlerRegistry) -> Str
         *LIBRARY_STREAMS,
         *LIBRARY_IMPORT_STREAMS,
         *QUALITY_ANALYSIS_STREAMS,
+        *playback_streams.STREAMS,
     ):
         registry.register(stream())
     for handler_stream in (

@@ -17,7 +17,7 @@ across sessions goes here, so every agent and every maintainer sees the same sta
 
 ## Current state
 
-_Last updated: 2026-10-26_
+_Last updated: 2026-10-27_
 
 - **Milestone 1 (Foundation)** is implemented: server skeleton, sync protocol with progressive
   loading, users and devices, jobs (core and view), client foundation with sign-in, sync layer and
@@ -52,11 +52,15 @@ _Last updated: 2026-10-26_
 - **Open, implemented in part:** `tag-editing` (PR #27 and #28). Decided with the maintainer:
   genres per recording; changing the album of selected tracks moves them. Only 3.3 is open
   (waits for transcoding and tagged copies). `metadata-lookup` is archived with its refresh.
-- **Archived:** `search` (branch `feat/search`, one pull request). Decided with the
-  maintainer: library items only (artists, albums, tracks; album and artist context); works,
+- **Archived:** `search` (PR #29). Decided with the maintainer: library items only (artists, albums, tracks; album and artist context); works,
   videos, playlists and their filters join with their domains (`docs/roadmap.md`); offline
   search moved to `offline-sync`; the server is the only parser of the syntax.
-- **Next:** see `docs/roadmap.md` (milestone 2: Streaming and Local views with listening).
+- **In progress:** change `local-playback` on branch `feat/local-playback` (one pull request):
+  listening in the browser. Decided with the maintainer: originals only until transcoding
+  (milestone 3), the queue lives on the server (one per user and device), play history and
+  counts follow with `personal-data`. `signed-media-urls` 3.1 is done; its 2.2 is done for
+  originals only.
+- **Next:** see `docs/roadmap.md` (milestone 2 is complete with listening; then milestone 3).
   `effective-quality-duplicate-checks` covers CD import and sources only; it waits for them.
 
 ## Working conventions

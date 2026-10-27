@@ -894,6 +894,27 @@ package "Playback" {
     +name : String
   }
 
+  class PlayQueue {
+    Queue of one user on one device
+    (change local-playback); rewriting all
+    entries changes the generation
+    ==
+    +id : UUID
+    +generation : UUID
+    +currentEntryId : Long [0..1]
+    +positionMs : Integer
+    +playing : Boolean
+    +shortened : Boolean
+    +updatedAt : DateTime
+  }
+
+  class PlayQueueEntry {
+    At most 10,000 per queue
+    ==
+    +id : Long
+    +position : Long
+  }
+
   enum OutputAdapter {
     CLIENT
     RAUMFELD
@@ -1256,6 +1277,10 @@ AuditLog "0..*" -- "1" User : by >
 
 ' Relationships – Playback
 OutputZone "0..1" o-- "1..*" OutputDevice
+User "1" *-- "0..*" PlayQueue
+Device "1" *-- "0..*" PlayQueue
+PlayQueue "1" *-- "0..*" PlayQueueEntry
+PlayQueueEntry "0..*" -- "1" Track
 
 ' Relationships – Works & Publishers
 Work "1" -- "0..*" WorkRelation : source >

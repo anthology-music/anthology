@@ -320,3 +320,32 @@ test('searching, filtering and opening a result', async ({ page }) => {
   await expect(page).toHaveURL(/\/local\/releases\//);
   await expect(page.getByTestId('release-title')).toBeVisible();
 });
+
+test('playing an imported album, seeking and resuming after a reload', async ({ page }) => {
+  await signIn(page);
+  await page.goto('/local/albums');
+  const kassette = page.locator('[data-testid^="release-"]').filter({ hasText: 'Kassette 1985' });
+  await kassette.first().click();
+  await expect(page.getByTestId('release-title')).toHaveText('Kassette 1985');
+
+  await page.getByTestId('play-release').click();
+  await expect(page.getByTestId('player-title')).toHaveText('Frühling');
+  // The browser plays the original: the position moves.
+  await expect(page.getByTestId('player-position')).not.toHaveText('0:00', { timeout: 15_000 });
+  await expect(page.getByTestId('player-duration')).toHaveText('0:08');
+
+  await page.getByTestId('player-next').click();
+  await expect(page.getByTestId('player-title')).toHaveText('Sommer');
+  const seek = page.getByTestId('player-seek');
+  const box = (await seek.boundingBox())!;
+  await page.mouse.click(box.x + box.width * 0.75, box.y + box.height / 2);
+  await expect(page.getByTestId('player-position')).toHaveText(/0:0[5-8]/);
+  await page.getByTestId('player-toggle').click();
+  await expect(page.getByTestId('player-toggle')).toHaveAttribute('aria-label', 'Abspielen');
+  const paused = await page.getByTestId('player-position').textContent();
+
+  await page.reload();
+  await expect(page.getByTestId('player-title')).toHaveText('Sommer');
+  await expect(page.getByTestId('player-position')).toHaveText(paused!);
+  await expect(page.getByTestId('player-toggle')).toHaveAttribute('aria-label', 'Abspielen');
+});
