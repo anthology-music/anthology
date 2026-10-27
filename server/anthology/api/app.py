@@ -43,6 +43,9 @@ from anthology.review import streams as review_streams
 from anthology.search import api as search_api
 from anthology.search import jobs as search_jobs
 from anthology.search import streams as search_streams
+from anthology.sources import api as sources_api
+from anthology.sources import streams as sources_streams
+from anthology.sources.service import SourceServices
 from anthology.sync import api as sync_api
 from anthology.sync.background import ChangeBackground
 from anthology.sync.feed import ChangeFeed
@@ -113,6 +116,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.tag_writer = tag_writer
         transcoder = Transcoder(sessionmaker, settings, tagger)
         app.state.transcoder = transcoder
+        sources = SourceServices(sessionmaker, settings, app.state.source_transport)
+        app.state.sources = sources
         lookups, mirror_monitor = _lookups(settings, sessionmaker)
         app.state.lookups = lookups
         identify = app.state.job_handlers.get(identification.JOB_TYPE)
@@ -152,6 +157,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             await scheduler.start()
             await tagger_monitor.start()
             await tag_writer.start()
+            await sources.start()
             if mirror_monitor is not None:
                 await mirror_monitor.start()
         try:
@@ -159,6 +165,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         finally:
             if mirror_monitor is not None:
                 await mirror_monitor.stop()
+            await sources.stop()
             await transcoder.aclose()
             await lookups.aclose()
             await tag_writer.stop()
@@ -172,6 +179,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(title="Anthology", version=__version__, lifespan=lifespan)
     app.state.review_handlers = _review_handlers()
     app.state.streams = _streams(settings, app.state.review_handlers)
+    # Tests: HTTP transports of the source services (e.g. the fake service in process).
+    app.state.source_transport = None
     app.state.job_handlers = _job_handlers(settings)
     app.state.schedules = _schedules()
     app.include_router(health.router, prefix=API_PREFIX)
@@ -186,6 +195,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(tagging_api.router, prefix=API_PREFIX)
     app.include_router(search_api.router, prefix=API_PREFIX)
     app.include_router(playback_api.router, prefix=API_PREFIX)
+    app.include_router(sources_api.router, prefix=API_PREFIX)
     if settings.web_dir is not None:
         mount_web(app, settings.web_dir)  # last: its fallback must not shadow API routes
     return app
@@ -286,6 +296,7 @@ def _streams(settings: Settings, review_handlers: review.HandlerRegistry) -> Str
         *LIBRARY_IMPORT_STREAMS,
         *QUALITY_ANALYSIS_STREAMS,
         *playback_streams.STREAMS,
+        *sources_streams.STREAMS,
     ):
         registry.register(stream())
     for handler_stream in (

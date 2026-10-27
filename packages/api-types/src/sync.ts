@@ -35,6 +35,10 @@ export type ReviewOrigin = 'fuzzy_match' | 'musicbrainz' | 'import' | 'quality_a
 export type Confidence = 'high' | 'medium' | 'low';
 export type ReviewStatus = 'open' | 'accepted' | 'rejected' | 'deferred' | 'obsolete';
 export type ChangeSetKind = 'edit' | 'undo';
+/**
+ * Why a configured service is unavailable (spec: Source status).
+ */
+export type SourceProblem = 'unreachable' | 'incompatible' | 'login_failed' | 'login_missing';
 
 export interface SyncProtocol {
   client?: ClientMessage;
@@ -65,6 +69,7 @@ export interface SyncProtocol {
     'search.tracks'?: LibraryTrackRow;
     'playback.queue'?: PlayQueueEntryRow;
     'playback.state'?: PlayQueueStateRow;
+    'sources.services'?: SourceServiceRow;
   };
   /**
    * Typed content of untyped row fields (e.g. review evidence).
@@ -432,6 +437,29 @@ export interface PlayQueueStateRow {
   entries: number;
   shortened: boolean;
   updated_at: string;
+}
+/**
+ * A configured source service; ``problem`` explains why it is unavailable (spec: Source
+ * status).
+ */
+export interface SourceServiceRow {
+  id: string;
+  key: unknown[];
+  name: string;
+  source: string | null;
+  short: string | null;
+  version: string | null;
+  available: boolean;
+  problem: SourceProblem | null;
+  message: string | null;
+  video: boolean;
+  search: boolean;
+  qualities: string[];
+  link_patterns: string[];
+  login_required: boolean;
+  logged_in: boolean | null;
+  rate_limited_until: string | null;
+  checked_at: string;
 }
 export interface RecordingMatchEvidence {
   subject: RecordingSide;

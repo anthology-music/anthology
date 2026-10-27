@@ -102,6 +102,7 @@ Licenses as published on PyPI/npm or by the projects. ⚠ marks components whose
 | asyncpg | Apache-2.0 | PostgreSQL driver |
 | argon2-cffi | MIT | password hashing |
 | PyJWT | MIT | access tokens |
+| cryptography | Apache-2.0 OR BSD-3-Clause | AES-GCM encryption of source service credentials |
 | pytest, pytest-asyncio, ruff | MIT / Apache-2.0 / MIT | tests and linting (development only) |
 | httpx-ws, wsproto | MIT / MIT | WebSocket tests (development only) |
 | pyacoustid | MIT | fingerprint lookup |
