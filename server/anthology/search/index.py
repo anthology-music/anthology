@@ -209,16 +209,20 @@ def _insert_ignoring(conn: Executor):
     return pg_insert if dialect == "postgresql" else sqlite_insert
 
 
-def rewrite(conn: Executor, item_type: str, ids: Iterable[uuid.UUID]) -> int:
-    """Rewrite the documents of ``ids`` (removing those of deleted items); returns the count."""
+def rewrite(
+    conn: Executor, item_type: str, ids: Iterable[uuid.UUID], *, replace: bool = True
+) -> int:
+    """Rewrite the documents of ``ids`` (removing those of deleted items); returns the count.
+    ``replace=False`` only writes (the documents were all removed before)."""
     written = 0
     insert = _insert_ignoring(conn)
     for chunk in _chunks(ids):
-        conn.execute(
-            delete(SearchDocument).where(
-                SearchDocument.item_type == item_type, SearchDocument.item_id.in_(chunk)
+        if replace:
+            conn.execute(
+                delete(SearchDocument).where(
+                    SearchDocument.item_type == item_type, SearchDocument.item_id.in_(chunk)
+                )
             )
-        )
         docs = _BUILDERS[item_type](conn, chunk)
         if not docs:
             continue
@@ -284,7 +288,12 @@ _SOURCES = {ARTIST: Artist.id, RELEASE: Release.id, TRACK: Track.id}
 
 
 def rebuild_batch(
-    conn: Executor, item_type: str, after: uuid.UUID | None, limit: int
+    conn: Executor,
+    item_type: str,
+    after: uuid.UUID | None,
+    limit: int,
+    *,
+    replace: bool = True,
 ) -> uuid.UUID | None:
     """Rewrite the documents of the next ``limit`` items after ``after`` (by ID); returns the
     last ID, or None when the items are exhausted."""
@@ -295,7 +304,7 @@ def rebuild_batch(
     ids = list(conn.execute(query).scalars())
     if not ids:
         return None
-    rewrite(conn, item_type, ids)
+    rewrite(conn, item_type, ids, replace=replace)
     return ids[-1]
 
 
@@ -311,12 +320,15 @@ def remove_stale(conn: Executor) -> None:
 
 
 def rebuild_all(conn: Executor, batch: int = 5_000) -> None:
-    """Rebuild the whole index in the caller's transaction (generator, tests)."""
+    """Rebuild the whole index in the caller's transaction (generator, tests).
+
+    The documents are removed once up front and then only written: deleting them again per
+    batch would scan the dead rows of the removed index (minutes after a large library)."""
     conn.execute(delete(SearchDocument))
     conn.execute(delete(SearchTerm))
     for item_type in ITEM_TYPES:
         after = None
-        while (after := rebuild_batch(conn, item_type, after, batch)) is not None:
+        while (after := rebuild_batch(conn, item_type, after, batch, replace=False)) is not None:
             pass
     set_version(conn)
 
