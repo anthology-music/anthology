@@ -42,6 +42,13 @@
           <p v-if="release?.edition" class="text-muted library-header__meta">
             {{ release.edition }}
           </p>
+          <router-link
+            v-if="release"
+            :to="{ name: 'search', query: { q: '', release_id: releaseId, in: release.title } }"
+            data-testid="search-in-release"
+          >
+            <q-icon name="search" aria-hidden="true" /> {{ t('search.inRelease') }}
+          </router-link>
         </div>
         <div v-if="auth.canEdit" class="library-header__actions">
           <EditModeSwitch v-model="editing" />

@@ -293,3 +293,30 @@ test('accepting a group in the conflict list', async ({ page }) => {
   await page.getByTestId('group-all').click();
   await expect(page.getByTestId('conflicts-total')).not.toContainText('0 Konflikte');
 });
+
+test('searching, filtering and opening a result', async ({ page }) => {
+  await signIn(page);
+  await page.goto('/local/albums');
+  await page.getByTestId('search-input').fill('Polka');
+  await expect(page).toHaveURL(/\/local\/search\?q=Polka$/);
+
+  // Counts per type first, then the first rows.
+  await expect(page.getByTestId('search-count-track')).toHaveText(/^[\d.]+\+?$/);
+  await expect(page.getByTestId('search-group-track')).toContainText('Polka');
+
+  // A filter chip narrows the search to albums.
+  await page.getByTestId('search-add-filter').click();
+  await page.getByTestId('search-filter-field').click();
+  await page.getByRole('option', { name: 'Art' }).click();
+  await page.getByTestId('search-filter-value').fill('album');
+  await page.getByTestId('search-filter-add').click();
+  await expect(page.getByTestId('search-input')).toHaveValue('Polka type:album');
+  await expect(page.getByTestId('search-chip-type')).toBeVisible();
+  await expect(page.getByTestId('search-group-track')).toHaveCount(0);
+
+  const release = page.locator('[data-testid="search-group-release"] [data-testid^="release-"]');
+  await expect(release.first()).toBeVisible();
+  await release.first().click();
+  await expect(page).toHaveURL(/\/local\/releases\//);
+  await expect(page.getByTestId('release-title')).toBeVisible();
+});

@@ -545,6 +545,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/search/parse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Parse Query
+         * @description The tokens of a search text with their errors (the client's filter chips).
+         */
+        get: operations["parse_query_api_v1_search_parse_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/setup": {
         parameters: {
             query?: never;
@@ -885,7 +905,8 @@ export interface components {
         };
         /**
          * EditRule
-         * @description The tracks of a library list: one release, one artist's releases, or all tracks.
+         * @description The tracks of a library list: one release, one artist's releases, all tracks, or the
+         *     tracks of a search (``q``, optionally within ``release_id`` or ``artist_id``).
          */
         EditRule: {
             /** Artist Id */
@@ -894,7 +915,9 @@ export interface components {
              * List
              * @enum {string}
              */
-            list: "release_tracks" | "artist_tracks" | "tracks";
+            list: "release_tracks" | "artist_tracks" | "tracks" | "search";
+            /** Q */
+            q?: string | null;
             /** Release Id */
             release_id?: string | null;
         };
@@ -1135,6 +1158,13 @@ export interface components {
             /** Next After */
             next_after: string | null;
         };
+        /** ParseOut */
+        ParseOut: {
+            /** Tokens */
+            tokens: components["schemas"]["SearchToken"][];
+            /** Types */
+            types: ("artist" | "release" | "track")[];
+        };
         /** PasswordReset */
         PasswordReset: {
             /** New Password */
@@ -1235,6 +1265,31 @@ export interface components {
          * @enum {string}
          */
         ScheduleFrequency: "daily" | "weekly";
+        /**
+         * SearchToken
+         * @description One token of the search text; filters become chips, errors become hints.
+         */
+        SearchToken: {
+            /** End */
+            end: number;
+            /** Error */
+            error?: ("unknown_field" | "unavailable_field" | "missing_value" | "invalid_value" | "invalid_operator") | null;
+            /** Field */
+            field?: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "word" | "phrase" | "filter";
+            /** Op */
+            op?: ("=" | ">" | "<") | null;
+            /** Start */
+            start: number;
+            /** Text */
+            text: string;
+            /** Value */
+            value?: string | null;
+        };
         /**
          * ServiceState
          * @enum {string}
@@ -2312,6 +2367,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReviewDecisionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    parse_query_api_v1_search_parse_get: {
+        parameters: {
+            query: {
+                q: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParseOut"];
                 };
             };
             /** @description Validation Error */

@@ -16,6 +16,7 @@
 - [ ] 3.2 Implement the sync engine with offline bitrate, limit check and warning, Wi-Fi-only rule, metered warning for transfers, resumable downloads and renewal; verify with tests using fake network states and a fake server
 - [ ] 3.3 Implement the offline change outbox; verify with a test that offline plays appear with original times after reconnect
 - [ ] 3.4 Create `client/src/features/offline/` UI (mark/unmark, storage usage, best-effort notice, warnings); verify with component tests
+- [ ] 3.5 Implement offline search over the offline items with a client parser sharing the server parser's test cases and local-only marking; verify with a test that offline results are returned without a connection
 
 ## Workflow follow-up
 

@@ -785,3 +785,10 @@ STREAMS = (
     MaintenanceRunsStream,
     MaintenanceFindingsStream,
 )
+
+
+# Row builders for other lists of library items (search results).
+TRACK_ROW = _TRACK_ROW
+artist_row = _artist_row
+release_row = _release_row
+track_row = _track_row

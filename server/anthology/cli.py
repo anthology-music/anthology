@@ -4,6 +4,8 @@ import argparse
 import asyncio
 import sys
 
+# All tables, and the search index maintenance for library writes of commands.
+import anthology.models  # noqa: F401
 from anthology.core.config import Settings, get_settings
 from anthology.db import create_engine
 

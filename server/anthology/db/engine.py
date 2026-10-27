@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 from sqlalchemy.ext.asyncio import create_async_engine as _create_async_engine
 
 from anthology.core.config import Settings
+from anthology.db.trigrams import similarity
 
 
 def create_engine(settings: Settings) -> AsyncEngine:
@@ -24,4 +25,5 @@ def _sqlite_pragmas(dbapi_connection, _connection_record) -> None:
     cursor = dbapi_connection.cursor()
     cursor.execute("PRAGMA journal_mode=WAL")
     cursor.execute("PRAGMA foreign_keys=ON")
+    dbapi_connection.create_function("similarity", 2, similarity, deterministic=True)
     cursor.close()

@@ -30,6 +30,8 @@ const props = defineProps<{
   positionKey: string;
   label: string;
   empty: string;
+  /** Keep the rows out of the local cache (short-lived lists such as search results). */
+  uncached?: boolean;
 }>();
 
 defineSlots<{
@@ -44,11 +46,13 @@ const positions = useLibraryPositions();
 const initialPosition = positions.position(props.positionKey);
 // Start with the window around the restored position, not at the top.
 const start = Math.max(0, initialPosition - 50);
-const subscription = useSubscription(props.stream, props.params ?? {}, [start, start + 100]);
+const subscription = useSubscription(props.stream, props.params ?? {}, [start, start + 100], {
+  cache: !props.uncached,
+});
 const list = ref<InstanceType<typeof VirtualList> | null>(null);
 // Loaded rows by position (e.g. for selecting a range with shift-click).
 const rowAt = (position: number) => subscription.value.rows.get(position);
-defineExpose({ total: () => subscription.value.total });
+defineExpose({ total: () => subscription.value.total, subscription });
 
 onBeforeUnmount(() => {
   if (list.value) positions.remember(props.positionKey, list.value.firstVisible());

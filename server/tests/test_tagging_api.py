@@ -249,6 +249,14 @@ async def test_browsing_stays_within_budget_during_a_bulk_edit(
     print(f"bulk edit of 5,000 recordings: {took:.1f} s, slowest window {max(timings):.2f} s")
 
 
+async def _delta_with(ws, sub: str, field: str, value: str) -> dict:
+    """The first delta of ``sub`` whose row has ``field`` = ``value``."""
+    while True:
+        data = (await ws.recv_type("delta", sub))["data"]
+        if (data.get("row") or {}).get(field) == value:
+            return data
+
+
 async def test_edits_reach_every_list_that_shows_them(app: FastAPI) -> None:
     """Spec: tagging, Propagation of edits (deltas)."""
     async with client_for(app) as client:
@@ -275,8 +283,9 @@ async def test_edits_reach_every_list_that_shows_them(app: FastAPI) -> None:
                     "fields": {"recording": {"title": "Eisfeld (2024)"}},
                 },
             )
-            in_album = (await ws.recv_type("delta", "p"))["data"]
-            in_sampler = (await ws.recv_type("delta", "w"))["data"]
+            # Deltas of the setup may arrive first; wait for the edited row.
+            in_album = await _delta_with(ws, "p", "title", "Eisfeld (2024)")
+            in_sampler = await _delta_with(ws, "w", "title", "Eisfeld (2024)")
             await client.post(
                 EDITS,
                 headers=owner.headers,

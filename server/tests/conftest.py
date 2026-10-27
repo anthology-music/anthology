@@ -6,7 +6,7 @@ down to base and up to head, so all existing tables are dropped.
 
 import gc
 import os
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Iterator
 
 import pytest
 from fastapi import FastAPI
@@ -14,6 +14,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 import anthology.models  # noqa: F401  (registers all tables)
+from anthology.api import app as app_module
 from anthology.api.app import create_app
 from anthology.core.config import Settings
 from anthology.db import Base, create_engine
@@ -29,6 +30,21 @@ def settings(tmp_path_factory: pytest.TempPathFactory) -> Settings:
     return Settings(
         data_dir=data_dir, database_url=TEST_DATABASE_URL, tagger_url="http://127.0.0.1:9"
     )
+
+
+@pytest.fixture(autouse=True, scope="session")
+def offline_lookups() -> Iterator[None]:
+    """Apps created in tests never reach the real MusicBrainz: their lookups use a closed port
+    (9). Tests of the lookups build their own ``LookupService`` with a mock transport."""
+    original = app_module._lookups
+
+    def offline(settings: Settings, sessionmaker):
+        closed = settings.model_copy(update={"musicbrainz_public_url": "http://127.0.0.1:9"})
+        return original(closed, sessionmaker)
+
+    app_module._lookups = offline
+    yield
+    app_module._lookups = original
 
 
 @pytest.fixture(scope="session")

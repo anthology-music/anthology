@@ -1,5 +1,6 @@
 <template>
   <nav class="library-nav" :aria-label="t('library.title')">
+    <SearchField class="library-nav__search" />
     <h2 class="library-nav__title">{{ t('library.title') }}</h2>
     <router-link
       v-for="section in sections"
@@ -20,6 +21,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
 
+import SearchField from '@/features/search/components/SearchField.vue';
 import { useSubscription } from '@/sync/useSubscription';
 
 import { useCounts } from '../numbers';
@@ -79,8 +81,12 @@ const sections = [
 @media (max-width: 839px) {
   .library-nav {
     flex-direction: row;
-    overflow-x: auto;
+    flex-wrap: wrap;
     border-bottom: 1px solid var(--color-border);
+  }
+
+  .library-nav__search {
+    flex: 1 0 100%;
   }
 
   .library-nav__title {

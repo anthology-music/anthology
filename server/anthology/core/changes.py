@@ -9,7 +9,7 @@ also write an audit log entry.
 import enum
 import json
 import uuid
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from contextvars import ContextVar
 from datetime import datetime
 from typing import Any
@@ -65,6 +65,22 @@ class AuditLog(Base):
     at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
 
 
+# Called with the session, the entity type and the IDs of every change entry written, in the
+# writing transaction (e.g. the search index collects the documents to rewrite).
+ChangeListener = Callable[[AsyncSession, str, list[uuid.UUID]], None]
+_listeners: list[ChangeListener] = []
+
+
+def add_change_listener(listener: ChangeListener) -> None:
+    if listener not in _listeners:
+        _listeners.append(listener)
+
+
+def _notify(session: AsyncSession, entity_type: str, entity_ids: list[uuid.UUID]) -> None:
+    for listener in _listeners:
+        listener(session, entity_type, entity_ids)
+
+
 async def record_change(
     session: AsyncSession,
     *,
@@ -86,6 +102,7 @@ async def record_change(
     )
     session.add(entry)
     await session.flush()
+    _notify(session, entity_type, [entity_id])
     if session.bind.dialect.name == "postgresql":
         # Delivered on commit; wakes the sequencer immediately.
         await session.execute(text("SELECT pg_notify('anthology_changes', '')"))
@@ -117,6 +134,7 @@ async def record_changes(
     if not rows:
         return 0
     await session.execute(insert(ChangeLog), rows)
+    _notify(session, entity_type, [row["entity_id"] for row in rows])
     if session.bind.dialect.name == "postgresql":
         await session.execute(text("SELECT pg_notify('anthology_changes', '')"))
     return len(rows)

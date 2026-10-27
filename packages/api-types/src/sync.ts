@@ -60,6 +60,9 @@ export interface SyncProtocol {
     'review.items'?: ReviewItemRow;
     'tagging.changes'?: ChangeSetRow;
     'tagging.conflicts'?: ReviewItemRow;
+    'search.artists'?: LibraryArtistRow;
+    'search.releases'?: LibraryReleaseRow;
+    'search.tracks'?: LibraryTrackRow;
   };
   /**
    * Typed content of untyped row fields (e.g. review evidence).

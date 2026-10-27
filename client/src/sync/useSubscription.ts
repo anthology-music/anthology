@@ -12,9 +12,10 @@ export function useSubscription(
   stream: string,
   params: Record<string, unknown> = {},
   window: [number, number] = [0, 100],
+  options: { cache?: boolean } = {},
 ): ShallowRef<Subscription> {
   const { sync } = getServices();
-  const subscription = shallowRef(sync.subscribe(stream, params, window));
+  const subscription = shallowRef(sync.subscribe(stream, params, window, options));
   const stop = subscription.value.onChange(() => triggerRef(subscription));
   onBeforeUnmount(() => {
     stop();

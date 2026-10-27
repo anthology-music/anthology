@@ -1,5 +1,7 @@
 """Seed a development database with a generated library (``anthology dev seed-library``).
 
+Writes the search documents as well (``search.index.rebuild_all``).
+
 Uses the test library generator from ``tools/library-generator`` (a development dependency,
 not part of production images). Seeding is an offline developer action: it writes no change
 log entries, so connected clients should reconnect afterwards.
@@ -29,6 +31,7 @@ from anthology.library.models import (
     Track,
 )
 from anthology.library.service import sort_key
+from anthology.search import index as search_index
 
 FLUSH_TRACKS = 20_000
 SQLITE_BATCH = 5_000
@@ -71,6 +74,9 @@ async def seed_library(engine: AsyncEngine, tracks: int, reset: bool = False) ->
         await _set_counters(connection, {**loader.totals, **unchecked})
     async with engine.begin() as connection:
         await _analyze(connection)
+    async with engine.begin() as connection:
+        await connection.run_sync(search_index.rebuild_all)
+    await _vacuum_search(engine)
     return {name.value: value for name, value in loader.totals.items()}
 
 
@@ -86,6 +92,17 @@ async def _analyze(connection: AsyncConnection) -> None:
         return
     for table in TABLES:
         await connection.execute(text(f'ANALYZE "{table.name}"'))
+
+
+async def _vacuum_search(engine: AsyncEngine) -> None:
+    """Statistics, visibility map and hint bits of the fresh search tables (PostgreSQL): the
+    first searches would otherwise write every page they read."""
+    if engine.dialect.name != "postgresql":
+        return
+    async with engine.connect() as connection:
+        autocommit = await connection.execution_options(isolation_level="AUTOCOMMIT")
+        for name in ("search_documents", "search_terms"):
+            await autocommit.execute(text(f'VACUUM (ANALYZE) "{name}"'))
 
 
 class _Loader:

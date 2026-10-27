@@ -44,6 +44,10 @@ Changes are stored as protocol messages with client timestamps in a local outbox
 
 On sync the client compares its `OfflineCopy.variant` with the current delivery decision; if the original changed and the new decision yields a better variant, it re-downloads. Metadata comes from the local cache, updated through deltas, so tag edits need no re-download.
 
+### Offline search
+
+The client indexes its offline items in its local store (SQLite FTS5 on Tauri/Capacitor, a prefix and n-gram index in Dexie on the web) with the server's normalisation. A client parser for the search syntax shares its test cases with the server's parser (`search` parses on the server only). Results carry `local: true`.
+
 ### Progressive loading
 
 Offline lists are served from the local cache first (< 300 ms); sync progress is shown as a local job.

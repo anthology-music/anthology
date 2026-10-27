@@ -17,6 +17,7 @@ The users spec stores an offline limit and a Wi-Fi-only setting per user and dev
   - Offline changes (play history, favorites, playlist edits) are queued and synchronised later with their original timestamps.
   - Offline copies are renewed when the original is replaced by a better one; tag changes need no re-download.
 - users: "Settings per user and device" gains the offline bitrate.
+- search: offline search over the offline storage with the same syntax, results marked as local only (moved here from the change `search`).
 
 ## Capabilities
 
@@ -27,6 +28,7 @@ The users spec stores an offline limit and a Wi-Fi-only setting per user and dev
 ### Modified Capabilities
 
 - `users`: "Settings per user and device" includes the offline bitrate.
+- `search`: "Offline search" is added.
 
 ## Impact
 

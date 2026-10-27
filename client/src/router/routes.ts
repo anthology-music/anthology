@@ -45,6 +45,12 @@ const routes: RouteRecordRaw[] = [
             name: 'library-tracks',
             component: () => import('@/features/library/pages/TracksPage.vue'),
           },
+          {
+            // Search (spec: search): text, type and context in the query.
+            path: 'search',
+            name: 'search',
+            component: () => import('@/features/search/pages/SearchPage.vue'),
+          },
         ],
       },
       { path: 'works', name: 'works', component: () => import('@/pages/WorksPage.vue') },

@@ -27,10 +27,12 @@ export class SyncClient {
     });
   }
 
+  /** `cache: false` keeps a short-lived list (e.g. search results) out of the local cache. */
   subscribe(
     stream: string,
     params: Record<string, unknown> = {},
     window: [number, number] = [0, 100],
+    options: { cache?: boolean } = {},
   ): Subscription {
     this.counter += 1;
     const id = `s${this.counter}`;
@@ -40,7 +42,7 @@ export class SyncClient {
       stream,
       params,
       this.connection,
-      this.cache,
+      options.cache === false ? null : this.cache,
       cacheKey,
     );
     this.subscriptions.set(id, subscription);
