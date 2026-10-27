@@ -4,7 +4,7 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import BigInteger, Boolean, ForeignKey, Index, Integer, String, Text, Uuid
+from sqlalchemy import JSON, BigInteger, Boolean, ForeignKey, Index, Integer, String, Text, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
 from anthology.db import Base
@@ -66,6 +66,8 @@ class Device(Base):
     type: Mapped[DeviceType] = mapped_column(str_enum(DeviceType, "type"))
     platform: Mapped[str] = mapped_column(String(128), default="")
     last_seen_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
+    # Audio formats the device reported it can play (None: never reported).
+    supported_formats: Mapped[list[str] | None] = mapped_column(JSON)
 
 
 class UserDevice(Base):

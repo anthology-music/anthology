@@ -64,6 +64,10 @@ class Settings(BaseSettings):
     # Folders admins may import from (spec: library-import, Import roots), comma-separated.
     # Default <data_dir>/imports.
     import_roots: str = ""
+    # Size limit of the shared transcode cache (spec: transcoding, Transcode cache size).
+    transcode_cache_gb: float = 20.0
+    # Transcodes running at once per server process.
+    transcode_parallel: int = 2
     omr_url: str = ""
     source_services: str = ""
 
@@ -103,6 +107,10 @@ class Settings(BaseSettings):
     def import_root_paths(self) -> list[Path]:
         roots = [Path(root.strip()) for root in self.import_roots.split(",") if root.strip()]
         return roots or [self.data_dir / "imports"]
+
+    @property
+    def transcodes_dir(self) -> Path:
+        return self.data_dir / "transcodes"
 
     @property
     def keys_dir(self) -> Path:

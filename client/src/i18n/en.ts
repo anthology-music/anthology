@@ -618,6 +618,20 @@ const en: typeof de = {
     addToQueue: 'Add to queue',
     more: 'More actions for {title}',
     remove: 'Remove {title} from the queue',
+    settings: {
+      title: 'Playback on this device',
+      hint: 'Higher bitrates sound better and use more data. An original is never converted to a higher bitrate than it has.',
+      bitrate: 'Bitrate',
+      bitrates: {
+        original: 'Original',
+        '320': '320 kbit/s',
+        '256': '256 kbit/s',
+        '192': '192 kbit/s',
+        '128': '128 kbit/s',
+      },
+      saved: 'Saved.',
+      failed: 'The setting could not be saved.',
+    },
     problem: {
       unplayable: 'Not playable on this device',
       missing: 'Not available',

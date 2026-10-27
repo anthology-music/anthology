@@ -22,6 +22,7 @@ from anthology.db.types import utcnow
 from anthology.sync.feed import ChangeEvent
 from anthology.users import schemas
 from anthology.users.models import (
+    BitrateSetting,
     Device,
     Role,
     SystemFlag,
@@ -646,3 +647,37 @@ async def _revoke_all(
     for user_device in (await session.scalars(query)).all():
         await _revoke(session, user_device, cache)
     cache.invalidate_user(user_id)
+
+
+async def record_formats(
+    sessionmaker: async_sessionmaker[AsyncSession], device_id: uuid.UUID, formats: list[str]
+) -> None:
+    """Store the audio formats a device reported in ``hello`` when they changed (spec:
+    transcoding, Format-aware delivery)."""
+    reported = sorted({value.strip().lower()[:16] for value in formats if value.strip()})
+    async with sessionmaker() as session, session.begin():
+        device = await session.get(Device, device_id)
+        if device is None or device.supported_formats == reported:
+            return
+        device.supported_formats = reported
+        await session.flush()
+        await record_change(
+            session,
+            entity_type="device",
+            entity_id=device.id,
+            operation=ChangeOperation.UPDATE,
+            scope=ChangeScope.DEVICE,
+            device_id=device.id,
+        )
+
+
+async def delivery_profile(
+    session: AsyncSession, user_device_id: uuid.UUID, device_id: uuid.UUID
+) -> tuple[BitrateSetting, list[str] | None]:
+    """The bitrate setting of a user device and the formats its device reported."""
+    settings = await session.get(UserDeviceSettings, user_device_id)
+    device = await session.get(Device, device_id)
+    return (
+        settings.audio_bitrate if settings is not None else BitrateSetting.ORIGINAL,
+        device.supported_formats if device is not None else None,
+    )

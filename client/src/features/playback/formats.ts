@@ -1,6 +1,6 @@
-import type { AudioLike } from './audio';
+import { type AudioLike, createAudio } from './audio';
 
-/** MIME types of the original formats (spec: playback, Formats the device cannot play). */
+/** MIME types of the original formats (spec: transcoding, Format-aware delivery). */
 const TYPES: Record<string, string> = {
   flac: 'audio/flac',
   mp3: 'audio/mpeg',
@@ -11,13 +11,20 @@ const TYPES: Record<string, string> = {
   wav: 'audio/wav',
   aiff: 'audio/aiff',
 };
+// Browsers answer "maybe" for these types without codecs, although they play them.
+const MAYBE_IS_ENOUGH = new Set(['flac', 'mp3', 'wav']);
 
-/** The original formats this device can play; kept as a list so that it can be sent to the
- * server later (change playable-delivery-format). */
-export function playableFormats(audio: AudioLike): Set<string> {
-  return new Set(
-    Object.entries(TYPES)
-      .filter(([, type]) => audio.canPlayType(type) !== '')
-      .map(([format]) => format),
-  );
+/**
+ * The audio formats this device can play, sent to the server in `hello`, which decides
+ * between original and transcode. Only "probably" counts, except for the formats that
+ * browsers report as "maybe".
+ */
+export function playableFormats(audio: AudioLike = createAudio()): string[] {
+  return Object.entries(TYPES)
+    .filter(([format, type]) => {
+      const answer = audio.canPlayType(type);
+      return answer === 'probably' || (answer === 'maybe' && MAYBE_IS_ENOUGH.has(format));
+    })
+    .map(([format]) => format)
+    .sort();
 }

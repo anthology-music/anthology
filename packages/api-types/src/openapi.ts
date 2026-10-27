@@ -471,6 +471,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/media/transcodes/{track_id}/{variant}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Media Transcode
+         * @description A transcode of a track's original: complete with range requests, or streamed while
+         *     FFmpeg writes it (spec: transcoding, Streaming while transcoding).
+         */
+        get: operations["media_transcode_api_v1_media_transcodes__track_id___variant__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/metadata-lookup/status": {
         parameters: {
             query?: never;
@@ -594,7 +615,9 @@ export interface paths {
         put?: never;
         /**
          * Urls
-         * @description Signed URLs of the originals of queue entries (valid for an hour).
+         * @description Signed URLs (valid for an hour) of what this device receives for queue entries: the
+         *     original or a transcode (spec: transcoding). Transcodes are started here, so the next
+         *     entry is ready before it plays (spec: Prepared next track).
          */
         post: operations["urls_api_v1_playback_urls_post"];
         delete?: never;
@@ -1293,6 +1316,11 @@ export interface components {
             /** Expires At */
             expires_at: string | null;
             format: components["schemas"]["AudioFormat"] | null;
+            /**
+             * Transcoded
+             * @default false
+             */
+            transcoded: boolean;
             /** Url */
             url: string | null;
         };
@@ -2458,6 +2486,38 @@ export interface operations {
             header?: never;
             path: {
                 audio_file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    media_transcode_api_v1_media_transcodes__track_id___variant__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                track_id: string;
+                variant: string;
             };
             cookie?: never;
         };

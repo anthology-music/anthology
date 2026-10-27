@@ -621,6 +621,20 @@ export default {
     addToQueue: 'Zur Warteschlange hinzufügen',
     more: 'Weitere Aktionen für {title}',
     remove: '{title} aus der Warteschlange entfernen',
+    settings: {
+      title: 'Wiedergabe auf diesem Gerät',
+      hint: 'Höhere Bitraten klingen besser und brauchen mehr Daten. Ein Original wird nie auf eine höhere Bitrate umgerechnet, als es hat.',
+      bitrate: 'Bitrate',
+      bitrates: {
+        original: 'Original',
+        '320': '320 kbit/s',
+        '256': '256 kbit/s',
+        '192': '192 kbit/s',
+        '128': '128 kbit/s',
+      },
+      saved: 'Gespeichert.',
+      failed: 'Die Einstellung konnte nicht gespeichert werden.',
+    },
     problem: {
       unplayable: 'Auf diesem Gerät nicht abspielbar',
       missing: 'Nicht verfügbar',

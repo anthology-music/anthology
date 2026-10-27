@@ -9,7 +9,7 @@ from typing import Annotated
 from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,7 +17,7 @@ from anthology.api.deps import CurrentSession, MediaAccess
 from anthology.db import get_session
 from anthology.db.types import utcnow
 from anthology.library import service as library
-from anthology.library.models import AudioFile, AudioFormat, OriginalStatus, Recording, Track
+from anthology.library.models import AudioFile, AudioFormat, OriginalStatus, Track
 from anthology.playback import service
 from anthology.playback.models import PlayQueueEntry
 from anthology.playback.schemas import (
@@ -30,11 +30,17 @@ from anthology.playback.schemas import (
     StateIn,
     UrlsIn,
 )
+from anthology.transcoding import delivery
+from anthology.transcoding import service as transcoding
+from anthology.transcoding.models import CacheStatus
+from anthology.users import service as users
 
 router = APIRouter(tags=["playback"])
 
 Session = Annotated[AsyncSession, Depends(get_session)]
 
+CACHE_HEADERS = {"Cache-Control": "private, max-age=3600"}
+FORMATS = frozenset(audio_format.value for audio_format in AudioFormat)
 # Client URLs live at most an hour (spec: sync-protocol, Short-lived client media URLs).
 URL_TTL_SECONDS = 3_600
 MEDIA_TYPES = {
@@ -147,42 +153,94 @@ async def clear(session: Session, current: CurrentSession) -> None:
 async def urls(
     request: Request, session: Session, current: CurrentSession, body: UrlsIn
 ) -> list[MediaUrl]:
-    """Signed URLs of the originals of queue entries (valid for an hour)."""
+    """Signed URLs (valid for an hour) of what this device receives for queue entries: the
+    original or a transcode (spec: transcoding). Transcodes are started here, so the next
+    entry is ready before it plays (spec: Prepared next track)."""
     ids = [_entry_id(value) for value in body.entry_ids]
+    missing = {i: MediaUrl(entry_id=str(i), url=None, expires_at=None, format=None) for i in ids}
     queue = await service.find_queue(session, current.user_id, current.device_id)
     if queue is None:
-        return [MediaUrl(entry_id=str(i), url=None, expires_at=None, format=None) for i in ids]
+        return list(missing.values())
     rows = await session.execute(
-        select(PlayQueueEntry.id, AudioFile.id, AudioFile.format)
+        select(PlayQueueEntry.id, Track.id, AudioFile)
         .join(Track, Track.id == PlayQueueEntry.track_id)
-        .join(Recording, Recording.id == Track.recording_id)
         .join(
             AudioFile,
-            (AudioFile.recording_id == Recording.id)
+            (AudioFile.recording_id == Track.recording_id)
             & (AudioFile.original_status == OriginalStatus.ACTIVE),
         )
         .where(PlayQueueEntry.queue_id == queue.id, PlayQueueEntry.id.in_(ids))
     )
-    originals = {entry_id: (file_id, audio_format) for entry_id, file_id, audio_format in rows}
+    originals = {entry_id: (track_id, audio) for entry_id, track_id, audio in rows}
+    setting, reported = await users.delivery_profile(
+        session, current.user_device_id, current.device_id
+    )
+    formats = frozenset(AudioFormat(value) for value in reported or () if value in FORMATS)
     signer = request.app.state.media_signer
+    transcoder = request.app.state.transcoder
     expires_at = utcnow() + timedelta(seconds=URL_TTL_SECONDS)
     result = []
     for entry_id in ids:
         if entry_id not in originals:
-            result.append(MediaUrl(entry_id=str(entry_id), url=None, expires_at=None, format=None))
+            result.append(missing[entry_id])
             continue
-        file_id, audio_format = originals[entry_id]
-        path = request.app.url_path_for("media_original", audio_file_id=str(file_id))
+        track_id, audio = originals[entry_id]
+        variant = delivery.decide(
+            delivery.Original(
+                audio.format, audio.bitrate_kbps, audio.declared_quality, audio.effective_quality
+            ),
+            setting,
+            formats,
+        )
+        if variant is None:
+            path = request.app.url_path_for("media_original", audio_file_id=str(audio.id))
+        else:
+            try:
+                await transcoder.ensure(audio.id, variant)
+            except transcoding.TranscodeFailed:
+                result.append(missing[entry_id])
+                continue
+            path = request.app.url_path_for(
+                "media_transcode", track_id=str(track_id), variant=variant.name
+            )
         params = signer.sign(path, current.user_id, current.user_device_id, URL_TTL_SECONDS)
         result.append(
             MediaUrl(
                 entry_id=str(entry_id),
                 url=f"{path}?{urlencode(params)}",
                 expires_at=expires_at,
-                format=audio_format,
+                format=audio.format if variant is None else variant.format,
+                transcoded=variant is not None,
             )
         )
     return result
+
+
+@router.get("/media/transcodes/{track_id}/{variant}", name="media_transcode", response_model=None)
+async def media_transcode(
+    request: Request, session: Session, _grant: MediaAccess, track_id: str, variant: str
+) -> FileResponse | StreamingResponse:
+    """A transcode of a track's original: complete with range requests, or streamed while
+    FFmpeg writes it (spec: transcoding, Streaming while transcoding)."""
+    wanted = delivery.Variant.parse(variant)
+    track = await session.get(Track, _uuid(track_id))
+    original = await library.active_original(session, track.recording_id) if track else None
+    if wanted is None or original is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="unknown_transcode")
+    transcoder = request.app.state.transcoder
+    try:
+        entry = await transcoder.ensure(original.id, wanted)
+        if entry.status == CacheStatus.READY:
+            path = transcoder.file(entry)
+            if await asyncio.to_thread(path.is_file):
+                return FileResponse(path, media_type="audio/mp4", headers=CACHE_HEADERS)
+            await transcoder.forget(entry)
+            entry = await transcoder.ensure(original.id, wanted)
+    except transcoding.TranscodeFailed as error:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="transcode_failed") from error
+    return StreamingResponse(
+        transcoder.follow(entry), media_type="audio/mp4", headers={"Cache-Control": "no-store"}
+    )
 
 
 @router.get("/media/originals/{audio_file_id}", name="media_original")

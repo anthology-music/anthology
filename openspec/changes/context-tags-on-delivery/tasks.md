@@ -8,7 +8,7 @@
 
 ## 2. Playback delivery
 
-- [ ] 2.1 Serve active originals for playback with HTTP range support and no modification; verify with a test that a requested range equals the same range of the file on disk
+- [x] 2.1 Serve active originals for playback with HTTP range support and no modification; verify with a test that a requested range equals the same range of the file on disk
 
 ## 3. Tagged downloads
 

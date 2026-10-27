@@ -349,3 +349,32 @@ test('playing an imported album, seeking and resuming after a reload', async ({ 
   await expect(page.getByTestId('player-position')).toHaveText(paused!);
   await expect(page.getByTestId('player-toggle')).toHaveAttribute('aria-label', 'Abspielen');
 });
+
+test('playing a FLAC track at 128 kbit/s while it is being transcoded', async ({ page }) => {
+  await signIn(page);
+  await page.goto('/settings');
+  await page.getByTestId('bitrate-128').click();
+  await expect(page.getByTestId('bitrate-message')).toContainText('Gespeichert');
+
+  await page.goto('/local/albums');
+  const kassette = page.locator('[data-testid^="release-"]').filter({ hasText: 'Kassette 1985' });
+  await kassette.first().click();
+  const urls = page.waitForResponse(
+    (response) => response.url().endsWith('/api/v1/playback/urls') && response.ok(),
+  );
+  await page.getByTestId('play-release').click();
+  const [current] = (await (await urls).json()) as [{ url: string; transcoded: boolean }];
+
+  // The original is FLAC; this device receives AAC at 128 kbit/s, streamed while it is written.
+  expect(current.transcoded).toBe(true);
+  expect(current.url).toContain('/media/transcodes/');
+  expect(current.url).toContain('aac-128');
+  await expect(page.getByTestId('player-title')).toHaveText('Frühling');
+  await expect(page.getByTestId('player-position')).not.toHaveText('0:00', { timeout: 15_000 });
+  await page.getByTestId('player-toggle').click();
+
+  // Back to the original for the other tests.
+  await page.goto('/settings');
+  await page.getByTestId('bitrate-original').click();
+  await expect(page.getByTestId('bitrate-message')).toContainText('Gespeichert');
+});

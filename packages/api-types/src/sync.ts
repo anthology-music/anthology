@@ -92,6 +92,7 @@ export interface HelloData {
   token: string;
   device_id?: string | null;
   last_seq?: number | null;
+  formats?: string[] | null;
 }
 export interface Auth {
   type: 'auth';

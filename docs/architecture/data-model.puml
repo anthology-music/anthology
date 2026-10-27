@@ -188,15 +188,27 @@ package "Library" {
   }
 
   class TranscodeCacheEntry {
+    One per variant (variantKey unique):
+    a transcode of an original, or its copy
+    tagged for one context track
+    ==
     +id : UUID
+    +variantKey : String
     +kind : CacheKind
     +format : String
     +bitrateKbps : Integer [0..1]
     +contextTrackId : UUID [0..1]
-    +blobKey : String
+    +status : CacheStatus
+    +path : String
     +sizeBytes : Long
-    +changeSeq : Long
+    +createdAt : DateTime
     +lastAccessedAt : DateTime
+  }
+
+  enum CacheStatus {
+    RUNNING
+    READY
+    FAILED
   }
 
   class ChangeLog {

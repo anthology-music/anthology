@@ -3,6 +3,7 @@
     <PageHeader :title="t('pages.settings.title')" :description="t('pages.settings.description')" />
     <div class="settings">
       <MyDevices />
+      <PlaybackSettings />
       <UserAdministration v-if="auth.isAdmin" />
       <IdentificationSettings v-if="auth.isAdmin || auth.user?.role === 'editor'" />
       <QualitySettings v-if="auth.isAdmin || auth.user?.role === 'editor'" />
@@ -24,6 +25,7 @@ import AdoptionSettings from '@/features/library/components/AdoptionSettings.vue
 import SupersededSettings from '@/features/library/components/SupersededSettings.vue';
 import IdentificationSettings from '@/features/library/components/IdentificationSettings.vue';
 import MaintenanceSettings from '@/features/library/components/MaintenanceSettings.vue';
+import PlaybackSettings from '@/features/playback/components/PlaybackSettings.vue';
 import QualitySettings from '@/features/quality-analysis/components/QualitySettings.vue';
 import ChangeHistory from '@/features/tagging/components/ChangeHistory.vue';
 import MyDevices from '@/features/users/components/MyDevices.vue';

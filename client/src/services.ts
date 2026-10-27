@@ -1,4 +1,5 @@
 import { createApi, type Api } from '@/api/client';
+import { playableFormats } from '@/features/playback/formats';
 import { AuthSession } from '@/features/users/session';
 import { browserStorage } from '@/platform/storage';
 import { SyncCache } from '@/sync/cache';
@@ -26,6 +27,8 @@ export function connectSyncToSession(session: AuthSession, sync: SyncClient): vo
   update();
 }
 
+let formats: string[] | null = null;
+
 export function getServices(): Services {
   if (!services) {
     const session = new AuthSession(browserStorage);
@@ -33,6 +36,7 @@ export function getServices(): Services {
       url: websocketUrl(),
       tokens: session,
       deviceId: () => session.state.deviceId,
+      formats: () => (formats ??= typeof Audio === 'undefined' ? null : playableFormats()),
     });
     const cache = typeof indexedDB === 'undefined' ? null : new SyncCache();
     const sync = new SyncClient(connection, cache, () => session.state.user?.id ?? 'anonymous');

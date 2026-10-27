@@ -62,10 +62,12 @@ class UrlsIn(BaseModel):
 
 class MediaUrl(BaseModel):
     entry_id: str
-    # None if the track has no original (or it is missing).
+    # None if the track has no original or its transcode failed.
     url: str | None
     expires_at: datetime | None
+    # The delivered format (the original's, or AAC/ALAC for a transcode).
     format: AudioFormat | None
+    transcoded: bool = False
 
 
 class PlayQueueEntryRow(StreamRow):

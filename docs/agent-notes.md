@@ -55,12 +55,17 @@ _Last updated: 2026-10-27_
 - **Archived:** `search` (PR #29). Decided with the maintainer: library items only (artists, albums, tracks; album and artist context); works,
   videos, playlists and their filters join with their domains (`docs/roadmap.md`); offline
   search moved to `offline-sync`; the server is the only parser of the syntax.
-- **Archived:** `local-playback` (branch `feat/local-playback`, one pull request): listening
-  in the browser. Decided with the maintainer: originals only until transcoding
+- **Archived:** `local-playback` (PR #30): listening in the browser. Decided with the maintainer: originals only until transcoding
   (milestone 3), the queue lives on the server (one per user and device), play history and
   counts follow with `personal-data`. `signed-media-urls` 3.1 is done; its 2.2 is done for
   originals only.
-- **Next:** see `docs/roadmap.md` (milestone 2 is complete with listening; then milestone 3).
+- **In progress:** change `transcoding-delivery` on branch `feat/transcoding-delivery`, pull
+  request 1 of 2 (delivery decision, device formats in `hello`, bitrate setting, transcoding
+  while streaming, cache with size limit). Pull request 2: tagged copies per context through
+  the tagger and their invalidation. Decided with the maintainer: transcodes are streamed while
+  they are written, tagged now through the tagger, declared quality stands in until the
+  analysis. `playable-delivery-format` 3.3 waits for the Raumfeld adapter.
+- **Next:** see `docs/roadmap.md` (milestone 3).
   `effective-quality-duplicate-checks` covers CD import and sources only; it waits for them.
 
 ## Working conventions
