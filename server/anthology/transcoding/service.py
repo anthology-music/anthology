@@ -14,7 +14,7 @@ import os
 import time
 import uuid
 from collections.abc import AsyncIterator
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from sqlalchemy import delete, func, select, update
@@ -24,7 +24,22 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from anthology.core.config import Settings
 from anthology.db.types import utcnow
-from anthology.library.models import AudioFile, AudioFormat, OriginalStatus
+from anthology.library.models import (
+    AudioFile,
+    AudioFormat,
+    OriginalStatus,
+    Recording,
+    Release,
+    Track,
+)
+from anthology.tagging.schemas import CopyFile, TagFields
+from anthology.tagging.tagger_client import (
+    TaggerClient,
+    TaggerIncompatible,
+    TaggerRequestError,
+    TaggerUnavailable,
+)
+from anthology.tagging.writer import context_tags
 from anthology.transcoding.delivery import Variant
 from anthology.transcoding.models import CacheKind, CacheStatus, TranscodeCacheEntry
 
@@ -42,6 +57,10 @@ ORPHAN_AFTER = timedelta(hours=1)
 TOUCH_EVERY = timedelta(minutes=1)
 # AAC encodes at most 48 kHz here (hi-res originals are resampled).
 AAC_MAX_RATE = 48_000
+# A request waits at most this long for the tagger; then it plays the untagged transcode.
+TAGGING_TIMEOUT = 5.0
+# Stale entries get this creation time, so that the next sweep removes them.
+STALE = datetime(2000, 1, 1, tzinfo=UTC)
 
 
 class TranscodeFailed(Exception):
@@ -76,11 +95,17 @@ def ffmpeg_args(ffmpeg: str, source: str, target: str, variant: Variant, rate: i
 
 
 class Transcoder:
-    """Creates, finds and streams transcodes; one per server process."""
+    """Creates, finds and streams transcodes and their tagged copies; one per server process."""
 
-    def __init__(self, sessionmaker: async_sessionmaker, settings: Settings) -> None:
+    def __init__(
+        self,
+        sessionmaker: async_sessionmaker,
+        settings: Settings,
+        tagger: TaggerClient | None = None,
+    ) -> None:
         self.sessionmaker = sessionmaker
         self.settings = settings
+        self.tagger = tagger
         self.root = settings.transcodes_dir
         self._slots = asyncio.Semaphore(max(1, settings.transcode_parallel))
         self._tasks: dict[uuid.UUID, asyncio.Task] = {}
@@ -174,6 +199,100 @@ class Transcoder:
         if start is not None:
             self._start(entry, *start)
         return entry
+
+    # --- tagged copies --------------------------------------------------------------------
+
+    async def tagged(
+        self, transcode: TranscodeCacheEntry, track_id: uuid.UUID
+    ) -> TranscodeCacheEntry | None:
+        """The copy of a ready transcode with the context tags of ``track_id``, created through
+        the tagger if missing (spec: Tagged copies per context). None while the tagger is
+        unavailable, slow or busy with it in another request: then the untagged transcode
+        plays, and a later request tries again."""
+        if self.tagger is None:
+            return None
+        variant = Variant(AudioFormat(transcode.format), transcode.bitrate_kbps)
+        key = variant_key(CacheKind.TAGGED_COPY, transcode.audio_file_id, variant, track_id)
+        async with self.sessionmaker() as session, session.begin():
+            entry = await self._entry(session, key)
+            now = utcnow()
+            if entry is not None and entry.status == CacheStatus.READY:
+                if now - entry.last_accessed_at > TOUCH_EVERY:
+                    entry.last_accessed_at = now
+                return entry
+            if entry is not None and entry.status == CacheStatus.RUNNING:
+                if (now - entry.created_at).total_seconds() < STUCK_SECONDS:
+                    return None
+            if entry is not None:
+                await session.delete(entry)
+                await session.flush()
+            tags = await self._context_tags(session, track_id)
+            if tags is None:
+                return None
+            entry_id = uuid.uuid4()
+            await session.execute(
+                self._insert(session)
+                .values(
+                    id=entry_id,
+                    variant_key=key,
+                    kind=CacheKind.TAGGED_COPY,
+                    audio_file_id=transcode.audio_file_id,
+                    format=transcode.format,
+                    bitrate_kbps=transcode.bitrate_kbps,
+                    context_track_id=track_id,
+                    status=CacheStatus.RUNNING,
+                    path=f"{str(entry_id)[:2]}/{entry_id}.m4a",
+                    size_bytes=0,
+                    created_at=now,
+                    last_accessed_at=now,
+                )
+                .on_conflict_do_nothing(index_elements=["variant_key"])
+            )
+            entry = await self._entry(session, key)
+            if entry is None or entry.id != entry_id:
+                return None
+        copied = await self._copy(transcode, entry, tags)
+        async with self.sessionmaker() as session, session.begin():
+            if copied is None:
+                await session.execute(
+                    delete(TranscodeCacheEntry).where(TranscodeCacheEntry.id == entry.id)
+                )
+                return None
+            await session.execute(
+                update(TranscodeCacheEntry)
+                .where(TranscodeCacheEntry.id == entry.id)
+                .values(status=CacheStatus.READY, size_bytes=copied)
+            )
+        await self.sweep()
+        async with self.sessionmaker() as session:
+            return await session.get(TranscodeCacheEntry, entry.id)
+
+    async def _context_tags(self, session: AsyncSession, track_id: uuid.UUID) -> TagFields | None:
+        track = await session.get(Track, track_id)
+        if track is None:
+            return None
+        recording = await session.get_one(Recording, track.recording_id)
+        release = await session.get_one(Release, track.release_id)
+        return context_tags(recording, track, release)
+
+    async def _copy(
+        self, transcode: TranscodeCacheEntry, entry: TranscodeCacheEntry, tags: TagFields
+    ) -> int | None:
+        """The size of the tagged copy, or None if the tagger did not write it in time."""
+        target = self.file(entry)
+        copy = CopyFile(source=str(self.file(transcode)), target=str(target), tags=tags)
+        try:
+            [result] = await asyncio.wait_for(self.tagger.copy([copy]), TAGGING_TIMEOUT)
+        except (TimeoutError, TaggerUnavailable, TaggerIncompatible, TaggerRequestError) as error:
+            logger.info("tagged copy of %s not written: %s", transcode.path, error)
+            return None
+        if not result.ok:
+            logger.warning("tagged copy of %s failed: %s", transcode.path, result.message)
+            return None
+        try:
+            return (await asyncio.to_thread(target.stat)).st_size
+        except FileNotFoundError:
+            return None
 
     async def forget(self, entry: TranscodeCacheEntry) -> None:
         """Drop an entry whose file disappeared (e.g. removed by hand)."""

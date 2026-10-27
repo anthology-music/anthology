@@ -110,7 +110,8 @@ class Settings(BaseSettings):
 
     @property
     def transcodes_dir(self) -> Path:
-        return self.data_dir / "transcodes"
+        # In the cache volume, which the tagger shares (it writes the tagged copies there).
+        return self.data_dir / "cache" / "transcodes"
 
     @property
     def keys_dir(self) -> Path:

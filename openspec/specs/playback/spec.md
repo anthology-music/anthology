@@ -41,7 +41,7 @@ The system SHALL play any video as audio only on demand, including on audio-only
 - **THEN** only its audio is played on the speakers
 
 ### Requirement: Playback on this device
-The client SHALL play tracks on the device it runs on, fetching the audio over HTTP with range requests from signed URLs (see sync-protocol, Signed media URLs). Until transcoding exists, the device SHALL receive the original.
+The client SHALL play tracks on the device it runs on, fetching the audio over HTTP with range requests from signed URLs (see sync-protocol, Signed media URLs). The device SHALL receive the original or a transcode as the transcoding spec decides for its bitrate setting and its playable formats.
 
 #### Scenario: Playing an album in the browser
 - **WHEN** a user presses "Play" on an album in the browser
@@ -51,6 +51,10 @@ The client SHALL play tracks on the device it runs on, fetching the audio over H
 #### Scenario: Seeking
 - **WHEN** the user drags the seek bar to the middle of a track
 - **THEN** playback continues there after a range request for that part of the file
+
+#### Scenario: Bitrate setting
+- **WHEN** a browser set to 128 kbit/s plays a FLAC original
+- **THEN** it receives AAC at 128 kbit/s
 
 ### Requirement: Play queue
 The system SHALL keep one play queue per user and device on the server with its entries in order, the current entry, the position within it and whether it plays; the queue SHALL be available as a subscription that follows every change, and SHALL hold at most 10,000 entries.
@@ -98,8 +102,12 @@ The client SHALL show the current track with title, artist and album, previous, 
 - **THEN** the track starts again from the beginning
 
 ### Requirement: Formats the device cannot play
-The client SHALL detect which original formats the device can play, SHALL mark the others as not playable on this device and SHALL skip them during playback; such entries SHALL stay in the queue.
+The client SHALL detect which formats the device can play and report them to the server; when no delivery is possible for an entry (e.g. its transcode failed), the client SHALL mark it as not playable on this device and SHALL skip it during playback; such entries SHALL stay in the queue.
 
 #### Scenario: AIFF in the browser
 - **WHEN** the queue reaches an AIFF original in a browser that cannot play AIFF
+- **THEN** the browser receives a transcode and plays it
+
+#### Scenario: Failed transcode
+- **WHEN** the transcode of an entry fails
 - **THEN** the entry is marked "not playable on this device" and the next entry starts

@@ -231,6 +231,12 @@ async def media_transcode(
     try:
         entry = await transcoder.ensure(original.id, wanted)
         if entry.status == CacheStatus.READY:
+            # The copy with this track's context tags, if the tagger wrote it in time.
+            copy = await transcoder.tagged(entry, track.id)
+            if copy is not None and await asyncio.to_thread(transcoder.file(copy).is_file):
+                return FileResponse(
+                    transcoder.file(copy), media_type="audio/mp4", headers=CACHE_HEADERS
+                )
             path = transcoder.file(entry)
             if await asyncio.to_thread(path.is_file):
                 return FileResponse(path, media_type="audio/mp4", headers=CACHE_HEADERS)
