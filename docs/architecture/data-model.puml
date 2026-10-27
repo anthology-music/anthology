@@ -423,6 +423,46 @@ package "Sources & Jobs" {
     +retrievedAt : DateTime
   }
 
+  class SourceService {
+    One configured service URL
+    (ANTHOLOGY_SOURCE_SERVICES), checked
+    with info and health (ADR 0017)
+    ==
+    +id : UUID
+    +url : String
+    +position : Integer
+    +serviceId : String [0..1]
+    +name : String [0..1]
+    +source : String [0..1]
+    +short : String [0..1]
+    +interface : Integer [0..1]
+    +version : String [0..1]
+    +capabilities : Json
+    +loginFields : Json [0..1]
+    +available : Boolean
+    +loggedIn : Boolean [0..1]
+    +rateLimitedUntil : DateTime [0..1]
+    +problem : SourceProblem [0..1]
+    +checkedAt : DateTime
+  }
+
+  class SourceCredential {
+    Login fields of a service,
+    encrypted with AES-GCM
+    ==
+    +serviceId : String
+    +nonce : Bytes
+    +ciphertext : Bytes
+    +updatedAt : DateTime
+  }
+
+  enum SourceProblem {
+    UNREACHABLE
+    INCOMPATIBLE
+    LOGIN_FAILED
+    LOGIN_MISSING
+  }
+
   class Job {
     +id : UUID
     +type : JobType
@@ -1286,6 +1326,8 @@ PlayHistory "0..*" -- "1" Device
 User "1" -- "0..*" PlayStats
 PlayStats "0..*" -- "1" Recording
 AuditLog "0..*" -- "1" User : by >
+
+SourceService "0..*" -- "0..1" SourceCredential : login by service id >
 
 ' Relationships – Playback
 OutputZone "0..1" o-- "1..*" OutputDevice

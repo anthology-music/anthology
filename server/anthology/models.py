@@ -13,6 +13,7 @@ from anthology.quality_analysis import models as quality_analysis
 from anthology.review import models as review
 from anthology.search import index as search_index  # installs the document maintenance
 from anthology.search import models as search
+from anthology.sources import models as sources
 from anthology.tagging import models as tagging
 from anthology.transcoding import invalidation as transcoding_invalidation  # installs it
 from anthology.transcoding import models as transcoding
@@ -30,6 +31,7 @@ __all__ = [
     "search",
     "search_index",
     "services",
+    "sources",
     "tagging",
     "transcoding",
     "transcoding_invalidation",

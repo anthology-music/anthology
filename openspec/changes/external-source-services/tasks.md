@@ -14,7 +14,7 @@
 
 ## 3. Generic source service adapter
 
-- [ ] 3.1 Implement the generic service source adapter and the `ANTHOLOGY_SOURCE_SERVICES` configuration with startup detection and version check; verify with tests against a fake service for available, unavailable and incompatible-version cases
+- [x] 3.1 Implement the generic service source adapter and the `ANTHOLOGY_SOURCE_SERVICES` configuration with startup detection and version check; verify with tests against a fake service for available, unavailable and incompatible-version cases
 - [ ] 3.2 Run the duplicate check on `resolve` results before `download`; verify with a test that an already present track is not requested from the service
 
 ## Workflow follow-up

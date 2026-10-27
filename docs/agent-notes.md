@@ -17,7 +17,7 @@ across sessions goes here, so every agent and every maintainer sees the same sta
 
 ## Current state
 
-_Last updated: 2026-10-27_
+_Last updated: 2026-10-28_
 
 - **Milestone 1 (Foundation)** is implemented: server skeleton, sync protocol with progressive
   loading, users and devices, jobs (core and view), client foundation with sign-in, sync layer and
@@ -63,6 +63,12 @@ _Last updated: 2026-10-27_
   bitrate and formats, streamed while written, tagged per context through the tagger. Decided
   with the maintainer: streaming, tagging now, declared quality before the analysis.
   `playable-delivery-format` 3.3 waits for the Raumfeld adapter.
+- **In progress:** change `source-service-adapter` on branch `feat/source-service-adapter`, pull
+  request 1 of 2 (interface v1 with all fields, fake service in `tools/fake-source-service/`,
+  detection, encrypted logins, search and links with duplicate status, source status, source
+  settings). Pull request 2: orders, download job, import into the library, outcomes, source
+  per original. Decided with the maintainer: whole chain in two pull requests, credentials now,
+  fake service in the repository, every user may open the source status with the reasons.
 - **Next:** see `docs/roadmap.md` (milestone 3).
   `effective-quality-duplicate-checks` covers CD import and sources only; it waits for them.
 

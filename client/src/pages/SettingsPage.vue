@@ -5,6 +5,7 @@
       <MyDevices />
       <PlaybackSettings />
       <UserAdministration v-if="auth.isAdmin" />
+      <SourceSettings v-if="auth.isAdmin" />
       <IdentificationSettings v-if="auth.isAdmin || auth.user?.role === 'editor'" />
       <QualitySettings v-if="auth.isAdmin || auth.user?.role === 'editor'" />
       <ChangeHistory v-if="auth.canEdit" />
@@ -27,6 +28,7 @@ import IdentificationSettings from '@/features/library/components/Identification
 import MaintenanceSettings from '@/features/library/components/MaintenanceSettings.vue';
 import PlaybackSettings from '@/features/playback/components/PlaybackSettings.vue';
 import QualitySettings from '@/features/quality-analysis/components/QualitySettings.vue';
+import SourceSettings from '@/features/sources/components/SourceSettings.vue';
 import ChangeHistory from '@/features/tagging/components/ChangeHistory.vue';
 import MyDevices from '@/features/users/components/MyDevices.vue';
 import UserAdministration from '@/features/users/components/UserAdministration.vue';

@@ -743,6 +743,72 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sources/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve
+         * @description The tracks of a link or search result with their duplicate status.
+         */
+        post: operations["resolve_api_v1_sources_resolve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sources/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Search
+         * @description Search the available services (all or one), each with its own results and error.
+         */
+        post: operations["search_api_v1_sources_search_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sources/services/{service_id}/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Login
+         * @description The login fields a service asks for and whether values are stored; never the values.
+         */
+        get: operations["get_login_api_v1_sources_services__service_id__login_get"];
+        /**
+         * Put Login
+         * @description Store the login fields encrypted and log the service in (spec: Source service login);
+         *     empty fields keep their stored values.
+         */
+        put: operations["put_login_api_v1_sources_services__service_id__login_put"];
+        post?: never;
+        /** Delete Login */
+        delete: operations["delete_login_api_v1_sources_services__service_id__login_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/tagging/changes/{change_set_id}/undo": {
         parameters: {
             query?: never;
@@ -1033,6 +1099,11 @@ export interface components {
          */
         DeviceType: "web" | "desktop" | "mobile";
         /**
+         * DuplicateStatus
+         * @enum {string}
+         */
+        DuplicateStatus: "present" | "better" | "new";
+        /**
          * EditIn
          * @description Fields per level for selected tracks (``ids``) or the tracks of a list (``rule``):
          *     recording fields apply to the tracks' recordings, release fields to their releases (after
@@ -1223,6 +1294,41 @@ export interface components {
          * @enum {string}
          */
         Level: "recording" | "release" | "track";
+        /** LoginField */
+        LoginField: {
+            /** Label */
+            label: string;
+            /** Name */
+            name: string;
+            /**
+             * Secret
+             * @default false
+             */
+            secret: boolean;
+        };
+        /** LoginIn */
+        LoginIn: {
+            /** Fields */
+            fields: {
+                [key: string]: string;
+            };
+        };
+        /**
+         * LoginOut
+         * @description The login of a service: field names only, never the stored values; ``stored_fields``
+         *     lets the settings show stored fields masked (spec: Source service login).
+         */
+        LoginOut: {
+            /** Fields */
+            fields: components["schemas"]["LoginField"][];
+            /** Logged In */
+            logged_in: boolean | null;
+            problem: components["schemas"]["SourceProblem"] | null;
+            /** Stored */
+            stored: boolean;
+            /** Stored Fields */
+            stored_fields: string[];
+        };
         /** LoginRequest */
         LoginRequest: {
             device: components["schemas"]["DeviceIn"];
@@ -1332,6 +1438,22 @@ export interface components {
             /** After */
             after?: string | null;
         };
+        /** Offered */
+        Offered: {
+            /** Bit Depth */
+            bit_depth?: number | null;
+            /** Bitrate Kbps */
+            bitrate_kbps?: number | null;
+            /** Format */
+            format?: string | null;
+            /**
+             * Lossless
+             * @default false
+             */
+            lossless: boolean;
+            /** Sample Rate Hz */
+            sample_rate_hz?: number | null;
+        };
         /** Page[DeviceOut] */
         Page_DeviceOut_: {
             /** Items */
@@ -1363,6 +1485,11 @@ export interface components {
          * @enum {string}
          */
         PriorityClass: "interactive" | "background";
+        /**
+         * QualityTier
+         * @enum {string}
+         */
+        QualityTier: "hires_lossless" | "cd_lossless" | "lossy_high" | "lossy_low";
         /** Readiness */
         Readiness: {
             /** Database */
@@ -1383,6 +1510,49 @@ export interface components {
         RefreshRequest: {
             /** Refresh Token */
             refresh_token: string;
+        };
+        /** ResolveIn */
+        ResolveIn: {
+            /** Ref */
+            ref?: string | null;
+            /** Service */
+            service?: string | null;
+            /** Url */
+            url?: string | null;
+        };
+        /** ResolveOut */
+        ResolveOut: {
+            item: components["schemas"]["SearchResult"];
+            /** Service */
+            service: string;
+            /** Tracks */
+            tracks: components["schemas"]["ResolvedTrack"][];
+        };
+        /** ResolvedTrack */
+        ResolvedTrack: {
+            /** Album */
+            album?: string | null;
+            /** Album Artist */
+            album_artist?: string | null;
+            /** Artist */
+            artist?: string | null;
+            /** Disc Number */
+            disc_number?: number | null;
+            /** Duration Ms */
+            duration_ms?: number | null;
+            existing_quality?: components["schemas"]["QualityTier"] | null;
+            /** Isrc */
+            isrc?: string | null;
+            offered?: components["schemas"]["Offered"] | null;
+            /** Recording Id */
+            recording_id?: string | null;
+            /** Ref */
+            ref: string;
+            status: components["schemas"]["DuplicateStatus"];
+            /** Title */
+            title: string;
+            /** Track Number */
+            track_number?: number | null;
         };
         /** ReviewDecisionIn */
         ReviewDecisionIn: {
@@ -1453,6 +1623,52 @@ export interface components {
          * @enum {string}
          */
         ScheduleFrequency: "daily" | "weekly";
+        /** SearchIn */
+        SearchIn: {
+            /**
+             * Kinds
+             * @default [
+             *       "album",
+             *       "track",
+             *       "playlist"
+             *     ]
+             */
+            kinds: ("album" | "track" | "playlist")[];
+            /**
+             * Page
+             * @default 1
+             */
+            page: number;
+            /**
+             * Page Size
+             * @default 20
+             */
+            page_size: number;
+            /** Query */
+            query: string;
+            /** Service */
+            service?: string | null;
+        };
+        /** SearchResult */
+        SearchResult: {
+            /** Album */
+            album?: string | null;
+            /** Artist */
+            artist?: string | null;
+            /** Kind */
+            kind: string;
+            offered?: components["schemas"]["Offered"] | null;
+            /** Ref */
+            ref: string;
+            /** Title */
+            title: string;
+            /** Track Count */
+            track_count?: number | null;
+            /** Url */
+            url?: string | null;
+            /** Year */
+            year?: number | null;
+        };
         /**
          * SearchToken
          * @description One token of the search text; filters become chips, errors become hints.
@@ -1477,6 +1693,17 @@ export interface components {
             text: string;
             /** Value */
             value?: string | null;
+        };
+        /** ServiceResults */
+        ServiceResults: {
+            /** Error */
+            error?: string | null;
+            /** Next Page */
+            next_page: number | null;
+            /** Results */
+            results: components["schemas"]["SearchResult"][];
+            /** Service */
+            service: string;
         };
         /**
          * ServiceState
@@ -1516,6 +1743,12 @@ export interface components {
             /** Current Entry Id */
             current_entry_id: string | null;
         };
+        /**
+         * SourceProblem
+         * @description Why a configured service is unavailable (spec: Source status).
+         * @enum {string}
+         */
+        SourceProblem: "unreachable" | "incompatible" | "login_failed" | "login_missing";
         /**
          * StartIn
          * @description Tracks to play (``ids`` in their order, or the tracks of a list ``rule`` in the list's
@@ -2971,6 +3204,167 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["TokenResponse"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resolve_api_v1_sources_resolve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolveIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResolveOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_api_v1_sources_search_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SearchIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceResults"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_login_api_v1_sources_services__service_id__login_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                service_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoginOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_login_api_v1_sources_services__service_id__login_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                service_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoginOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_login_api_v1_sources_services__service_id__login_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                service_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

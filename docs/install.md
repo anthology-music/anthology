@@ -76,6 +76,10 @@ The system maintenance (Settings › Systempflege, admins) runs daily at 03:00 b
 
 The password is a secret, never part of a unit file or environment variable: PostgreSQL reads it from `POSTGRES_PASSWORD_FILE`, the server from `ANTHOLOGY_DATABASE_PASSWORD_FILE` (it replaces the password in `ANTHOLOGY_DATABASE_URL`). PostgreSQL uses the secret only when it creates the database; to change it later, change it in PostgreSQL (`ALTER USER anthology PASSWORD …`) and in the secret.
 
+## Source services
+
+Streaming sources (Tidal, Spotify, YouTube) are optional source services from the GitHub organisation `anthology-sources` (ADR 0017), each its own container in the pod with the imports volume mounted at `/data/imports`. List their URLs in `ANTHOLOGY_SOURCE_SERVICES`, comma-separated (Quadlet pod: `http://localhost:8420,http://localhost:8421`; Compose: `http://anthology-source-streamrip:8420`). The server checks them every minute; unavailable ones are left out of the Streaming view, and its "Source status" says why. Services that need a login ask for it in Settings › Sources (admins); the values are stored encrypted with the key `sources.key` in the keys volume and are never shown again.
+
 ## Metadata lookups
 
 Anthology identifies music with MusicBrainz (at most one request per second, cached). Set `ANTHOLOGY_MUSICBRAINZ_CONTACT` to your e-mail address or a URL; MusicBrainz asks every application to name a contact in its User-Agent. For fingerprint lookups, register an application at [AcoustID](https://acoustid.org/new-application) and set `ANTHOLOGY_ACOUSTID_API_KEY`. For large collections, a local MusicBrainz mirror removes the rate limit: `docs/architecture/musicbrainz-mirror.md`.

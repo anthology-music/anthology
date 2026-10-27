@@ -150,9 +150,10 @@ async def test_auth_renews_the_token_on_the_open_connection(
     admin = await setup_admin(client)
 
     async with ws_connect(app) as ws:
-        await ws.hello(_short_token(app, admin.access_token, 1))
+        # Room for hello and auth on a slow runner (expiry times are whole seconds).
+        await ws.hello(_short_token(app, admin.access_token, 3))
         await ws.send("auth", token=admin.access_token)
-        await asyncio.sleep(1.5)
+        await asyncio.sleep(3.5)
         meta = await ws.subscribe("s1", "users")
 
     assert meta["type"] == "snapshot_meta"
