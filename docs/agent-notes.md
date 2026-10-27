@@ -55,8 +55,8 @@ _Last updated: 2026-10-27_
 - **Archived:** `search` (PR #29). Decided with the maintainer: library items only (artists, albums, tracks; album and artist context); works,
   videos, playlists and their filters join with their domains (`docs/roadmap.md`); offline
   search moved to `offline-sync`; the server is the only parser of the syntax.
-- **In progress:** change `local-playback` on branch `feat/local-playback` (one pull request):
-  listening in the browser. Decided with the maintainer: originals only until transcoding
+- **Archived:** `local-playback` (branch `feat/local-playback`, one pull request): listening
+  in the browser. Decided with the maintainer: originals only until transcoding
   (milestone 3), the queue lives on the server (one per user and device), play history and
   counts follow with `personal-data`. `signed-media-urls` 3.1 is done; its 2.2 is done for
   originals only.
