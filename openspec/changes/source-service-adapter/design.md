@@ -37,7 +37,7 @@ Errors: HTTP status and `{"error": code, "message": …}`. Unknown fields are ig
 
 ### Credentials
 
-`source_credentials`: one row per service id with AES-GCM ciphertext and nonce of the JSON object of field values. The key (32 bytes) is created at first start as `keys/sources.key` like the other keys (`core.security.load_or_create_key`). `PUT /api/v1/sources/services/{id}/login` (admins) encrypts and stores the values and calls `login`; `GET` answers with the field names, whether values are stored and the login state, never the values. The monitor logs a service in again with the stored values when `health` reports `logged_in: false` (at most once per check interval). Library: `cryptography` (Apache-2.0 OR BSD-3-Clause).
+`source_credentials`: one row per service id with AES-GCM ciphertext and nonce of the JSON object of field values. The key (32 bytes) is created at first start as `keys/sources.key` like the other keys (`core.security.load_or_create_key`). `PUT /api/v1/sources/services/{id}/login` (admins) encrypts and stores the values and calls `login`; `GET` answers with the field names, the names of the stored fields and the login state, never the values; the settings show stored fields with a fixed mask (decided with the maintainer: it must be clear that nothing is missing). A field left empty in `PUT` keeps its stored value. The monitor logs a service in again with the stored values when `health` reports `logged_in: false` (at most once per check interval). Library: `cryptography` (Apache-2.0 OR BSD-3-Clause).
 
 ### Search, links and duplicate status
 

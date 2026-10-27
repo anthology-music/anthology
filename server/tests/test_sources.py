@@ -102,6 +102,12 @@ async def test_logins_are_encrypted_and_renewed(
         path, headers=admin.headers, json={"fields": {"username": "anna", "password": "geheim"}}
     )
     unknown = await client.put(path, headers=admin.headers, json={"fields": {"token": "x"}})
+    kept_user = await client.put(
+        path, headers=admin.headers, json={"fields": {"username": "", "password": "falsch"}}
+    )
+    relogin = await client.put(
+        path, headers=admin.headers, json={"fields": {"username": "", "password": "geheim"}}
+    )
     async with app.state.sessionmaker() as session:
         stored = await session.scalar(select(SourceCredential))
     # The service restarts and has forgotten its session: the core logs in again.
@@ -115,11 +121,24 @@ async def test_logins_are_encrypted_and_renewed(
             {"name": "password", "label": "Passwort", "secret": True},
         ],
         "stored": False,
+        "stored_fields": [],
         "logged_in": False,
         "problem": "login_missing",
     }
     assert wrong.json()["problem"] == "login_failed"
-    assert right.json() == {**shown.json(), "stored": True, "logged_in": True, "problem": None}
+    assert right.json() == {
+        **shown.json(),
+        "stored": True,
+        "stored_fields": ["password", "username"],
+        "logged_in": True,
+        "problem": None,
+    }
+    # A changed password alone: the stored user name stays.
+    assert kept_user.json()["logged_in"] is False and kept_user.json()["stored_fields"] == [
+        "password",
+        "username",
+    ]
+    assert relogin.json()["logged_in"] is True
     assert unknown.status_code == 422
     assert b"geheim" not in stored.ciphertext and b"anna" not in stored.ciphertext
     assert again is True

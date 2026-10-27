@@ -172,9 +172,11 @@ async def resolve(
 
 
 async def _login_out(services: SourceServices, row: SourceService) -> LoginOut:
+    stored = await services.stored_names(row.service_id)
     return LoginOut(
         fields=[LoginField.model_validate(clean(LoginField, f)) for f in row.login_fields or []],
-        stored=await services.has_login(row.service_id),
+        stored=bool(stored),
+        stored_fields=stored,
         logged_in=row.logged_in,
         problem=row.problem,
     )
@@ -192,7 +194,8 @@ async def get_login(
 async def put_login(
     request: Request, session: Session, _current: Admin, service_id: str, body: LoginIn
 ) -> LoginOut:
-    """Store the login fields encrypted and log the service in (spec: Source service login)."""
+    """Store the login fields encrypted and log the service in (spec: Source service login);
+    empty fields keep their stored values."""
     row = await _service(session, service_id)
     names = {str(field.get("name")) for field in row.login_fields or []}
     if not names or set(body.fields) - names:

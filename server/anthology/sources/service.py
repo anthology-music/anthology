@@ -233,7 +233,12 @@ class SourceServices:
     # --- login ------------------------------------------------------------------------------
 
     async def save_login(self, row_id: uuid.UUID, fields: dict[str, str]) -> SourceService:
-        """Store a service's login fields encrypted and log it in now."""
+        """Store a service's login fields encrypted and log it in now. An empty field keeps
+        its stored value, so a changed password needs no other field again."""
+        async with self.sessionmaker() as session:
+            service_id = (await session.get_one(SourceService, row_id)).service_id
+        kept = await self._stored_fields(service_id) if service_id else None
+        fields = {**(kept or {}), **{name: value for name, value in fields.items() if value}}
         async with self.sessionmaker() as session, session.begin():
             row = await session.get_one(SourceService, row_id)
             if not row.service_id:
@@ -265,11 +270,12 @@ class SourceServices:
                 )
         await self.check(row.url)
 
-    async def has_login(self, service_id: str | None) -> bool:
+    async def stored_names(self, service_id: str | None) -> list[str]:
+        """The names of the stored, non-empty login fields (never their values)."""
         if not service_id:
-            return False
-        async with self.sessionmaker() as session:
-            return await session.get(SourceCredential, service_id) is not None
+            return []
+        fields = await self._stored_fields(service_id) or {}
+        return sorted(name for name, value in fields.items() if value)
 
 
 def _snapshot(row: SourceService) -> tuple:

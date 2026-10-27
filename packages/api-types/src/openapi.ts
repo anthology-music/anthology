@@ -797,7 +797,8 @@ export interface paths {
         get: operations["get_login_api_v1_sources_services__service_id__login_get"];
         /**
          * Put Login
-         * @description Store the login fields encrypted and log the service in (spec: Source service login).
+         * @description Store the login fields encrypted and log the service in (spec: Source service login);
+         *     empty fields keep their stored values.
          */
         put: operations["put_login_api_v1_sources_services__service_id__login_put"];
         post?: never;
@@ -1314,7 +1315,8 @@ export interface components {
         };
         /**
          * LoginOut
-         * @description The login of a service: field names only, never the stored values.
+         * @description The login of a service: field names only, never the stored values; ``stored_fields``
+         *     lets the settings show stored fields masked (spec: Source service login).
          */
         LoginOut: {
             /** Fields */
@@ -1324,6 +1326,8 @@ export interface components {
             problem: components["schemas"]["SourceProblem"] | null;
             /** Stored */
             stored: boolean;
+            /** Stored Fields */
+            stored_fields: string[];
         };
         /** LoginRequest */
         LoginRequest: {

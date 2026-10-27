@@ -39,10 +39,12 @@ class SourceServiceRow(StreamRow):
 
 
 class LoginOut(BaseModel):
-    """The login of a service: field names only, never the stored values."""
+    """The login of a service: field names only, never the stored values; ``stored_fields``
+    lets the settings show stored fields masked (spec: Source service login)."""
 
     fields: list[LoginField]
     stored: bool
+    stored_fields: list[str]
     logged_in: bool | None
     problem: SourceProblem | None
 

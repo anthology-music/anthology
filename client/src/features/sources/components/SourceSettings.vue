@@ -26,41 +26,53 @@
         </span>
       </header>
       <form
-        v-if="service.login_required"
+        v-if="service.login_required && logins[service.id]"
         class="source-settings__login"
         @submit.prevent="save(service.id)"
       >
-        <template v-if="logins[service.id]">
+        <template v-for="field in logins[service.id]!.fields" :key="field.name">
+          <!-- Stored values are never shown: a fixed mask says that nothing is missing. -->
           <q-input
-            v-for="field in logins[service.id]!.fields"
-            :key="field.name"
+            v-if="!editing[service.id] && isStored(service.id, field.name)"
+            :model-value="MASK"
+            dense
+            outlined
+            readonly
+            type="password"
+            :label="field.label"
+            :hint="t('sources.settings.storedField')"
+            :data-testid="`login-${service.id}-${field.name}`"
+          />
+          <q-input
+            v-else
             v-model="values[service.id]![field.name]"
             dense
             outlined
             autocomplete="off"
             :type="field.secret ? 'password' : 'text'"
             :label="field.label"
+            :placeholder="
+              isStored(service.id, field.name) ? t('sources.settings.keepPlaceholder') : ''
+            "
             :data-testid="`login-${service.id}-${field.name}`"
           />
-          <q-btn
-            type="submit"
-            unelevated
-            no-caps
-            color="primary"
-            :label="t('sources.settings.save')"
-            :data-testid="`login-save-${service.id}`"
-          />
-          <span v-if="logins[service.id]!.stored" class="text-muted">
-            {{ t('sources.settings.stored') }}
-          </span>
         </template>
+        <q-btn
+          v-if="editing[service.id] || !complete(service.id)"
+          type="submit"
+          unelevated
+          no-caps
+          color="primary"
+          :label="t('sources.settings.save')"
+          :data-testid="`login-save-${service.id}`"
+        />
         <q-btn
           v-else
           flat
           no-caps
-          :label="t('sources.settings.enterLogin')"
-          :data-testid="`login-open-${service.id}`"
-          @click="load(service.id)"
+          :label="t('sources.settings.change')"
+          :data-testid="`login-change-${service.id}`"
+          @click="editing[service.id] = true"
         />
       </form>
       <p v-if="messages[service.id]" role="status" :data-testid="`login-message-${service.id}`">
@@ -72,7 +84,7 @@
 
 <script setup lang="ts">
 import type { Schemas } from '@anthology/api-types';
-import { reactive } from 'vue';
+import { reactive, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import { getServices } from '@/services';
@@ -85,6 +97,21 @@ const { all } = useSourceServices();
 const logins = reactive<Record<string, Schemas['LoginOut']>>({});
 const values = reactive<Record<string, Record<string, string>>>({});
 const messages = reactive<Record<string, 'saved' | 'failed'>>({});
+const editing = reactive<Record<string, boolean>>({});
+const MASK = '••••••••';
+
+const isStored = (id: string, name: string) => logins[id]?.stored_fields.includes(name) ?? false;
+const complete = (id: string) =>
+  logins[id]?.fields.every((field) => isStored(id, field.name)) ?? false;
+
+// The login of every service that needs one, so stored fields show masked at once.
+watch(
+  () => all.value.filter((service) => service.login_required).map((service) => service.id),
+  (ids) => {
+    for (const id of ids) if (!(id in logins)) void load(id);
+  },
+  { immediate: true },
+);
 
 const params = (id: string) => ({ params: { path: { service_id: id } } });
 
@@ -106,6 +133,7 @@ async function save(id: string): Promise<void> {
   // The values are not kept in the page once they are stored.
   values[id] = Object.fromEntries(Object.keys(values[id] ?? {}).map((name) => [name, '']));
   if (data) logins[id] = data;
+  editing[id] = false;
   messages[id] = data?.logged_in ? 'saved' : 'failed';
 }
 </script>

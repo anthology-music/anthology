@@ -89,14 +89,19 @@ async function page(path: string, role = 'editor', loginStored = false) {
             { name: 'password', label: 'Passwort', secret: true },
           ],
           stored: loginStored,
+          stored_fields: loginStored ? ['password', 'username'] : [],
           logged_in: false,
           problem: 'login_missing',
         }),
       'PUT /api/v1/sources/services/tidal/login': async (request) => {
         bodies.login!.push(await request.json());
         return json({
-          fields: [{ name: 'username', label: 'Benutzername', secret: false }],
+          fields: [
+            { name: 'username', label: 'Benutzername', secret: false },
+            { name: 'password', label: 'Passwort', secret: true },
+          ],
           stored: true,
+          stored_fields: ['password', 'username'],
           logged_in: true,
           problem: null,
         });
@@ -209,31 +214,37 @@ describe('sources', () => {
     ).toContain('Verfügbar');
   });
 
-  it('lets admins enter a login without showing stored values', async () => {
+  it('shows stored login fields masked and changes only what is entered', async () => {
     const { wrapper, socket, bodies } = await page('/settings', 'admin', true);
     await serveServices(socket, [unavailable]);
 
-    await wrapper.find('[data-testid="login-open-tidal"]').trigger('click');
+    // Stored fields appear masked at once, never with their values.
     await vi.waitFor(() =>
       expect(wrapper.find('[data-testid="login-tidal-password"]').exists()).toBe(true),
     );
+    for (const name of ['username', 'password']) {
+      const input = wrapper.find(`[data-testid="login-tidal-${name}"]`);
+      expect((input.element as HTMLInputElement).value).toBe('••••••••');
+      expect(input.attributes('readonly')).toBeDefined();
+      expect(input.attributes('type')).toBe('password');
+    }
+    expect(wrapper.find('[data-testid="source-settings-tidal"]').text()).toContain('Gespeichert');
+
+    await wrapper.find('[data-testid="login-change-tidal"]').trigger('click');
     const password = wrapper.find('[data-testid="login-tidal-password"]');
     expect((password.element as HTMLInputElement).value).toBe('');
-    expect(password.attributes('type')).toBe('password');
-    expect(wrapper.find('[data-testid="source-settings-tidal"]').text()).toContain(
-      'Zugangsdaten gespeichert',
-    );
-    await wrapper.find('[data-testid="login-tidal-username"]').setValue('anna');
-    await password.setValue('geheim');
+    expect(password.attributes('placeholder')).toContain('Leer lassen');
+    await password.setValue('neu');
     await wrapper.find('.source-settings__login').trigger('submit');
     await vi.waitFor(() => expect(bodies.login).toHaveLength(1));
 
-    expect(bodies.login![0]).toEqual({ fields: { username: 'anna', password: 'geheim' } });
+    // The empty user name keeps its stored value on the server.
+    expect(bodies.login![0]).toEqual({ fields: { username: '', password: 'neu' } });
     await vi.waitFor(() =>
       expect(wrapper.find('[data-testid="login-message-tidal"]').text()).toContain('Angemeldet'),
     );
     expect(
-      (wrapper.find('[data-testid="login-tidal-username"]').element as HTMLInputElement).value,
-    ).toBe('');
+      (wrapper.find('[data-testid="login-tidal-password"]').element as HTMLInputElement).value,
+    ).toBe('••••••••');
   });
 });

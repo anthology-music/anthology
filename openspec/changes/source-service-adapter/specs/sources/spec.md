@@ -41,12 +41,20 @@ Downloaded files SHALL enter the library through the library import (duplicate d
 - **THEN** each of these tracks shows the source and the retrieval date
 
 ### Requirement: Source service login
-For a source service that needs a login, admins SHALL enter the fields the service asks for in the source settings; the system SHALL send them to the service and SHALL send them again whenever the service reports that it is logged out; the settings SHALL show the login state, never the stored values.
+For a source service that needs a login, admins SHALL enter the fields the service asks for in the source settings; the system SHALL send them to the service and SHALL send them again whenever the service reports that it is logged out; the settings SHALL show the login state and every stored field masked, so that it is clear that nothing is missing, but never the stored values; a field left empty when changing the login SHALL keep its stored value.
 
 #### Scenario: Login entered
 - **WHEN** an admin enters the login fields of a service and saves them
 - **THEN** the service is logged in and the settings show "logged in"
 - **AND** the API answers with the field names only
+
+#### Scenario: Stored fields masked
+- **WHEN** an admin opens the source settings of a service whose login is stored
+- **THEN** each stored field is shown masked with the same fixed mask, whatever its length
+
+#### Scenario: Only the password changed
+- **WHEN** an admin changes only the password and leaves the user name empty
+- **THEN** the stored user name is kept and the service is logged in with the new password
 
 #### Scenario: Service restarted
 - **WHEN** a logged-in source service restarts and reports that it is logged out
