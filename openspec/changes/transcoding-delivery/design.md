@@ -38,7 +38,7 @@ Table `transcode_cache` (model `TranscodeCacheEntry`):
 
 - `kind`: `transcode` (the audio of one original in one format and bitrate, untagged) or `tagged_copy` (a transcode with the tags of one context track);
 - `audio_file_id`, `format` (`aac`, `alac`), `bitrate_kbps` (none for ALAC), `context_track_id` (tagged copies);
-- `status` (`running`, `ready`, `failed`), `path` below `<data_dir>/transcodes/`, `size_bytes`, `created_at`, `last_accessed_at`.
+- `status` (`running`, `ready`, `failed`), `path` below `<data_dir>/cache/transcodes/`, `size_bytes`, `created_at`, `last_accessed_at`. Implemented in the cache volume (pull request 2; pull request 1 used `<data_dir>/transcodes`): the tagger mounts the cache volume and writes its copies only below `/data/cache`.
 
 A unique `variant_key` (kind, original, variant, context as one string; implemented this way instead of a unique index over the columns, because NULLs (no bitrate, no context) are distinct in unique indexes on SQLite) makes creation idempotent across processes: the process whose insert wins transcodes, the others follow its file. A stuck `running` row is taken over with a compare-and-swap on `created_at`, so only one process restarts it.
 
@@ -60,7 +60,7 @@ Alternative considered: transcode completely before playing. Rejected by the mai
 
 When a ready transcode is requested for a track and no ready tagged copy exists, the server asks the tagger to copy it with the track's context tags (the same fields as the tag writer's home context, without images until `covers`). This happens in the request when the tagger answers within 5 seconds, otherwise the untagged transcode is served and the next request tries again. Running transcodes are always served untagged.
 
-Invalidation: a change listener collects changed tracks, recordings, releases and originals; before the commit it marks the tagged copies of the affected tracks (and every entry of a replaced or superseded original) as stale (`status = failed` → removed by the cache sweep). Files are deleted after the commit by the sweep, never inside the transaction.
+Invalidation: a change listener collects changed tracks, recordings, releases and originals; before the commit it marks the tagged copies of the affected tracks (and every entry of a replaced or superseded original) as stale (`status = failed` with an old creation time, so the next sweep removes them). Files are deleted after the commit by the sweep, never inside the transaction. A tag write into an original (an original change) also makes its tracks' copies stale; the next request writes them anew. Checked in the implementation: mutagen writes MP4 tags into fragmented MP4 without changing the decoded audio.
 
 ### Cache size
 

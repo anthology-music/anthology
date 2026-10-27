@@ -59,12 +59,10 @@ _Last updated: 2026-10-27_
   (milestone 3), the queue lives on the server (one per user and device), play history and
   counts follow with `personal-data`. `signed-media-urls` 3.1 is done; its 2.2 is done for
   originals only.
-- **In progress:** change `transcoding-delivery` on branch `feat/transcoding-delivery`, pull
-  request 1 of 2 (delivery decision, device formats in `hello`, bitrate setting, transcoding
-  while streaming, cache with size limit). Pull request 2: tagged copies per context through
-  the tagger and their invalidation. Decided with the maintainer: transcodes are streamed while
-  they are written, tagged now through the tagger, declared quality stands in until the
-  analysis. `playable-delivery-format` 3.3 waits for the Raumfeld adapter.
+- **Archived:** `transcoding-delivery` (PR #31 and the tagged copies): transcodes by device
+  bitrate and formats, streamed while written, tagged per context through the tagger. Decided
+  with the maintainer: streaming, tagging now, declared quality before the analysis.
+  `playable-delivery-format` 3.3 waits for the Raumfeld adapter.
 - **Next:** see `docs/roadmap.md` (milestone 3).
   `effective-quality-duplicate-checks` covers CD import and sources only; it waits for them.
 

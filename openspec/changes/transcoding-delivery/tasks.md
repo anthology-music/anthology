@@ -15,8 +15,8 @@
 
 ## 3. Pull request 2: tagged copies
 
-- [ ] 3.1 Create tagged copies per context through the tagger with the 5-second bound and the untagged fallback; verify with tests using a fake tagger: first request, cache hit, tagger down, slow tagger
-- [ ] 3.2 Invalidate tagged copies on changes of the context's tags and entries of replaced or superseded originals; verify with tests for an album rename, a recording edit and a replaced original
+- [x] 3.1 Create tagged copies per context through the tagger with the 5-second bound and the untagged fallback; verify with tests using a fake tagger: first request, cache hit, tagger down, slow tagger
+- [x] 3.2 Invalidate tagged copies on changes of the context's tags and entries of replaced or superseded originals; verify with tests for an album rename, a recording edit and a replaced original
 
 ## Workflow follow-up
 

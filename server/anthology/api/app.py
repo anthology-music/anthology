@@ -55,6 +55,7 @@ from anthology.tagging import review as tagging_review
 from anthology.tagging import streams as tagging_streams
 from anthology.tagging.tagger_client import TaggerClient, check_tagger
 from anthology.tagging.writer import TagWriter
+from anthology.transcoding import invalidation as _transcode_invalidation  # noqa: F401
 from anthology.transcoding.service import Transcoder
 from anthology.users import api as users_api
 from anthology.users.service import SessionCache, TokenSettings
@@ -110,7 +111,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.tagger_monitor = tagger_monitor
         tag_writer = TagWriter(sessionmaker, tagger)
         app.state.tag_writer = tag_writer
-        transcoder = Transcoder(sessionmaker, settings)
+        transcoder = Transcoder(sessionmaker, settings, tagger)
         app.state.transcoder = transcoder
         lookups, mirror_monitor = _lookups(settings, sessionmaker)
         app.state.lookups = lookups
