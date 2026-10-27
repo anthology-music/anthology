@@ -13,6 +13,7 @@ from anthology.core.changes import ChangeLog
 from anthology.core.security import InvalidTokenError, decode_access_token
 from anthology.sync import messages as m
 from anthology.sync.connection import CLOSE_TOKEN_EXPIRED, Connection, FeedPosition
+from anthology.users.service import record_formats
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +57,9 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
     if info is None or info.user_id != claims.user_id:
         await websocket.close(code=CLOSE_TOKEN_EXPIRED, reason="session revoked")
         return
+
+    if hello.data.formats is not None:
+        await record_formats(state.sessionmaker, info.device_id, hello.data.formats)
 
     connection = Connection(
         websocket,

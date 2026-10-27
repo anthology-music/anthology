@@ -10,12 +10,13 @@ from urllib.parse import parse_qsl, urlsplit
 import pytest
 from fastapi import FastAPI
 from httpx import AsyncClient
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, update
 
 from anthology.core.changes import ChangeOperation, ChangeScope, record_change
 from anthology.library.models import AudioFile, Track
 from anthology.playback import service
 from anthology.playback.models import PlayQueue, PlayQueueEntry
+from anthology.users.models import Device
 from tests.library_helpers import album
 from tests.users_helpers import Account, create_user, login, setup_admin
 from tests.ws_helpers import Ws, ws_connect
@@ -309,6 +310,8 @@ async def test_media_urls_serve_originals_with_ranges(
     async with app.state.sessionmaker() as session, session.begin():
         files = {audio.recording_id: audio for audio in await session.scalars(select(AudioFile))}
         files[data["tracks"][0].recording_id].path = str(original)
+        # The browser reported that it plays FLAC: it receives the originals.
+        await session.execute(update(Device).values(supported_formats=["aac", "flac", "mp3"]))
     await _start(client, admin, ids=[str(data["tracks"][0].id), str(data["tracks"][1].id)])
     async with app.state.sessionmaker() as session:
         entries = [
@@ -339,7 +342,14 @@ async def test_media_urls_serve_originals_with_ranges(
 
     assert signed.status_code == 200
     assert first["format"] == "flac" and first["expires_at"]
-    assert unknown == {"entry_id": "999999", "url": None, "expires_at": None, "format": None}
+    assert first["transcoded"] is False
+    assert unknown == {
+        "entry_id": "999999",
+        "url": None,
+        "expires_at": None,
+        "format": None,
+        "transcoded": False,
+    }
     assert whole.status_code == 200 and whole.content == payload
     assert whole.headers["content-type"] == "audio/flac"
     assert whole.headers["accept-ranges"] == "bytes"

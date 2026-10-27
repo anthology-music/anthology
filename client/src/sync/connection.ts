@@ -28,6 +28,8 @@ export interface ConnectionOptions {
   url: string;
   tokens: TokenSource;
   deviceId?: () => string | null;
+  /** Audio formats this device plays, sent in `hello` (spec: transcoding, Format-aware delivery). */
+  formats?: () => string[] | null;
   socketFactory?: SocketFactory;
   minDelayMs?: number;
   maxDelayMs?: number;
@@ -131,6 +133,7 @@ export class SyncConnection {
           protocol: PROTOCOL_VERSION,
           token,
           device_id: this.options.deviceId?.() ?? null,
+          formats: this.options.formats?.() ?? null,
         },
       } satisfies ClientMessage),
     );

@@ -37,7 +37,8 @@ class FakeAudio extends EventTarget implements AudioLike {
   }
 
   canPlayType(type: string): string {
-    return type.includes('aiff') ? '' : 'probably';
+    if (type.includes('aiff')) return '';
+    return type === 'audio/flac' ? 'maybe' : 'probably';
   }
 
   /** The browser loaded the file's metadata. */
@@ -119,7 +120,8 @@ async function setup(path = '/local/albums', expiresInMs = 3_600_000) {
         return json(
           entry_ids.map((id) => ({
             entry_id: id,
-            url: `/api/v1/media/originals/file-${id}?sig=x`,
+            // Entry "failed": the server found no delivery (its transcode failed).
+            url: id === 'failed' ? null : `/api/v1/media/originals/file-${id}?sig=x`,
             expires_at: new Date(Date.now() + expiresInMs).toISOString(),
             format: 'flac',
           })),
@@ -225,12 +227,12 @@ describe('player', () => {
     expect(wrapper.find('[data-testid="player-title"]').text()).toBe('Titel t-2');
   });
 
-  it('skips entries the device cannot play and marks them', async () => {
+  it('skips entries without a delivery and marks them', async () => {
     const { wrapper, socket, audio, calls } = await setup();
     await serveState(socket, state('1', { playing: true }));
     await vi.waitFor(() => expect(audio.src).toContain('file-1'));
     await wrapper.find('[data-testid="player-toggle"]').trigger('click');
-    await serveState(socket, state('2', { format: 'aiff', playing: true }), 2);
+    await serveState(socket, state('failed', { format: 'aiff', playing: true }), 2);
 
     await vi.waitFor(() =>
       expect(posted(calls, '/api/v1/playback/skip')).toEqual([{ by: 1, playing: true }]),
@@ -238,7 +240,10 @@ describe('player', () => {
     expect(wrapper.find('[data-testid="player-problem"]').text()).toContain(
       'Auf diesem Gerät nicht abspielbar',
     );
-    expect(posted(calls, '/api/v1/playback/urls')).toEqual([{ entry_ids: ['1'] }]);
+    expect(posted(calls, '/api/v1/playback/urls')).toEqual([
+      { entry_ids: ['1'] },
+      { entry_ids: ['failed'] },
+    ]);
   });
 
   it('restarts the track or goes back with previous', async () => {
@@ -366,5 +371,19 @@ describe('player', () => {
         'DELETE /api/v1/playback/queue/entries/2',
       ),
     );
+  });
+
+  it('reports the playable formats for the hello', async () => {
+    const { playableFormats } = await import('@/features/playback/formats');
+
+    expect(playableFormats(new FakeAudio())).toEqual([
+      'aac',
+      'alac',
+      'flac',
+      'mp3',
+      'opus',
+      'vorbis',
+      'wav',
+    ]);
   });
 });

@@ -35,6 +35,9 @@ class HelloData(_Data):
     token: str = Field(min_length=1)
     device_id: uuid.UUID | None = None
     last_seq: int | None = Field(default=None, ge=0)
+    # Audio formats the device can play (e.g. "flac", "aac"); stored on the device for the
+    # delivery decision (spec: transcoding, Format-aware delivery).
+    formats: list[str] | None = Field(default=None, max_length=32)
 
 
 class Hello(_Message):

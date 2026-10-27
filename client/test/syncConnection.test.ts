@@ -31,6 +31,7 @@ function connection(tokens = tokenSource()) {
     url: 'ws://anthology.test/api/v1/ws',
     tokens,
     deviceId: () => 'device-1',
+    formats: () => ['aac', 'flac'],
     socketFactory: sockets.factory,
     random: () => 1,
   });
@@ -59,6 +60,7 @@ describe('SyncConnection', () => {
       protocol: 1,
       token: 'token-1',
       device_id: 'device-1',
+      formats: ['aac', 'flac'],
     });
     expect(states).toEqual(['connecting', 'live']);
   });

@@ -6,7 +6,6 @@ import { getServices } from '@/services';
 import type { Subscription } from '@/sync/subscription';
 
 import { type AudioLike, createAudio } from './audio';
-import { playableFormats } from './formats';
 
 export type PlayRule = NonNullable<Schemas['StartIn']['rule']>;
 export type Problem = 'unplayable' | 'missing';
@@ -42,7 +41,6 @@ export const usePlayerStore = defineStore('player', () => {
   let subscription: Subscription | null = null;
   let stopListening: (() => void) | null = null;
   let reportTimer: ReturnType<typeof setInterval> | null = null;
-  let formats = new Set<string>();
   // The user wants sound: play what gets loaded (false after a reload: resume paused).
   let wanted = false;
   let pendingSeek: number | null = null;
@@ -60,7 +58,6 @@ export const usePlayerStore = defineStore('player', () => {
   function attach(): AudioLike {
     if (audio) return audio;
     const element = createAudio();
-    formats = playableFormats(element);
     element.volume = volume.value;
     element.addEventListener('timeupdate', () => {
       positionMs.value = Math.round(element.currentTime * 1000);
@@ -152,10 +149,8 @@ export const usePlayerStore = defineStore('player', () => {
     positionMs.value = fromMs;
     durationMs.value = current.value?.duration_ms ?? 0;
     updateMetadata();
-    const format = current.value?.format ?? null;
-    if (format === null) problems.set(entry, 'missing');
-    else if (!formats.has(format)) problems.set(entry, 'unplayable');
-    if (problems.has(entry)) {
+    if ((current.value?.format ?? null) === null) {
+      problems.set(entry, 'missing');
       element.pause();
       await advance();
       return;
@@ -165,7 +160,10 @@ export const usePlayerStore = defineStore('player', () => {
     if (loaded.value !== entry) return;
     const url = known.get(entry)?.url ?? null;
     if (url === null) {
-      problems.set(entry, 'missing');
+      // The server found no delivery: its transcode failed (spec: Formats the device cannot
+      // play).
+      problems.set(entry, 'unplayable');
+      element.pause();
       await advance();
       return;
     }

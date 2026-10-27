@@ -14,6 +14,7 @@ from anthology.review import models as review
 from anthology.search import index as search_index  # installs the document maintenance
 from anthology.search import models as search
 from anthology.tagging import models as tagging
+from anthology.transcoding import models as transcoding
 from anthology.users import models as users
 
 __all__ = [
@@ -29,5 +30,6 @@ __all__ = [
     "search_index",
     "services",
     "tagging",
+    "transcoding",
     "users",
 ]

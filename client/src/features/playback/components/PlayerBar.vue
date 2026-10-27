@@ -7,6 +7,12 @@
         <span class="text-muted player-bar__sub">
           {{ player.current.artist }} · {{ player.current.album }}
         </span>
+        <!-- The original's effective quality, also when a transcode plays. -->
+        <QualityBadge
+          class="player-bar__quality"
+          :effective="player.current.effective_quality"
+          :status="player.current.quality_status"
+        />
         <span v-if="problem" class="player-bar__problem" role="status" data-testid="player-problem">
           <q-icon name="info" aria-hidden="true" /> {{ t(`playback.problem.${problem}`) }}
         </span>
@@ -99,6 +105,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import QualityBadge from '@/features/library/components/QualityBadge.vue';
 import { formatDuration } from '@/features/library/format';
 
 import { usePlayerStore } from '../store';
@@ -158,6 +165,10 @@ onBeforeUnmount(() => player.stop());
 
 .player-bar__title {
   font-weight: var(--weight-medium);
+}
+
+.player-bar__quality {
+  align-self: flex-start;
 }
 
 .player-bar__problem {
