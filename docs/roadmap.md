@@ -21,7 +21,6 @@ Collected decisions to revisit or features deferred on purpose; each needs its o
 | Opus as an additional transcode target | ADR 0013 | per-device option |
 | Sample-rate/bit-depth limits of playback targets | change `playable-delivery-format` | extends the format capability list |
 | Virtual header splicing for FLAC/MP3 downloads | change `context-tags-on-delivery` | optimisation only, no behavior change |
-| Album/zip export of tagged copies | change `context-tags-on-delivery` | streamed, without filling the cache |
 | HTOA, CD-Text and pre-emphasis in the CD ripper | ADR 0018 | |
 | CUETools database (CTDB) as second rip verification | ADR 0018 | |
 | Further multi-room systems (Sonos, Chromecast) | ADR 0011 | new output adapters |

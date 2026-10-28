@@ -38,6 +38,7 @@ async def test_ready_does_not_log_migration_details(
     assert not [record for record in caplog.records if record.name.startswith("alembic")]
 
 
+@pytest.mark.usefixtures("clean_db")  # a downgrade to base needs empty tables
 async def test_not_ready_when_migrations_are_behind(
     client: AsyncClient, settings: Settings, engine: AsyncEngine
 ) -> None:

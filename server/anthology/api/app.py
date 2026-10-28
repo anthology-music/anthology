@@ -21,6 +21,7 @@ from anthology.jobs.schedules import Scheduler, ScheduleRegistry
 from anthology.jobs.streams import JobItemsStream, JobsStream
 from anthology.library import adoption, identification, maintenance, superseded
 from anthology.library import api as library_api
+from anthology.library import downloads as library_downloads
 from anthology.library import review as library_review
 from anthology.library.streams import STREAMS as LIBRARY_STREAMS
 from anthology.library_import import api as library_import_api
@@ -191,6 +192,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(jobs_api.router, prefix=API_PREFIX)
     app.include_router(metadata_lookup_api.router, prefix=API_PREFIX)
     app.include_router(library_api.router, prefix=API_PREFIX)
+    app.include_router(library_downloads.router, prefix=API_PREFIX)
     app.include_router(library_import_api.router, prefix=API_PREFIX)
     app.include_router(quality_analysis_api.router, prefix=API_PREFIX)
     app.include_router(review_api.router, prefix=API_PREFIX)

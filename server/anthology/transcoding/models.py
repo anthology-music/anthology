@@ -15,7 +15,7 @@ from anthology.db.types import UTCDateTime, utcnow
 
 class CacheKind(enum.StrEnum):
     TRANSCODE = "transcode"  # the audio of one original in one format and bitrate, untagged
-    TAGGED_COPY = "tagged_copy"  # a transcode with the tags of one context track
+    TAGGED_COPY = "tagged_copy"  # a transcode or an original with the tags of one context track
 
 
 class CacheStatus(enum.StrEnum):
@@ -39,7 +39,7 @@ class TranscodeCacheEntry(Base):
         ForeignKey("audio_files.id", ondelete="CASCADE"), index=True
     )
     format: Mapped[str] = mapped_column(String(16))
-    # None for ALAC.
+    # None for ALAC and for tagged copies of originals.
     bitrate_kbps: Mapped[int | None] = mapped_column(Integer)
     context_track_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, index=True)
     status: Mapped[CacheStatus] = mapped_column(str_enum(CacheStatus, "status"))

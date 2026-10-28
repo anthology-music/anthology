@@ -20,7 +20,7 @@ Pull request 1: tasks 1–4. Pull request 2: task 5. The change is archived afte
 
 - [x] 3.1 Implement the persistent write queue with coalescing and the `TagWriter` (base tags of managed originals atomically, home-context tags of referenced files with opt-in in place, never superseded or without opt-in, resume after a tagger outage, retries with back-off, content hash updated); verify with tests using a fake tagger (down, up, managed, referenced with and without opt-in, superseded, two processes) (closes `managed-and-referenced-originals` 2.3)
 - [x] 3.2 ~~Implement `POST /v1/tags/write` modes in `services/tagger`~~ – moved to change `tagger-service` (task 2.4)
-- [ ] 3.3 (waits for `transcoding` and `context-tags-on-delivery`) Invalidate transcodes and tagged copies of affected contexts; verify with a test that a title edit discards the cache entries
+- [x] 3.3 (waits for `transcoding` and `context-tags-on-delivery`) Invalidate transcodes and tagged copies of affected contexts; verify with a test that a title edit discards the cache entries
 - [x] 3.4 Deltas for edited rows in every list that shows them; verify with protocol tests that a recording edit reaches the track rows of all its contexts and a release edit its album row and track rows
 
 ## 4. Client

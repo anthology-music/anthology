@@ -21,6 +21,8 @@ FORMATS = {
     "alac": ("tone-alac.m4a", ["-c:a", "alac"]),
     "vorbis": ("tone.ogg", ["-c:a", "libvorbis"]),
     "opus": ("tone.opus", ["-c:a", "libopus"]),
+    "wav": ("tone.wav", ["-c:a", "pcm_s16le"]),
+    "aiff": ("tone.aiff", ["-c:a", "pcm_s16be"]),
 }
 
 

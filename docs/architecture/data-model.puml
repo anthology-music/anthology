@@ -189,7 +189,8 @@ package "Library" {
 
   class TranscodeCacheEntry {
     One per variant (variantKey unique):
-    a transcode of an original, or its copy
+    a transcode of an original, or a copy of a
+    transcode or of the original (downloads)
     tagged for one context track
     ==
     +id : UUID

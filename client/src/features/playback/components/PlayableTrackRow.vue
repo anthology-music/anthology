@@ -41,6 +41,15 @@
           >
             <q-item-section>{{ t('playback.addToQueue') }}</q-item-section>
           </q-item>
+          <q-item
+            v-close-popup
+            clickable
+            :disable="downloads.busy"
+            :data-testid="`download-${track.id}`"
+            @click="downloads.downloadTrack(track.id)"
+          >
+            <q-item-section>{{ t('library.download.track') }}</q-item-section>
+          </q-item>
         </q-list>
       </q-menu>
     </q-btn>
@@ -52,6 +61,7 @@ import type { LibraryTrackRow } from '@anthology/api-types';
 import { useI18n } from 'vue-i18n';
 
 import TrackRow from '@/features/library/components/TrackRow.vue';
+import { useDownloadStore } from '@/features/library/downloads';
 
 import { type PlayRule, usePlayerStore } from '../store';
 
@@ -68,6 +78,7 @@ const props = withDefaults(
 
 const { t } = useI18n();
 const player = usePlayerStore();
+const downloads = useDownloadStore();
 
 function play(): void {
   if (props.rule) void player.playList(props.rule, props.track.id);

@@ -361,6 +361,13 @@ const en: typeof de = {
     },
   },
   library: {
+    download: {
+      track: 'Download',
+      release: 'Download album',
+      untagged: 'Downloaded without context tags: the tagger is not reachable right now.',
+      failed: 'The download could not be started.',
+      dismiss: 'Dismiss notice',
+    },
     source: '{source}, retrieved on {date}',
     quality: {
       tiers: {

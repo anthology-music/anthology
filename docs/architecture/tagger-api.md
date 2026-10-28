@@ -10,14 +10,14 @@ The tagger (`services/tagger`, GPL-2.0-or-later, container `anthology-tagger`) r
 
 | Endpoint | Purpose |
 |---|---|
-| `GET /v1/health` | `{ status, service, version, interface: "1.0", formats }` |
+| `GET /v1/health` | `{ status, service, version, interface: "1.1", formats }` |
 | `POST /v1/tags/read` | `{ paths: [...], include_raw?: false, extract_images_to?: <dir> }` → per file: `audio`, `tags`, `images`, optional `raw` |
 | `POST /v1/tags/write` | `{ mode: "atomic" \| "in_place", files: [{ path, tags?, replace_all?: false, images? }] }` |
 | `POST /v1/tags/copy` | `{ files: [{ source, target, tags?, images? }] }` – tagged copy below the cache root |
 
 ### Read results
 
-- `audio`: `format` (`flac`, `mp3`, `mp4`, `ogg_vorbis`, `opus`), `codec` (`flac`, `mp3`, `aac`, `alac`, `vorbis`, `opus`), `lossless`, `duration_seconds`, `sample_rate`, `bit_depth` (lossless only), `channels`, `bitrate_kbps`. These are declared properties; the effective quality is determined by quality analysis (ADR 0012).
+- `audio`: `format` (`flac`, `mp3`, `mp4`, `ogg_vorbis`, `opus`, `wav`, `aiff`), `codec` (`flac`, `mp3`, `aac`, `alac`, `vorbis`, `opus`, `pcm`), `lossless`, `duration_seconds`, `sample_rate`, `bit_depth` (lossless only), `channels`, `bitrate_kbps`. These are declared properties; the effective quality is determined by quality analysis (ADR 0012).
 - `tags`: the neutral fields below; absent fields are omitted.
 - `images`: `[{ type, mime, size, width, height, sha256, path? }]`. `type` is `front`, `back`, `booklet`, `disc` or `other` (MP4 has no picture types: the first cover counts as `front`). With `extract_images_to` (a directory below the cache root) each image is stored as `<sha256>.<ext>`; existing files are kept, so an image shared by many files is stored once. The core moves extracted images into its `BlobStore` (ADR 0019).
 - `raw` (with `include_raw`): native keys and their text values, for import diagnostics; pictures are left out.
@@ -38,7 +38,7 @@ The tagger (`services/tagger`, GPL-2.0-or-later, container `anthology-tagger`) r
 
 Following MusicBrainz Picard, so files stay readable by other players and by Picard.
 
-| Field | Type | Vorbis comment (FLAC, Ogg) | ID3v2.4 (MP3) | MP4 |
+| Field | Type | Vorbis comment (FLAC, Ogg) | ID3v2.4 (MP3, WAV, AIFF) | MP4 |
 |---|---|---|---|---|
 | `title` | text | `TITLE` | `TIT2` | `©nam` |
 | `artist` | text | `ARTIST` | `TPE1` | `©ART` |
@@ -86,4 +86,4 @@ Paths must be absolute. They are resolved with symbolic links followed and must 
 
 ## Versioning
 
-`interface` in `/v1/health` is `major.minor`. Additive changes (new optional fields, new endpoints) raise the minor version; breaking changes get a new path prefix (`/v2`). The core accepts interface major version 1.
+`interface` in `/v1/health` is `major.minor`. Additive changes (new optional fields, new endpoints) raise the minor version; breaking changes get a new path prefix (`/v2`). The core accepts interface major version 1. Version 1.1 added WAV and AIFF (ID3v2.4 in their `id3 `/`ID3 ` chunk).

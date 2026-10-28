@@ -5,11 +5,13 @@ from types import UnionType
 from typing import Union, get_args, get_origin
 
 import mutagen
+from mutagen.aiff import AIFF
 from mutagen.flac import FLAC
 from mutagen.mp3 import MP3
 from mutagen.mp4 import MP4
 from mutagen.oggopus import OggOpus
 from mutagen.oggvorbis import OggVorbis
+from mutagen.wave import WAVE
 
 from tagger.errors import CORRUPT, UNSUPPORTED_FORMAT, TaggerError
 from tagger.formats import Family, RawImage
@@ -18,7 +20,7 @@ from tagger.formats.mp4 import Mp4Family
 from tagger.formats.vorbis import VorbisFamily
 from tagger.models import Tags
 
-FORMATS = ["flac", "mp3", "mp4", "ogg_vorbis", "opus"]
+FORMATS = ["flac", "mp3", "mp4", "ogg_vorbis", "opus", "wav", "aiff"]
 PAIRS = {
     "track_number": ("track", 0),
     "track_total": ("track", 1),
@@ -50,7 +52,7 @@ def open_file(path: Path) -> Family:
         raise TaggerError(CORRUPT, f"cannot parse file: {error}") from error
     if isinstance(file, FLAC | OggVorbis | OggOpus):
         return VorbisFamily(file)
-    if isinstance(file, MP3):
+    if isinstance(file, MP3 | WAVE | AIFF):
         return Id3Family(file)
     if isinstance(file, MP4):
         return Mp4Family(file)

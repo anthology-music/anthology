@@ -277,6 +277,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/library/releases/{release_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Download Release
+         * @description A signed URL of the album as a zip of tagged copies.
+         */
+        post: operations["download_release_api_v1_library_releases__release_id__download_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/library/superseded/deletion": {
         parameters: {
             query?: never;
@@ -291,6 +311,27 @@ export interface paths {
          * @description Delete all superseded managed originals whose replacement verifies (ADR 0021).
          */
         post: operations["start_superseded_deletion_api_v1_library_superseded_deletion_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/library/tracks/{track_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Download Track
+         * @description A signed URL of a track's original with the tags of this context; the copy is written
+         *     here, so that the answer says whether it carries them.
+         */
+        post: operations["download_track_api_v1_library_tracks__track_id__download_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -442,6 +483,47 @@ export interface paths {
         get: operations["get_my_settings_api_v1_me_settings_get"];
         /** Put My Settings */
         put: operations["put_my_settings_api_v1_me_settings_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/media/downloads/releases/{release_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Media Download Release
+         * @description The album as a zip, streamed while it is written (no range requests).
+         */
+        get: operations["media_download_release_api_v1_media_downloads_releases__release_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/media/downloads/tracks/{track_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Media Download Track
+         * @description The tagged copy (or, without the tagger, the original) as an attachment, with range
+         *     requests, so that an interrupted download continues.
+         */
+        get: operations["media_download_track_api_v1_media_downloads_tracks__track_id__get"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -1119,6 +1201,22 @@ export interface components {
          * @enum {string}
          */
         DeviceType: "web" | "desktop" | "mobile";
+        /** DownloadOut */
+        DownloadOut: {
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** File Name */
+            file_name: string;
+            /** Notice */
+            notice?: string | null;
+            /** Tagged */
+            tagged: boolean;
+            /** Url */
+            url: string;
+        };
         /**
          * DuplicateStatus
          * @enum {string}
@@ -2418,6 +2516,37 @@ export interface operations {
             };
         };
     };
+    download_release_api_v1_library_releases__release_id__download_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DownloadOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     start_superseded_deletion_api_v1_library_superseded_deletion_post: {
         parameters: {
             query?: never;
@@ -2434,6 +2563,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DeletionStarted"];
+                };
+            };
+        };
+    };
+    download_track_api_v1_library_tracks__track_id__download_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                track_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DownloadOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -2749,6 +2909,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserSettingsData"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    media_download_release_api_v1_media_downloads_releases__release_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    media_download_track_api_v1_media_downloads_tracks__track_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                track_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
