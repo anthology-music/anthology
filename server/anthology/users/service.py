@@ -681,3 +681,29 @@ async def delivery_profile(
         settings.audio_bitrate if settings is not None else BitrateSetting.ORIGINAL,
         device.supported_formats if device is not None else None,
     )
+
+
+async def output_zone(
+    session: AsyncSession, user_device_id: uuid.UUID, *, lock: bool = False
+) -> uuid.UUID | None:
+    """The output zone a user device controls (spec: playback, Output picker); None: itself."""
+    query = select(UserDevice.output_zone_id).where(UserDevice.id == user_device_id)
+    if lock:
+        query = query.with_for_update()
+    return await session.scalar(query)
+
+
+async def set_output_zone(
+    session: AsyncSession, user_device_id: uuid.UUID, zone_id: uuid.UUID | None
+) -> None:
+    user_device = await session.get_one(UserDevice, user_device_id)
+    user_device.output_zone_id = zone_id
+    await session.flush()
+    await record_change(
+        session,
+        entity_type="user_device",
+        entity_id=user_device.id,
+        operation=ChangeOperation.UPDATE,
+        scope=ChangeScope.USER,
+        owner_user_id=user_device.user_id,
+    )

@@ -33,6 +33,10 @@ from anthology.metadata_lookup import refresh as metadata_refresh
 from anthology.metadata_lookup.service import LookupService, check_mirror
 from anthology.playback import api as playback_api
 from anthology.playback import streams as playback_streams
+from anthology.playback.outputs import api as outputs_api
+from anthology.playback.outputs import streams as outputs_streams
+from anthology.playback.outputs.player import Media
+from anthology.playback.outputs.registry import Outputs, load_adapters, media_base
 from anthology.quality_analysis import api as quality_analysis_api
 from anthology.quality_analysis import review as quality_review
 from anthology.quality_analysis import service as quality_analysis
@@ -118,6 +122,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.tag_writer = tag_writer
         transcoder = Transcoder(sessionmaker, settings, tagger)
         app.state.transcoder = transcoder
+        outputs = Outputs(
+            sessionmaker,
+            settings,
+            app.state.output_adapters
+            if app.state.output_adapters is not None
+            else load_adapters(settings),
+            Media(
+                sign=app.state.media_signer.sign,
+                path_for=app.url_path_for,
+                transcoder=transcoder,
+                base_url=media_base(settings),
+                max_ttl_seconds=settings.media_url_output_max_ttl_seconds,
+            ),
+        )
+        app.state.outputs = outputs
+        feed.subscribe(outputs.on_change)
         sources = SourceServices(sessionmaker, settings, app.state.source_transport)
         app.state.sources = sources
         app.state.job_handlers.get(source_orders.JOB_TYPE).bind(sessionmaker, sources, settings)
@@ -161,6 +181,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             await tagger_monitor.start()
             await tag_writer.start()
             await sources.start()
+            await outputs.start()
             if mirror_monitor is not None:
                 await mirror_monitor.start()
         try:
@@ -168,6 +189,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         finally:
             if mirror_monitor is not None:
                 await mirror_monitor.stop()
+            await outputs.stop()
             await sources.stop()
             await transcoder.aclose()
             await lookups.aclose()
@@ -184,6 +206,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.streams = _streams(settings, app.state.review_handlers)
     # Tests: HTTP transports of the source services (e.g. the fake service in process).
     app.state.source_transport = None
+    # Tests: output adapters (e.g. Raumfeld against the fake host); None loads the installed.
+    app.state.output_adapters = None
     app.state.job_handlers = _job_handlers(settings)
     app.state.schedules = _schedules()
     app.include_router(health.router, prefix=API_PREFIX)
@@ -199,6 +223,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(tagging_api.router, prefix=API_PREFIX)
     app.include_router(search_api.router, prefix=API_PREFIX)
     app.include_router(playback_api.router, prefix=API_PREFIX)
+    app.include_router(outputs_api.router, prefix=API_PREFIX)
     app.include_router(sources_api.router, prefix=API_PREFIX)
     if settings.web_dir is not None:
         mount_web(app, settings.web_dir)  # last: its fallback must not shadow API routes
@@ -301,6 +326,7 @@ def _streams(settings: Settings, review_handlers: review.HandlerRegistry) -> Str
         *LIBRARY_IMPORT_STREAMS,
         *QUALITY_ANALYSIS_STREAMS,
         *playback_streams.STREAMS,
+        *outputs_streams.STREAMS,
         *sources_streams.STREAMS,
     ):
         registry.register(stream())

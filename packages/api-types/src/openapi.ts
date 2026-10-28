@@ -591,6 +591,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/playback/output": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Select Output
+         * @description Hand this device's queue to a zone, or take it back (spec: Output picker).
+         */
+        put: operations["select_output_api_v1_playback_output_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/playback/queue": {
         parameters: {
             query?: never;
@@ -646,6 +666,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/playback/rooms/{room_id}/volume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Room Volume */
+        put: operations["room_volume_api_v1_playback_rooms__room_id__volume_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/playback/rooms/{room_id}/zone": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Join Zone
+         * @description Add the room to a zone, or form a new zone of it alone (spec: Zone management).
+         */
+        put: operations["join_zone_api_v1_playback_rooms__room_id__zone_put"];
+        post?: never;
+        /** Leave Zone */
+        delete: operations["leave_zone_api_v1_playback_rooms__room_id__zone_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/playback/skip": {
         parameters: {
             query?: never;
@@ -686,6 +744,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/playback/systems": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add System
+         * @description An output system the server cannot discover (no multicast, spec: Output discovery and
+         *     addresses).
+         */
+        post: operations["add_system_api_v1_playback_systems_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/playback/systems/{system_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove System */
+        delete: operations["remove_system_api_v1_playback_systems__system_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/playback/urls": {
         parameters: {
             query?: never;
@@ -702,6 +798,23 @@ export interface paths {
          *     entry is ready before it plays (spec: Prepared next track).
          */
         post: operations["urls_api_v1_playback_urls_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/playback/zones/{zone_id}/volume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Zone Volume */
+        put: operations["zone_volume_api_v1_playback_zones__zone_id__volume_put"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1601,6 +1714,14 @@ export interface components {
             /** Order Id */
             order_id: string;
         };
+        /**
+         * OutputIn
+         * @description The zone this device controls from now on; None: the device plays itself.
+         */
+        OutputIn: {
+            /** Zone Id */
+            zone_id: string | null;
+        };
         /** Page[DeviceOut] */
         Page_DeviceOut_: {
             /** Items */
@@ -1765,6 +1886,14 @@ export interface components {
          * @enum {string}
          */
         Role: "admin" | "editor" | "listener";
+        /**
+         * RoomZoneIn
+         * @description The zone the room joins; None: a new zone of the room alone.
+         */
+        RoomZoneIn: {
+            /** Zone Id */
+            zone_id: string | null;
+        };
         /**
          * ScheduleFrequency
          * @enum {string}
@@ -1931,6 +2060,21 @@ export interface components {
             /** Position Ms */
             position_ms: number;
         };
+        /** SystemIn */
+        SystemIn: {
+            /**
+             * Adapter
+             * @default raumfeld
+             */
+            adapter: string;
+            /** Address */
+            address: string;
+        };
+        /** SystemOut */
+        SystemOut: {
+            /** Id */
+            id: string;
+        };
         /**
          * Theme
          * @enum {string}
@@ -2053,6 +2197,13 @@ export interface components {
             };
             /** Items */
             items: number;
+        };
+        /** VolumeIn */
+        VolumeIn: {
+            /** Muted */
+            muted?: boolean | null;
+            /** Volume */
+            volume?: number | null;
         };
     };
     responses: never;
@@ -3067,6 +3218,37 @@ export interface operations {
             };
         };
     };
+    select_output_api_v1_playback_output_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OutputIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     start_api_v1_playback_queue_post: {
         parameters: {
             query?: never;
@@ -3180,6 +3362,101 @@ export interface operations {
             };
         };
     };
+    room_volume_api_v1_playback_rooms__room_id__volume_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                room_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VolumeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    join_zone_api_v1_playback_rooms__room_id__zone_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                room_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoomZoneIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    leave_zone_api_v1_playback_rooms__room_id__zone_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                room_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     skip_api_v1_playback_skip_post: {
         parameters: {
             query?: never;
@@ -3244,6 +3521,68 @@ export interface operations {
             };
         };
     };
+    add_system_api_v1_playback_systems_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SystemIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_system_api_v1_playback_systems__system_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                system_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     urls_api_v1_playback_urls_post: {
         parameters: {
             query?: never;
@@ -3265,6 +3604,39 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["MediaUrl"][];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    zone_volume_api_v1_playback_zones__zone_id__volume_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                zone_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VolumeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

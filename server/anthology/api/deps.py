@@ -58,9 +58,17 @@ async def media_grant(request: Request) -> MediaGrant:
     except InvalidMediaUrlError as error:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="invalid_url") from error
     info = await request.app.state.session_cache.get(grant.target_id)
-    if info is None or info.user_id != grant.user_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="revoked")
-    return grant
+    if info is not None and info.user_id == grant.user_id:
+        return grant
+    # A URL handed to an output zone (spec: playback, Delivery to outputs).
+    outputs = getattr(request.app.state, "outputs", None)
+    if (
+        info is None
+        and outputs is not None
+        and await outputs.allows(grant.user_id, grant.target_id)
+    ):
+        return grant
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="revoked")
 
 
 MediaAccess = Annotated[MediaGrant, Depends(media_grant)]

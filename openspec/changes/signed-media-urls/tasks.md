@@ -14,7 +14,7 @@
 ## 3. Clients and outputs
 
 - [x] 3.1 Request and refresh signed URLs for the play queue in the client; verify with a unit test that URLs are refreshed before expiry
-- [ ] 3.2 Issue zone-bound URLs per track (track duration plus one hour, max 24 h) when the zone player hands a track over (change `raumfeld-output`); verify with tests using a fake clock
+- [x] 3.2 Issue zone-bound URLs per track (track duration plus one hour, max 24 h) when the zone player hands a track over (change `raumfeld-output`); verify with tests using a fake clock
 
 ## 4. WebSocket token renewal
 

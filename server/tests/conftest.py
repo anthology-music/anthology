@@ -27,8 +27,12 @@ TEST_DATABASE_URL = os.environ.get("ANTHOLOGY_TEST_DATABASE_URL", "")
 def settings(tmp_path_factory: pytest.TempPathFactory) -> Settings:
     data_dir = tmp_path_factory.mktemp("data")
     # Port 9 (discard) is closed: the tagger is unavailable unless a test brings its own.
+    # No SSDP search: tests never reach real speakers.
     return Settings(
-        data_dir=data_dir, database_url=TEST_DATABASE_URL, tagger_url="http://127.0.0.1:9"
+        data_dir=data_dir,
+        database_url=TEST_DATABASE_URL,
+        tagger_url="http://127.0.0.1:9",
+        output_discovery=False,
     )
 
 

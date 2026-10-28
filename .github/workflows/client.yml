@@ -12,6 +12,7 @@ on:
       - "docs/design/tokens.css"
       - "server/**"
       - "tools/fake-source-service/**"
+      - "tools/fake-raumfeld/**"
       - ".github/workflows/client.yml"
   pull_request:
     paths:
@@ -23,6 +24,7 @@ on:
       - "docs/design/tokens.css"
       - "server/**"
       - "tools/fake-source-service/**"
+      - "tools/fake-raumfeld/**"
       - ".github/workflows/client.yml"
 
 permissions:

@@ -66,7 +66,7 @@ Alternative considered: a separate service per output system, like source servic
 
 A device's selected output is `UserDevice.output_zone_id`:
 - the queue REST endpoints and the queue streams resolve "my queue" to the zone queue while it is set. The client is then a remote control with the same commands;
-- choosing a zone copies the device queue into the zone queue (replacing it, entries in order, current entry, position, playing) and starts the zone player;
+- choosing a zone copies the device queue into the zone queue (replacing it, entries in order, current entry, position, playing) and starts the zone player; a zone that plays already keeps its queue, and the device joins it (Shared zone);
 - choosing "this device" copies the zone queue back to the device, paused at the zone's position, and stops the zone.
 
 Several users may select the same zone: they all control the one queue (a household speaker). Every signed-in user may play on zones, change volumes and group rooms. Adding or removing system addresses is for admins only.
@@ -79,7 +79,7 @@ One task per playing zone (`playback/outputs/player.py`):
 - it hands the current entry to the renderer (`SetAVTransportURI` with DIDL-Lite of the track's context, then `Play`, and `Seek` when it resumes at a position);
 - it polls transport state and position once per second while playing;
 - it writes the position to the queue at most every 5 seconds and on every state change;
-- it starts the next entry when the track ends.
+- it starts the next entry when the track ends: the zone reports `STOPPED` after it was seen playing, or 10 seconds after the handover (before that, it may still be loading).
 - Entries that cannot be delivered (no original, failed transcode) are skipped and marked, like on a device.
 - If the renderer plays a URI that is not Anthology's (the Raumfeld app started something else), the zone queue pauses and keeps its position.
 
@@ -96,6 +96,7 @@ With several server processes, one process runs a zone's player. It holds a leas
   - valid for the track's duration plus one hour, capped at 24 hours;
   - a track resumed after its URL expired is handed over again with a new URL at the paused position.
 - **Revocation:** `media_grant` accepts a zone target when the zone exists and the user is active.
+- **URL base:** the speakers fetch from `ANTHOLOGY_OUTPUT_MEDIA_URL`; without it, from this host's address on the route to the system and `ANTHOLOGY_PORT` (8400). Behind port forwarding (a rootless pod) the URL has to be set.
 
 This replaces "valid for the handed-over queue, refreshed before expiry" in `signed-media-urls`. Because the server hands over each track itself, no URL has to outlive its track. The change's requirement and task 3.2 are reworded accordingly.
 

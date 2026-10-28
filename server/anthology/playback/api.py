@@ -1,5 +1,6 @@
-"""REST routes of playback (spec: playback): the queue of the requesting device, media URLs
-and the signed media endpoint for originals (spec: sync-protocol, Signed media URLs)."""
+"""REST routes of playback (spec: playback): the queue of the requesting device (or of the zone
+it controls, spec: Remote control), media URLs and the signed media endpoint for originals
+(spec: sync-protocol, Signed media URLs)."""
 
 import asyncio
 import os
@@ -19,6 +20,7 @@ from anthology.db.types import utcnow
 from anthology.library import service as library
 from anthology.library.models import AudioFile, AudioFormat, OriginalStatus, Track
 from anthology.playback import service
+from anthology.playback.media import MEDIA_TYPES
 from anthology.playback.models import PlayQueueEntry
 from anthology.playback.schemas import (
     MediaUrl,
@@ -43,16 +45,6 @@ CACHE_HEADERS = {"Cache-Control": "private, max-age=3600"}
 FORMATS = frozenset(audio_format.value for audio_format in AudioFormat)
 # Client URLs live at most an hour (spec: sync-protocol, Short-lived client media URLs).
 URL_TTL_SECONDS = 3_600
-MEDIA_TYPES = {
-    AudioFormat.FLAC: "audio/flac",
-    AudioFormat.WAV: "audio/wav",
-    AudioFormat.AIFF: "audio/aiff",
-    AudioFormat.ALAC: "audio/mp4",
-    AudioFormat.MP3: "audio/mpeg",
-    AudioFormat.AAC: "audio/mp4",
-    AudioFormat.OPUS: "audio/ogg",
-    AudioFormat.VORBIS: "audio/ogg",
-}
 
 
 def _invalid(detail: str) -> HTTPException:
@@ -73,7 +65,10 @@ def _entry_id(value: str) -> int:
 
 
 async def _queue(session: AsyncSession, current: CurrentSession):
-    return await service.queue_of(session, current.user_id, current.device_id)
+    """The queue this device's commands act on (the zone's while it controls one)."""
+    return await service.controlled_queue(
+        session, current.user_id, current.user_device_id, current.device_id
+    )
 
 
 @router.post("/playback/queue")

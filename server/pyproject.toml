@@ -24,8 +24,13 @@ dependencies = [
 [project.scripts]
 anthology = "anthology.cli:main"
 
+# Output adapters (spec: playback, Output adapters); external ones register the same way.
+[project.entry-points."anthology.outputs"]
+raumfeld = "anthology.playback.outputs.raumfeld:RaumfeldAdapter"
+
 [dependency-groups]
 dev = [
+    "anthology-fake-raumfeld",
     "anthology-fake-source",
     "anthology-library-generator",
     "httpx-ws>=0.9.0",
@@ -64,5 +69,6 @@ markers = [
 ]
 
 [tool.uv.sources]
+anthology-fake-raumfeld = { path = "../tools/fake-raumfeld", editable = true }
 anthology-fake-source = { path = "../tools/fake-source-service", editable = true }
 anthology-library-generator = { path = "../tools/library-generator", editable = true }

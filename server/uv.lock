@@ -70,6 +70,7 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "anthology-fake-raumfeld" },
     { name = "anthology-fake-source" },
     { name = "anthology-library-generator" },
     { name = "httpx-ws" },
@@ -98,9 +99,34 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "anthology-fake-raumfeld", editable = "../tools/fake-raumfeld" },
     { name = "anthology-fake-source", editable = "../tools/fake-source-service" },
     { name = "anthology-library-generator", editable = "../tools/library-generator" },
     { name = "httpx-ws", specifier = ">=0.9.0" },
+    { name = "pytest", specifier = ">=9.1.1" },
+    { name = "pytest-asyncio", specifier = ">=1.4.0" },
+    { name = "ruff", specifier = ">=0.17.0" },
+]
+
+[[package]]
+name = "anthology-fake-raumfeld"
+version = "0.1.0"
+source = { editable = "../tools/fake-raumfeld" }
+dependencies = [
+    { name = "fastapi" },
+    { name = "httpx" },
+    { name = "uvicorn" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "fastapi", specifier = ">=0.143.0" },
+    { name = "httpx", specifier = ">=0.28.1" },
+    { name = "uvicorn", specifier = ">=0.54.0" },
+]
+
+[package.metadata.requires-dev]
+dev = [
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "pytest-asyncio", specifier = ">=1.4.0" },
     { name = "ruff", specifier = ">=0.17.0" },

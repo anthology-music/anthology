@@ -431,12 +431,14 @@ export interface PlayQueueEntryRow {
   track: LibraryTrackRow;
 }
 /**
- * The queue of this device: its generation (the entries list to subscribe), the current
- * entry with its track, the position and whether it plays.
+ * The queue of this device, or of the zone it controls (``output_zone_id``; the client is
+ * then a remote control): its generation (the entries list to subscribe), the current entry
+ * with its track, the position and whether it plays.
  */
 export interface PlayQueueStateRow {
   id: string;
   key: unknown[];
+  output_zone_id?: string | null;
   generation: string;
   current_entry_id: string | null;
   current: LibraryTrackRow | null;

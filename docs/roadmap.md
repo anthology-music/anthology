@@ -40,5 +40,5 @@ Collected decisions to revisit or features deferred on purpose; each needs its o
 | Instrument sounds (soundfont) for sheet-music playback and its license | open |
 | Practice mode for parts that exist only as PDF (without recognition) | open |
 | Who holds the Apple developer account for iOS distribution | open (six-pager) |
-| Multi-room discovery with rootless Podman without host networking | open (six-pager, ADR 0005) |
+| Multi-room discovery with rootless Podman without host networking | answered: host networking for discovery, or the host's address entered by an admin (change `raumfeld-output`, `docs/install.md`) |
 | Legal review of the license separation before the first public release | planned (ADR 0004) |

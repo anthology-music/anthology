@@ -1,11 +1,11 @@
-"""Streams of playback (spec: playback, Play queue): ``playback.state`` (one row: the queue of
-this device) and ``playback.queue`` (its entries in order). Both show the requesting user's
-queue on the requesting device only."""
+"""Streams of playback (spec: playback, Play queue, Remote control): ``playback.state`` (one row:
+the queue of this device) and ``playback.queue`` (its entries in order). Both show the
+requesting user's queue on the requesting device, or the queue of the zone the device controls."""
 
 import uuid
 from typing import Any
 
-from sqlalchemy import func, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from anthology.library import streams as library
@@ -24,18 +24,32 @@ from anthology.sync.streams import (
     StreamContext,
     StreamError,
 )
+from anthology.users.models import UserDevice
 from anthology.users.service import SessionInfo
 
 ENTRY_KEY = (PlayQueueEntry.position, PlayQueueEntry.id)
 
 
-def _queue_id(ctx: StreamContext):
+def _controlled(ctx: StreamContext):
+    """The condition of the queue the device shows: the zone's while it controls one."""
     session = ctx.session
-    return (
-        select(PlayQueue.id)
-        .where(PlayQueue.user_id == session.user_id, PlayQueue.device_id == session.device_id)
+    zone = (
+        select(UserDevice.output_zone_id)
+        .where(UserDevice.id == session.user_device_id)
         .scalar_subquery()
     )
+    return or_(
+        and_(
+            zone.is_(None),
+            PlayQueue.user_id == session.user_id,
+            PlayQueue.device_id == session.device_id,
+        ),
+        and_(zone.is_not(None), PlayQueue.output_zone_id == zone),
+    )
+
+
+def _queue_id(ctx: StreamContext):
+    return select(PlayQueue.id).where(_controlled(ctx)).scalar_subquery()
 
 
 def _data(model) -> dict[str, Any]:
@@ -152,27 +166,16 @@ class StateStream:
 
     async def _queue(self, db: AsyncSession, ctx: StreamContext) -> PlayQueue | None:
         return await db.scalar(
-            select(PlayQueue)
-            .where(
-                PlayQueue.user_id == ctx.session.user_id,
-                PlayQueue.device_id == ctx.session.device_id,
-            )
-            .execution_options(populate_existing=True)
+            select(PlayQueue).where(_controlled(ctx)).execution_options(populate_existing=True)
         )
 
     async def meta(self, db: AsyncSession, ctx: StreamContext) -> Meta:
         return Meta(total=0 if await self._queue(db, ctx) is None else 1)
 
     def key_query(self, ctx: StreamContext) -> KeyQuery:
-        session = ctx.session
-        return KeyQuery(
-            query=select(PlayQueue).where(
-                PlayQueue.user_id == session.user_id, PlayQueue.device_id == session.device_id
-            ),
-            columns=(PlayQueue.id,),
-        )
+        return KeyQuery(query=select(PlayQueue).where(_controlled(ctx)), columns=(PlayQueue.id,))
 
-    async def _row(self, db: AsyncSession, queue: PlayQueue) -> Row:
+    async def _row(self, db: AsyncSession, queue: PlayQueue, ctx: StreamContext) -> Row:
         current = track = None
         if queue.current_entry_id is not None:
             current = await db.get(PlayQueueEntry, queue.current_entry_id, populate_existing=True)
@@ -180,8 +183,10 @@ class StateStream:
             track = (await _track_rows(db, [current.track_id])).get(current.track_id)
         count = await db.scalar(select(func.count()).where(PlayQueueEntry.queue_id == queue.id))
         following = await service.neighbour(db, queue, 1) if current is not None else None
+        # The row keeps its ID when the device switches between itself and a zone.
         model = PlayQueueStateRow(
-            id=str(queue.id),
+            id=str(ctx.session.user_device_id),
+            output_zone_id=str(queue.output_zone_id) if queue.output_zone_id else None,
             key=[str(queue.id)],
             generation=str(queue.generation),
             current_entry_id=str(current.id) if current is not None else None,
@@ -201,7 +206,7 @@ class StateStream:
         queue = await self._queue(db, ctx)
         if queue is None or after is not None or limit < 1:
             return []
-        return [await self._row(db, queue)]
+        return [await self._row(db, queue, ctx)]
 
     async def changes(
         self, db: AsyncSession, ctx: StreamContext, event: ChangeEvent
@@ -210,7 +215,10 @@ class StateStream:
         if queue is None:
             return []
         if event.entity_type == service.QUEUE and event.entity_id != queue.id:
-            return []
+            # Its own queue changes when the device hands it over or takes playback back.
+            own = await service.find_queue(db, ctx.session.user_id, ctx.session.device_id)
+            if own is None or own.id != event.entity_id:
+                return []
         if event.entity_type == "track":
             current = (
                 await db.get(PlayQueueEntry, queue.current_entry_id)
@@ -219,7 +227,7 @@ class StateStream:
             )
             if current is None or current.track_id != event.entity_id:
                 return []
-        row = await self._row(db, queue)
+        row = await self._row(db, queue, ctx)
         return [RowChange(op="upsert", id=row.id, key=row.key, row=row)]
 
 

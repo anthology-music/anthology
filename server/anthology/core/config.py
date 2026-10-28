@@ -39,6 +39,17 @@ class Settings(BaseSettings):
     # IANA time zone of the installation; schedules (e.g. the maintenance) run in it.
     time_zone: str = "UTC"
 
+    # The port the server listens on (the container publishes 8400).
+    port: int = 8400
+    # Playback on network outputs (spec: playback, Output discovery and addresses). Discovery
+    # needs multicast (host networking); without it, admins enter the systems' addresses.
+    output_discovery: bool = True
+    # Raumfeld host addresses (host or host:port), comma-separated; added as entered ones.
+    raumfeld_hosts: str = ""
+    # The URL the speakers fetch media from, e.g. http://192.168.1.10:8400; empty: this host's
+    # address on the route to the system with ``port`` (wrong behind port forwarding).
+    output_media_url: str = ""
+
     tagger_url: str = "http://localhost:8410"
     tagger_batch_size: int = 200
     tagger_timeout_seconds: float = 30.0
