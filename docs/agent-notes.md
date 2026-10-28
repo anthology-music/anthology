@@ -28,8 +28,6 @@ _Last updated: 2026-10-28_
   - `signed-media-urls` – signing, revocation and WebSocket token renewal done; protecting the
     media endpoints (2.2), client URL refresh (3.1) and Raumfeld output URLs (3.2) wait until
     those endpoints and the output adapter exist.
-  - `external-source-services` – documentation done; the generic service source adapter (3.1)
-    and the duplicate check before download (3.2) belong to milestone 3.
   - `media-delivery-wording` – only the audio extraction from videos (2.1) is open (video, milestone 4).
 - **Library:** `library-core` is merged (PR #15). Decided with the maintainer: one artist per
   recording and one album artist per release, with the credited text kept as display text.
@@ -63,12 +61,12 @@ _Last updated: 2026-10-28_
   bitrate and formats, streamed while written, tagged per context through the tagger. Decided
   with the maintainer: streaming, tagging now, declared quality before the analysis.
   `playable-delivery-format` 3.3 waits for the Raumfeld adapter.
-- **In progress:** change `source-service-adapter`, pull request 2 of 2 on branch
-  `feat/source-orders` (orders, download job, import into the library, outcomes, source per
-  original; pull request 1 merged as PR #33). Decided with the maintainer: whole chain in two
-  pull requests, credentials now (shown masked once stored), fake service in the repository,
-  every user may open the source status with the reasons. `effective-quality-duplicate-checks`
-  2.1 (CD import) stays open.
+- **Archived:** `source-service-adapter` (PR #33 and the orders pull request) and
+  `external-source-services`: interface v1 with the fake service in `tools/fake-source-service/`,
+  detection, encrypted logins (shown masked once stored), search and links with duplicate status,
+  source status with reasons for every user, orders with a download job, an import that confirms
+  itself, outcomes and the source per original. `effective-quality-duplicate-checks` 2.1 (CD
+  import) stays open.
 - **Next:** see `docs/roadmap.md` (milestone 3).
   `effective-quality-duplicate-checks` covers CD import and sources only; it waits for them.
 
