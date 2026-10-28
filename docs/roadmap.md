@@ -19,7 +19,7 @@ Collected decisions to revisit or features deferred on purpose; each needs its o
 | FUSE view with context tags for other programs | ADR 0008 | new domain; server module only once specified |
 | S3-compatible `BlobStore` adapter for tag images and caches | ADR 0019 | file system adapter first (change `covers`); presigned redirects or proxying for media URLs |
 | Opus as an additional transcode target | ADR 0013 | per-device option |
-| Sample-rate/bit-depth limits of playback targets | change `playable-delivery-format` | extends the format capability list |
+| Sample-rate/bit-depth limits of playback targets | spec `transcoding` (archived change `playable-delivery-format`) | extends the format capability list |
 | Virtual header splicing for FLAC/MP3 downloads | ADR 0008, `library` spec (Context-tagged downloads) | optimisation only, no behavior change |
 | HTOA, CD-Text and pre-emphasis in the CD ripper | ADR 0018 | |
 | CUETools database (CTDB) as second rip verification | ADR 0018 | |

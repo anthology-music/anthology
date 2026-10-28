@@ -59,7 +59,7 @@ _Last updated: 2026-10-28_
 - **Archived:** `transcoding-delivery` (PR #31 and the tagged copies): transcodes by device
   bitrate and formats, streamed while written, tagged per context through the tagger. Decided
   with the maintainer: streaming, tagging now, declared quality before the analysis.
-  `playable-delivery-format` 3.3 was done with `raumfeld-output`.
+  `playable-delivery-format` is archived (its 3.3 was done with `raumfeld-output`).
 - **Archived:** `source-service-adapter` (PR #33 and the orders pull request) and
   `external-source-services`: interface v1 with the fake service in `tools/fake-source-service/`,
   detection, encrypted logins (shown masked once stored), search and links with duplicate status,
