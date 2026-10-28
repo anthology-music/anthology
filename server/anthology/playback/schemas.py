@@ -93,3 +93,27 @@ class PlayQueueStateRow(StreamRow):
     entries: int
     shortened: bool
     updated_at: datetime
+
+
+class PlaybackOutputRow(StreamRow):
+    """One row of ``playback.outputs``: an output system, a zone or a room (``kind``). Fields
+    of another kind are left out."""
+
+    kind: Literal["system", "zone", "room"]
+    name: str
+    system_id: str
+    # The zone itself, or the zone a room is in (None: unassigned); None for systems.
+    zone_id: str | None
+    # Systems.
+    adapter: str | None = None
+    address: str | None = None
+    origin: Literal["discovered", "manual"] | None = None
+    state: Literal["online", "unreachable"] | None = None
+    # Why a system is unreachable.
+    reason: str | None = None
+    # Zones and rooms.
+    online: bool | None = None
+    volume: int | None = None
+    muted: bool | None = None
+    # Zones: audio formats the zone plays.
+    formats: list[str] | None = None

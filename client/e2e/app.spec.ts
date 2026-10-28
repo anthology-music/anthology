@@ -430,3 +430,48 @@ test('downloading a track and an album, untagged while the tagger is absent', as
   expect(zip.suggestedFilename()).toMatch(/Kassette 1985\.zip$/);
   expect(await zip.failure()).toBeNull();
 });
+
+test('handing an album to a Raumfeld zone, pausing it, reloading and taking it back', async ({
+  page,
+  request,
+}) => {
+  // The fake Raumfeld host started next to the server (e2e/start-server.sh, e2e/raumfeld.json).
+  const fake = `http://127.0.0.1:${process.env.ANTHOLOGY_E2E_FAKE_RAUMFELD_PORT ?? 8431}`;
+  const zone = async () =>
+    (
+      (await (await request.get(`${fake}/test/state`)).json()) as {
+        zones: Record<string, { state: string; uri: string | null }>;
+      }
+    ).zones['uuid:zone-wohnzimmer']!;
+
+  await signIn(page);
+  await page.goto('/local/albums');
+  const kassette = page.locator('[data-testid^="release-"]').filter({ hasText: 'Kassette 1985' });
+  await kassette.first().click();
+  await page.getByTestId('play-release').click();
+  await expect(page.getByTestId('player-title')).toHaveText('Frühling');
+
+  await page.getByTestId('output-picker').click();
+  await page.getByTestId('output-zone-Wohnzimmer').click();
+  await expect(page.getByTestId('player-remote')).toContainText('Wohnzimmer');
+  await expect(page.getByTestId('player-toggle')).toHaveAttribute('aria-label', 'Pause');
+  await expect.poll(async () => (await zone()).state, { timeout: 15_000 }).toBe('playing');
+  expect((await zone()).uri).toContain('/api/v1/media/');
+
+  await page.getByTestId('player-toggle').click();
+  await expect(page.getByTestId('player-toggle')).toHaveAttribute('aria-label', 'Abspielen');
+  await expect.poll(async () => (await zone()).state, { timeout: 15_000 }).toBe('paused');
+  const title = await page.getByTestId('player-title').textContent();
+
+  await page.reload();
+  await expect(page.getByTestId('player-remote')).toContainText('Wohnzimmer');
+  await expect(page.getByTestId('player-title')).toHaveText(title!);
+  await expect(page.getByTestId('player-toggle')).toHaveAttribute('aria-label', 'Abspielen');
+
+  await page.getByTestId('output-picker').click();
+  await page.getByTestId('output-device').click();
+  await expect(page.getByTestId('player-remote')).toHaveCount(0);
+  await expect(page.getByTestId('player-title')).toHaveText(title!);
+  await expect(page.getByTestId('player-toggle')).toHaveAttribute('aria-label', 'Abspielen');
+  await expect.poll(async () => (await zone()).state, { timeout: 15_000 }).toBe('stopped');
+});

@@ -16,7 +16,7 @@ from anthology.library.schemas import (
     MaintenanceRunRow,
 )
 from anthology.library_import.schemas import LibraryImportRow
-from anthology.playback.schemas import PlayQueueEntryRow, PlayQueueStateRow
+from anthology.playback.schemas import PlaybackOutputRow, PlayQueueEntryRow, PlayQueueStateRow
 from anthology.quality_analysis.schemas import QualitySummaryRow
 from anthology.review import schemas as review
 from anthology.review.schemas import ReviewItemRow
@@ -46,6 +46,7 @@ ROW_SCHEMAS: dict[str, type[BaseModel]] = {
     "search.tracks": LibraryTrackRow,
     "playback.queue": PlayQueueEntryRow,
     "playback.state": PlayQueueStateRow,
+    "playback.outputs": PlaybackOutputRow,
     "sources.services": SourceServiceRow,
     "sources.orders": OrderRow,
     "sources.order.items": OrderItemRow,

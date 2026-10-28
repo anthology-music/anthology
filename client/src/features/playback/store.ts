@@ -16,6 +16,8 @@ export const REPORT_MS = 15_000;
 export const RENEW_MS = 5 * 60_000;
 /** "Previous" restarts the track after this much of it (spec: Player controls). */
 export const RESTART_MS = 3_000;
+/** While a zone plays, the shown position advances this often between server reports. */
+export const REMOTE_TICK_MS = 500;
 
 interface SignedUrl {
   url: string | null;
@@ -26,6 +28,10 @@ interface SignedUrl {
  * The player of this device: the queue lives on the server (`playback.state` with the
  * current entry), the audio plays here. Starting, skipping and reporting go over REST; the
  * state stream answers with the new current entry, which the player then loads.
+ *
+ * While the device controls an output zone (`output_zone_id`), it is a remote control (spec:
+ * Remote control): no audio plays here, the state shows the zone's queue, and play, pause,
+ * seek and skip change the zone's queue, which the server's zone player carries out.
  */
 export const usePlayerStore = defineStore('player', () => {
   const state = shallowRef<PlayQueueStateRow | null>(null);
@@ -35,7 +41,7 @@ export const usePlayerStore = defineStore('player', () => {
   const durationMs = ref(0);
   const volume = ref(1);
   const problems = reactive(new Map<string, Problem>());
-  const message = ref<'shortened' | null>(null);
+  const message = ref<'shortened' | 'output_offline' | 'output_failed' | null>(null);
 
   let audio: AudioLike | null = null;
   let subscription: Subscription | null = null;
@@ -46,8 +52,13 @@ export const usePlayerStore = defineStore('player', () => {
   let pendingSeek: number | null = null;
   const urls = new Map<string, SignedUrl>();
   const now = () => Date.now();
+  // Remote control: the zone's position at the time it arrived.
+  let remoteAt = 0;
+  let remoteTimer: ReturnType<typeof setInterval> | null = null;
 
   const current = computed(() => state.value?.current ?? null);
+  /** The zone this device controls; null: it plays itself. */
+  const outputZone = computed(() => state.value?.output_zone_id ?? null);
 
   function api() {
     return getServices().api;
@@ -97,8 +108,16 @@ export const usePlayerStore = defineStore('player', () => {
     subscription = getServices().sync.subscribe('playback.state', {}, [0, 1], { cache: false });
     stopListening = subscription.onChange(() => onState());
     reportTimer = setInterval(() => {
-      if (playing.value) void report();
+      if (playing.value && !outputZone.value) void report();
     }, REPORT_MS);
+    remoteTimer = setInterval(() => {
+      if (outputZone.value && playing.value) {
+        positionMs.value = Math.min(
+          (state.value?.position_ms ?? 0) + (now() - remoteAt),
+          durationMs.value || Number.MAX_SAFE_INTEGER,
+        );
+      }
+    }, REMOTE_TICK_MS);
   }
 
   function stop(): void {
@@ -107,12 +126,25 @@ export const usePlayerStore = defineStore('player', () => {
     subscription = null;
     if (reportTimer) clearInterval(reportTimer);
     reportTimer = null;
+    if (remoteTimer) clearInterval(remoteTimer);
+    remoteTimer = null;
     audio?.pause();
   }
 
   function onState(): void {
     const row = (subscription?.rows.get(0) as PlayQueueStateRow | undefined) ?? null;
+    const wasRemote = outputZone.value !== null;
     state.value = subscription?.total === 0 ? null : row;
+    if (row?.output_zone_id) {
+      remote(row);
+      return;
+    }
+    if (wasRemote) {
+      // Playback came back to this device: load where the zone stopped, paused.
+      loaded.value = null;
+      wanted = false;
+      if (audio) audio.src = '';
+    }
     const entry = row?.current_entry_id ?? null;
     if (entry === null) {
       if (loaded.value !== null) {
@@ -122,6 +154,31 @@ export const usePlayerStore = defineStore('player', () => {
       return;
     }
     if (entry !== loaded.value) void load(entry, loaded.value === null ? row!.position_ms : 0);
+  }
+
+  /** Show the zone's state; the audio of this device stays silent. */
+  function remote(row: PlayQueueStateRow): void {
+    if (audio && !audio.paused) audio.pause();
+    wanted = false;
+    loaded.value = row.current_entry_id;
+    playing.value = row.playing;
+    positionMs.value = row.position_ms;
+    durationMs.value = row.current?.duration_ms ?? 0;
+    remoteAt = now();
+    updateMetadata();
+  }
+
+  /** Commands of the remote control: the zone queue's new state. */
+  async function command(change: { positionMs?: number; playing?: boolean }): Promise<void> {
+    const row = state.value;
+    if (!row?.current_entry_id) return;
+    const position = change.positionMs ?? positionMs.value;
+    const wantPlaying = change.playing ?? playing.value;
+    positionMs.value = position;
+    playing.value = wantPlaying;
+    await api().PUT('/api/v1/playback/state', {
+      body: { current_entry_id: row.current_entry_id, position_ms: position, playing: wantPlaying },
+    });
   }
 
   async function signed(ids: string[]): Promise<Map<string, SignedUrl>> {
@@ -178,6 +235,10 @@ export const usePlayerStore = defineStore('player', () => {
   }
 
   async function step(by: 1 | -1): Promise<void> {
+    if (outputZone.value) {
+      await api().POST('/api/v1/playback/skip', { body: { by, playing: playing.value } });
+      return;
+    }
     const { data } = await api().POST('/api/v1/playback/skip', {
       body: { by, playing: wanted },
     });
@@ -204,6 +265,10 @@ export const usePlayerStore = defineStore('player', () => {
   // --- controls ---------------------------------------------------------------------------
 
   async function play(): Promise<void> {
+    if (outputZone.value) {
+      await command({ playing: true });
+      return;
+    }
     wanted = true;
     const element = attach();
     if (loaded.value && problems.has(loaded.value)) {
@@ -216,6 +281,10 @@ export const usePlayerStore = defineStore('player', () => {
   }
 
   async function pause(): Promise<void> {
+    if (outputZone.value) {
+      await command({ playing: false });
+      return;
+    }
     wanted = false;
     audio?.pause();
     await report();
@@ -230,7 +299,8 @@ export const usePlayerStore = defineStore('player', () => {
   }
 
   async function previous(): Promise<void> {
-    if ((audio?.currentTime ?? 0) * 1000 > RESTART_MS) {
+    const at = outputZone.value ? positionMs.value : (audio?.currentTime ?? 0) * 1000;
+    if (at > RESTART_MS) {
       await seek(0);
       return;
     }
@@ -238,6 +308,10 @@ export const usePlayerStore = defineStore('player', () => {
   }
 
   async function seek(ms: number): Promise<void> {
+    if (outputZone.value) {
+      await command({ positionMs: ms });
+      return;
+    }
     if (audio) audio.currentTime = ms / 1000;
     positionMs.value = ms;
     await report();
@@ -249,6 +323,21 @@ export const usePlayerStore = defineStore('player', () => {
   }
 
   // --- starting playback -------------------------------------------------------------------
+
+  /** Hand this device's queue to a zone, or take it back (null; spec: Output picker). */
+  async function selectOutput(zoneId: string | null): Promise<boolean> {
+    if (zoneId === null) wanted = false;
+    const { error, response } = await api().PUT('/api/v1/playback/output', {
+      body: { zone_id: zoneId },
+    });
+    if (response.ok) {
+      message.value = null;
+      return true;
+    }
+    const detail = (error as { detail?: unknown } | undefined)?.detail;
+    message.value = detail === 'output_offline' ? 'output_offline' : 'output_failed';
+    return false;
+  }
 
   async function startQueue(body: Schemas['StartIn']): Promise<void> {
     attach();
@@ -304,6 +393,7 @@ export const usePlayerStore = defineStore('player', () => {
   return {
     state,
     current,
+    outputZone,
     loaded,
     playing,
     positionMs,
@@ -325,5 +415,6 @@ export const usePlayerStore = defineStore('player', () => {
     enqueue,
     playEntry,
     removeEntry,
+    selectOutput,
   };
 });
