@@ -3,11 +3,15 @@
 ## MODIFIED Requirements
 
 ### Requirement: Output adapters
-The system SHALL implement every playback target as an output adapter with a common interface (discover, play, pause, resume, stop, seek, volume, state, group/ungroup where supported, supported formats), loaded through the `anthology.outputs` entry point group, so that core code contains no system-specific cases.
+The system SHALL implement every playback target as an output adapter with a common interface (discover, play, pause, resume, stop, seek, volume, state, group/ungroup where supported), loaded through the `anthology.outputs` entry point group, so that core code contains no system-specific cases. Each adapter SHALL declare per zone the audio formats it can play, and audio for that zone SHALL be delivered according to the transcoding spec's format-aware delivery.
 
 #### Scenario: New output type
 - **WHEN** an output adapter for a new system is installed
 - **THEN** its devices appear in the output picker without changes to core code
+
+#### Scenario: Output cannot play the original's format
+- **WHEN** a recording whose original is Opus is played on an output that does not declare Opus
+- **THEN** the output receives a compatibility transcode
 
 ### Requirement: Output picker
 Every client SHALL offer an output picker listing "this device" and all zones of all reachable output systems with their rooms; choosing a zone SHALL hand the device's queue over to the zone, and choosing "this device" SHALL take playback back to the device.
