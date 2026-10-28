@@ -5,9 +5,10 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field, model_validator
 
+from anthology.jobs.models import ItemOutcome
 from anthology.library.models import QualityTier
 from anthology.sources.duplicates import DuplicateStatus
-from anthology.sources.models import SourceProblem
+from anthology.sources.models import OrderItemState, OrderStatus, SourceProblem
 from anthology.sync.messages import StreamRow
 
 
@@ -129,3 +130,50 @@ def clean(model: type[BaseModel], value: Any) -> dict[str, Any]:
     if not isinstance(value, dict):
         return {}
     return {name: value[name] for name in model.model_fields if name in value}
+
+
+class OrderIn(BaseModel):
+    """Order tracks (refs) of a resolved item (``ref``) from one service."""
+
+    service: str
+    ref: str = Field(max_length=256)
+    tracks: list[str] = Field(min_length=1, max_length=500)
+    quality: str = Field(default="best", max_length=32)
+
+
+class OrderOut(BaseModel):
+    order_id: str
+    job_id: str
+    items: int
+    already_present: int
+
+
+class OrderRow(StreamRow):
+    """A download order with the counts of its items (mockup Main: total, done, running,
+    waiting, failed)."""
+
+    title: str
+    service_name: str
+    short: str | None
+    status: OrderStatus
+    message: str | None
+    total: int
+    done: int
+    running: int
+    waiting: int
+    failed: int
+    created_at: datetime
+    finished_at: datetime | None
+
+
+class OrderItemRow(StreamRow):
+    position: int
+    title: str
+    artist: str | None
+    album: str | None
+    offered: Offered | None
+    duplicate: str
+    state: OrderItemState
+    progress: float
+    outcome: ItemOutcome | None
+    message: str | None

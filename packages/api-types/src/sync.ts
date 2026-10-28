@@ -39,6 +39,10 @@ export type ChangeSetKind = 'edit' | 'undo';
  * Why a configured service is unavailable (spec: Source status).
  */
 export type SourceProblem = 'unreachable' | 'incompatible' | 'login_failed' | 'login_missing';
+export type OrderStatus = 'downloading' | 'importing' | 'done' | 'failed';
+export type OrderItemState = 'queued' | 'running' | 'waiting' | 'downloaded' | 'done' | 'skipped' | 'failed';
+export type ItemOutcome =
+  'new' | 'replaced' | 'already_present' | 'not_better_than_existing' | 'needs_review' | 'failed';
 
 export interface SyncProtocol {
   client?: ClientMessage;
@@ -70,6 +74,8 @@ export interface SyncProtocol {
     'playback.queue'?: PlayQueueEntryRow;
     'playback.state'?: PlayQueueStateRow;
     'sources.services'?: SourceServiceRow;
+    'sources.orders'?: OrderRow;
+    'sources.order.items'?: OrderItemRow;
   };
   /**
    * Typed content of untyped row fields (e.g. review evidence).
@@ -244,6 +250,9 @@ export interface LibraryTrackRow {
   bitrate_kbps: number | null;
   effective_quality: QualityTier | null;
   quality_status: QualityStatus | null;
+  source?: string | null;
+  source_short?: string | null;
+  retrieved_at?: string | null;
 }
 /**
  * A superseded referenced original (spec: library, Superseded referenced originals).
@@ -460,6 +469,47 @@ export interface SourceServiceRow {
   logged_in: boolean | null;
   rate_limited_until: string | null;
   checked_at: string;
+}
+/**
+ * A download order with the counts of its items (mockup Main: total, done, running,
+ * waiting, failed).
+ */
+export interface OrderRow {
+  id: string;
+  key: unknown[];
+  title: string;
+  service_name: string;
+  short: string | null;
+  status: OrderStatus;
+  message: string | null;
+  total: number;
+  done: number;
+  running: number;
+  waiting: number;
+  failed: number;
+  created_at: string;
+  finished_at: string | null;
+}
+export interface OrderItemRow {
+  id: string;
+  key: unknown[];
+  position: number;
+  title: string;
+  artist: string | null;
+  album: string | null;
+  offered: Offered | null;
+  duplicate: string;
+  state: OrderItemState;
+  progress: number;
+  outcome: ItemOutcome | null;
+  message: string | null;
+}
+export interface Offered {
+  format?: string | null;
+  lossless?: boolean;
+  bitrate_kbps?: number | null;
+  sample_rate_hz?: number | null;
+  bit_depth?: number | null;
 }
 export interface RecordingMatchEvidence {
   subject: RecordingSide;

@@ -36,6 +36,7 @@ from anthology.library.schemas import (
     MaintenanceFindingRow,
     MaintenanceRunRow,
 )
+from anthology.sources.models import Source
 from anthology.sync.feed import ChangeEvent
 from anthology.sync.streams import (
     KeyQuery,
@@ -327,6 +328,9 @@ _TRACK_ROW = (
         AudioFile.bitrate_kbps,
         AudioFile.effective_quality,
         AudioFile.quality_status,
+        Source.label,
+        Source.short,
+        Source.retrieved_at,
     )
     .join(Recording, Recording.id == Track.recording_id)
     .join(Release, Release.id == Track.release_id)
@@ -335,13 +339,14 @@ _TRACK_ROW = (
         (AudioFile.recording_id == Track.recording_id)
         & (AudioFile.original_status == OriginalStatus.ACTIVE),
     )
+    .outerjoin(Source, Source.id == AudioFile.source_id)
 )
 
 
 def _track_row(result_row, key: SortKey) -> Row:
     """A track row by context (spec: library, Track rows by context)."""
     (track, recording, release, audio_format, sample_rate, bit_depth, bitrate, effective,
-     quality_status) = result_row  # fmt: skip
+     quality_status, source, source_short, retrieved_at) = result_row  # fmt: skip
     model = LibraryTrackRow(
         id=str(track.id),
         key=list(key),
@@ -360,6 +365,9 @@ def _track_row(result_row, key: SortKey) -> Row:
         bitrate_kbps=bitrate,
         effective_quality=effective,
         quality_status=quality_status,
+        source=source,
+        source_short=source_short,
+        retrieved_at=retrieved_at,
     )
     return Row(id=model.id, key=key, data=_data(model))
 

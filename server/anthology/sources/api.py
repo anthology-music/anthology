@@ -6,18 +6,20 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from anthology.api.deps import require_role
 from anthology.db import get_session
-from anthology.sources import duplicates
+from anthology.sources import duplicates, orders
 from anthology.sources.client import SourceServiceError
-from anthology.sources.models import SourceService
+from anthology.sources.models import DownloadOrderItem, OrderItemState, SourceService
 from anthology.sources.schemas import (
     LoginField,
     LoginIn,
     LoginOut,
+    OrderIn,
+    OrderOut,
     ResolvedTrack,
     ResolveIn,
     ResolveOut,
@@ -165,6 +167,51 @@ async def resolve(
         if item.get("ref") and item.get("title")
         else SearchResult(ref=body.ref or body.url or "", kind="album", title=""),
         tracks=tracks,
+    )
+
+
+# --- orders ---------------------------------------------------------------------------------
+
+
+@router.post("/sources/orders", status_code=status.HTTP_202_ACCEPTED)
+async def order(request: Request, session: Session, current: Editor, body: OrderIn) -> OrderOut:
+    """Order tracks of a resolved item (spec: Download orders); present tracks are not
+    downloaded."""
+    row = await _service(session, body.service)
+    try:
+        created = await orders.create(
+            session,
+            _services(request),
+            request.app.state.settings,
+            service=row,
+            ref=body.ref,
+            tracks=body.tracks,
+            quality=body.quality,
+            created_by=current.user_id,
+        )
+    except orders.OrderError as error:
+        if error.code == "service_unavailable":
+            raise _unavailable() from error
+        if error.code in ("no_tracks", "not_found"):
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_CONTENT, detail="no_tracks"
+            ) from error
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, detail=error.code) from error
+    present = await session.scalar(
+        select(func.count()).where(
+            DownloadOrderItem.order_id == created.id,
+            DownloadOrderItem.state == OrderItemState.SKIPPED,
+        )
+    )
+    total = await session.scalar(
+        select(func.count()).where(DownloadOrderItem.order_id == created.id)
+    )
+    await session.commit()
+    return OrderOut(
+        order_id=str(created.id),
+        job_id=str(created.job_id),
+        items=total or 0,
+        already_present=present or 0,
     )
 
 

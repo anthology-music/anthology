@@ -378,3 +378,31 @@ test('playing a FLAC track at 128 kbit/s while it is being transcoded', async ({
   await page.getByTestId('bitrate-original').click();
   await expect(page.getByTestId('bitrate-message')).toContainText('Gespeichert');
 });
+
+test('ordering an album from a source and playing a downloaded track', async ({ page }) => {
+  await signIn(page);
+  await page.getByRole('link', { name: 'Streaming' }).click();
+
+  // The fake source service of the end-to-end server (tools/fake-source-service).
+  await expect(page.getByTestId('source-none')).toHaveCount(0, { timeout: 30_000 });
+  await page.getByTestId('source-query').fill('https://fake.example/album/2');
+  await page.getByTestId('source-submit').click();
+  await expect(page.getByTestId('resolved')).toContainText('Bergwind');
+  await expect(page.getByTestId('status-track:201')).toContainText('Neu');
+  await page.getByTestId('source-order').click();
+  await expect(page.getByTestId('source-ordered')).toContainText('2 Titel');
+
+  // The order downloads and enters the library.
+  const order = page.locator('[data-testid^="order-"]').filter({ hasText: 'Bergwind' }).first();
+  await expect(order).toContainText('Fertig', { timeout: 90_000 });
+
+  await page.goto(`/local/search?q=${encodeURIComponent('Bergwind type:album')}`);
+  const release = page.locator('[data-testid="search-group-release"] [data-testid^="release-"]');
+  await release.first().click();
+  await expect(page.getByTestId('release-title')).toHaveText('Bergwind');
+  await expect(page.getByTestId('track-source').first()).toHaveText('FK');
+  await page.getByTestId('play-release').click();
+  await expect(page.getByTestId('player-title')).toHaveText('Abendrot');
+  await expect(page.getByTestId('player-position')).not.toHaveText('0:00', { timeout: 15_000 });
+  await page.getByTestId('player-toggle').click();
+});

@@ -361,6 +361,7 @@ const en: typeof de = {
     },
   },
   library: {
+    source: '{source}, retrieved on {date}',
     quality: {
       tiers: {
         hires_lossless: 'Hi-res',
@@ -661,6 +662,44 @@ const en: typeof de = {
       video: 'Video',
       videoLater: 'Video orders follow later.',
     },
+    order: 'Send order',
+    ordered: 'Order sent: {n} tracks, {present} of them already present.',
+    orders: {
+      title: 'Orders',
+      summary: 'Overview',
+      none: 'No orders yet.',
+      counts: {
+        total: 'Tracks total',
+        done: 'Done',
+        running: 'Running',
+        waiting: 'Waiting',
+        failed: 'Failed',
+      },
+      status: {
+        downloading: 'Downloading',
+        importing: 'Importing',
+        done: 'Done',
+        failed: 'Failed',
+      },
+      states: {
+        queued: 'Queued',
+        running: 'Downloading',
+        waiting: 'Waiting (rate limit)',
+        downloaded: 'Downloaded',
+        done: 'Done',
+        skipped: 'Already present',
+        failed: 'Failed',
+      },
+      outcomes: {
+        new: 'New',
+        replaced: 'Replaced',
+        already_present: 'Already present',
+        not_better_than_existing: 'Not better than existing',
+        needs_review: 'Needs review',
+        failed: 'Failed',
+      },
+      progress: 'Progress of {title}',
+    },
     search: 'Search',
     open: 'Open link',
     source: 'Source',
@@ -677,6 +716,7 @@ const en: typeof de = {
       new: 'New',
     },
     errors: {
+      orderFailed: 'The order could not be sent.',
       failed: 'The source did not answer.',
       timeout: 'no answer',
       noSourceForLink: 'No available source can open this link.',

@@ -63,12 +63,12 @@ _Last updated: 2026-10-28_
   bitrate and formats, streamed while written, tagged per context through the tagger. Decided
   with the maintainer: streaming, tagging now, declared quality before the analysis.
   `playable-delivery-format` 3.3 waits for the Raumfeld adapter.
-- **In progress:** change `source-service-adapter` on branch `feat/source-service-adapter`, pull
-  request 1 of 2 (interface v1 with all fields, fake service in `tools/fake-source-service/`,
-  detection, encrypted logins, search and links with duplicate status, source status, source
-  settings). Pull request 2: orders, download job, import into the library, outcomes, source
-  per original. Decided with the maintainer: whole chain in two pull requests, credentials now,
-  fake service in the repository, every user may open the source status with the reasons.
+- **In progress:** change `source-service-adapter`, pull request 2 of 2 on branch
+  `feat/source-orders` (orders, download job, import into the library, outcomes, source per
+  original; pull request 1 merged as PR #33). Decided with the maintainer: whole chain in two
+  pull requests, credentials now (shown masked once stored), fake service in the repository,
+  every user may open the source status with the reasons. `effective-quality-duplicate-checks`
+  2.1 (CD import) stays open.
 - **Next:** see `docs/roadmap.md` (milestone 3).
   `effective-quality-duplicate-checks` covers CD import and sources only; it waits for them.
 

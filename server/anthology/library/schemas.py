@@ -1,5 +1,7 @@
 """Row schemas of the library streams (spec: library, Track rows by context)."""
 
+from datetime import datetime
+
 from anthology.library.models import (
     AudioFormat,
     FindingKind,
@@ -47,6 +49,10 @@ class LibraryTrackRow(StreamRow):
     # Known only after a conclusive quality analysis (spec: library, Quality badge).
     effective_quality: QualityTier | None
     quality_status: QualityStatus | None
+    # Where the original was acquired (spec: sources, Downloads enter the library).
+    source: str | None = None
+    source_short: str | None = None
+    retrieved_at: datetime | None = None
 
 
 class LibrarySupersededRow(StreamRow):

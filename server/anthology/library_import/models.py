@@ -76,6 +76,9 @@ class LibraryImport(Base):
     allow_tag_writes: Mapped[bool] = mapped_column(Boolean, default=False)
     # Delete replaced managed originals after verification (ADR 0021); else keep superseded.
     delete_replaced: Mapped[bool] = mapped_column(Boolean, default=True)
+    # Imports of download orders confirm themselves after the analysis (spec: sources,
+    # Downloads enter the library).
+    confirm_automatically: Mapped[bool] = mapped_column(Boolean, default=False)
     status: Mapped[ImportStatus] = mapped_column(str_enum(ImportStatus, "status"))
     report_json: Mapped[str | None] = mapped_column(Text)
     # The job working on the import now (scan, analysis or import).

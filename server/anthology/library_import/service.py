@@ -11,6 +11,7 @@ import json
 import logging
 import re
 import uuid
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -121,6 +122,7 @@ async def start(
     allow_tag_writes: bool,
     created_by: uuid.UUID,
     delete_replaced: bool = True,
+    confirm_automatically: bool = False,
 ) -> LibraryImport:
     """Create an import and its scan job. An unconfirmed report of the same folder is replaced
     (spec: Report confirmation)."""
@@ -148,6 +150,7 @@ async def start(
         same_mount=same_mount,
         allow_tag_writes=allow_tag_writes and mode in (ImportMode.REFERENCE, ImportMode.HARDLINK),
         delete_replaced=delete_replaced,
+        confirm_automatically=confirm_automatically,
         status=ImportStatus.SCANNING,
         created_by=created_by,
         created_at=utcnow(),
@@ -226,14 +229,29 @@ async def _stop_job(session: AsyncSession, job_id: uuid.UUID | None) -> None:
         await jobs.stop_job(session, job_id)
 
 
+# Called in the transaction that ends an import (done, cancelled or failed), e.g. by download
+# orders to take over the outcomes of their files.
+FinishedListener = Callable[[AsyncSession, LibraryImport], Awaitable[None]]
+_finished_listeners: list[FinishedListener] = []
+
+
+def on_finished(listener: FinishedListener) -> None:
+    if listener not in _finished_listeners:
+        _finished_listeners.append(listener)
+
+
 async def _set_status(
     session: AsyncSession, library_import: LibraryImport, status: ImportStatus
 ) -> None:
     library_import.status = status
-    if status in (ImportStatus.DONE, ImportStatus.CANCELLED, ImportStatus.FAILED):
+    finished = status in (ImportStatus.DONE, ImportStatus.CANCELLED, ImportStatus.FAILED)
+    if finished:
         library_import.finished_at = utcnow()
     await session.flush()
     await changed(session, library_import.id)
+    if finished:
+        for listener in _finished_listeners:
+            await listener(session, library_import)
 
 
 async def fail(session: AsyncSession, import_id: uuid.UUID, error: str) -> None:
@@ -340,6 +358,8 @@ async def analysis_finished(session: AsyncSession, import_id: uuid.UUID, job_id:
     library_import = await _locked(session, import_id)
     if library_import.status == ImportStatus.SCANNING and library_import.job_id == job_id:
         await reported(session, library_import)
+        if library_import.confirm_automatically:
+            await confirm(session, import_id)
 
 
 # --- report -----------------------------------------------------------------------------------
