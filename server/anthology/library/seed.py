@@ -233,6 +233,7 @@ class _Loader:
                     fingerprint_duration_s=None,
                     home_track_id=track.id,
                     added_at=self.now,
+                    source_id=None,
                 )
         self.totals[Counter.TRACKS] += len(release.tracks)
 

@@ -416,11 +416,63 @@ package "Library" {
 package "Sources & Jobs" {
 
   class Source {
+    Where an original was acquired;
+    kind is the service's source id
+    (e.g. "tidal"), not a fixed list
+    ==
     +id : UUID
-    +kind : SourceKind
+    +kind : String
+    +label : String
+    +short : String [0..1]
     +externalId : String [0..1]
     +url : String [0..1]
     +retrievedAt : DateTime
+  }
+
+  class DownloadOrder {
+    Tracks ordered from one source service;
+    imported by a self-confirming library import
+    ==
+    +id : UUID
+    +serviceUrl : String
+    +serviceName : String
+    +source : String
+    +title : String
+    +quality : String
+    +status : OrderStatus
+    +folder : String
+    +taskId : String [0..1]
+    +createdAt : DateTime
+    +finishedAt : DateTime [0..1]
+  }
+
+  class DownloadOrderItem {
+    +id : UUID
+    +position : Integer
+    +ref : String
+    +title : String
+    +duplicate : String
+    +state : OrderItemState
+    +progress : Float
+    +file : String [0..1]
+    +outcome : ItemOutcome [0..1]
+  }
+
+  enum OrderStatus {
+    DOWNLOADING
+    IMPORTING
+    DONE
+    FAILED
+  }
+
+  enum OrderItemState {
+    QUEUED
+    RUNNING
+    WAITING
+    DOWNLOADED
+    DONE
+    SKIPPED
+    FAILED
   }
 
   class SourceService {
@@ -1328,6 +1380,10 @@ PlayStats "0..*" -- "1" Recording
 AuditLog "0..*" -- "1" User : by >
 
 SourceService "0..*" -- "0..1" SourceCredential : login by service id >
+DownloadOrder "1" *-- "1..*" DownloadOrderItem
+DownloadOrder "0..*" -- "0..1" Job : downloaded by >
+DownloadOrder "0..1" -- "0..1" LibraryImport : imported by >
+DownloadOrder "0..*" -- "0..1" User : ordered by >
 
 ' Relationships – Playback
 OutputZone "0..1" o-- "1..*" OutputDevice

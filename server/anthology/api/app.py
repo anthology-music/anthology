@@ -44,6 +44,7 @@ from anthology.search import api as search_api
 from anthology.search import jobs as search_jobs
 from anthology.search import streams as search_streams
 from anthology.sources import api as sources_api
+from anthology.sources import orders as source_orders
 from anthology.sources import streams as sources_streams
 from anthology.sources.service import SourceServices
 from anthology.sync import api as sync_api
@@ -118,6 +119,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.transcoder = transcoder
         sources = SourceServices(sessionmaker, settings, app.state.source_transport)
         app.state.sources = sources
+        app.state.job_handlers.get(source_orders.JOB_TYPE).bind(sessionmaker, sources, settings)
         lookups, mirror_monitor = _lookups(settings, sessionmaker)
         app.state.lookups = lookups
         identify = app.state.job_handlers.get(identification.JOB_TYPE)
@@ -255,6 +257,7 @@ def _job_handlers(settings: Settings) -> HandlerRegistry:
     registry.register(tagging_jobs.TaggingBulkHandler())
     registry.register(metadata_refresh.MetadataRefreshHandler())
     registry.register(search_jobs.SearchReindexHandler())
+    registry.register(source_orders.SourceDownloadHandler())
     for handler in library_import_jobs.HANDLERS:
         registry.register(handler())
     if settings.dev_demo:

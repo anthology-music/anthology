@@ -76,7 +76,22 @@
 
     <ResolvedTracks v-if="resolved" :key="resolvedKey" :resolved="resolved">
       <template #default="{ selected }">
-        <slot name="order" :resolved="resolved" :selected="selected" :quality="quality" />
+        <div class="source-search__order">
+          <q-btn
+            unelevated
+            no-caps
+            color="primary"
+            icon="download"
+            :label="t('sources.order')"
+            :disable="!selected.length || ordering"
+            :loading="ordering"
+            data-testid="source-order"
+            @click="order(selected)"
+          />
+          <span v-if="ordered" role="status" data-testid="source-ordered">
+            {{ t('sources.ordered', { n: ordered.items, present: ordered.already_present }) }}
+          </span>
+        </div>
       </template>
     </ResolvedTracks>
     <div v-else-if="results.length" class="source-search__results" data-testid="source-results">
@@ -147,6 +162,8 @@ const error = ref<string | null>(null);
 const results = ref<Schemas['ServiceResults'][]>([]);
 const resolved = ref<Schemas['ResolveOut'] | null>(null);
 const resolvedKey = ref(0);
+const ordering = ref(false);
+const ordered = ref<Schemas['OrderOut'] | null>(null);
 
 const qualityOptions = computed(() => {
   const chosen = available.value.filter((s) => service.value === null || s.id === service.value);
@@ -203,12 +220,41 @@ async function resolve(body: Schemas['ResolveIn']): Promise<void> {
   }
   resolved.value = data;
   resolvedKey.value += 1;
+  ordered.value = null;
+}
+
+/** Send the selected tracks as an order (spec: sources, Download orders). */
+async function order(tracks: string[]): Promise<void> {
+  if (!resolved.value) return;
+  ordering.value = true;
+  error.value = null;
+  const { data, error: failed } = await getServices().api.POST('/api/v1/sources/orders', {
+    body: {
+      service: resolved.value.service,
+      ref: resolved.value.item.ref,
+      tracks,
+      quality: quality.value,
+    },
+  });
+  ordering.value = false;
+  if (failed || !data) {
+    error.value = 'orderFailed';
+    return;
+  }
+  ordered.value = data;
 }
 
 defineExpose({ clear: () => (resolved.value = null) });
 </script>
 
 <style scoped>
+.source-search__order {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
 .source-search__form {
   display: flex;
   flex-wrap: wrap;

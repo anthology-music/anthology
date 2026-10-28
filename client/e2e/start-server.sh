@@ -21,4 +21,10 @@ uv run anthology dev seed-demo --rows "${ANTHOLOGY_E2E_DEMO_ROWS:-500000}"
 uv run anthology dev seed-library --tracks "${ANTHOLOGY_E2E_LIBRARY_TRACKS:-20000}"
 uv run anthology dev seed-conflicts --releases 2
 uv run python ../client/e2e/import-folder.py "$ANTHOLOGY_IMPORT_ROOTS"
-exec uv run uvicorn anthology.api.app:create_app --factory --port "${ANTHOLOGY_E2E_SERVER_PORT:-8490}"
+# The fake source service (tools/fake-source-service): orders without any streaming service.
+FAKE_SOURCE_PORT="${ANTHOLOGY_E2E_FAKE_SOURCE_PORT:-8429}"
+uv run anthology-fake-source --port "$FAKE_SOURCE_PORT" &
+FAKE_SOURCE_PID=$!
+trap 'kill "$FAKE_SOURCE_PID" 2>/dev/null' EXIT INT TERM
+export ANTHOLOGY_SOURCE_SERVICES="http://127.0.0.1:$FAKE_SOURCE_PORT"
+uv run uvicorn anthology.api.app:create_app --factory --port "${ANTHOLOGY_E2E_SERVER_PORT:-8490}"

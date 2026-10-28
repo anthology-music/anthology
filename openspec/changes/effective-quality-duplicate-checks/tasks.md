@@ -10,8 +10,8 @@
 
 ## 3. Sources
 
-- [ ] 3.1 Before download, compare the source's declared quality with the existing original's effective quality and skip unless the offer is better; verify with tests for both scenarios of the spec
-- [ ] 3.2 After download, apply the analysis result: replace on high-confidence improvement, discard with "not better than existing" on high-confidence non-improvement, otherwise keep the file and create a review entry with "needs review"; verify with tests for all three outcomes and that discarded files are removed from `imports`
+- [x] 3.1 Before download, compare the source's declared quality with the existing original's effective quality and skip unless the offer is better; verify with tests for both scenarios of the spec
+- [x] 3.2 After download, apply the analysis result: replace on high-confidence improvement, discard with "not better than existing" on high-confidence non-improvement, otherwise keep the file and create a review entry with "needs review"; verify with tests for all three outcomes and that discarded files are removed from `imports`
 
 ## Workflow follow-up
 

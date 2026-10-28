@@ -327,6 +327,10 @@ class AudioFile(Base):
         ForeignKey("tracks.id", ondelete="SET NULL"), index=True
     )
     added_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
+    # Where it was acquired (spec: sources, Downloads enter the library); None for imports.
+    source_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("sources.id", ondelete="SET NULL"), index=True
+    )
 
 
 class LibraryCounter(Base):

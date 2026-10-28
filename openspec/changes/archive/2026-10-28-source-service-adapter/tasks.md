@@ -2,7 +2,7 @@
 
 ## 1. Documentation and data model
 
-- [ ] 1.1 Complete `docs/architecture/source-service-api.md` with every v1 field and the errors; add `SourceService`, `SourceCredential`, `DownloadOrder`, `DownloadOrderItem`, `Source.kind` as a string and `AudioFile.source` to `docs/architecture/data-model.puml`; describe the streams in `docs/architecture/sync-protocol.md`, the module in `server/AGENTS.md` and the configuration in `docs/install.md`; verify the diagram renders and `openspec validate --all --strict` passes
+- [x] 1.1 Complete `docs/architecture/source-service-api.md` with every v1 field and the errors; add `SourceService`, `SourceCredential`, `DownloadOrder`, `DownloadOrderItem`, `Source.kind` as a string and `AudioFile.source` to `docs/architecture/data-model.puml`; describe the streams in `docs/architecture/sync-protocol.md`, the module in `server/AGENTS.md` and the configuration in `docs/install.md`; verify the diagram renders and `openspec validate --all --strict` passes
 
 ## 2. Pull request 1: connection, search and links
 
@@ -14,10 +14,10 @@
 
 ## 3. Pull request 2: orders and library
 
-- [ ] 3.1 Create orders and the job `source_download` with one item per track, present tracks finished at once, download via the service, progress, rate-limit waiting and takeover; verify with tests against the fake (`external-source-services` 3.2, `effective-quality-duplicate-checks` 3.1)
-- [ ] 3.2 Import the order folder automatically (managed, `move`) with the import's comparison, map the outcomes to the items, remove what is not better, create review entries for inconclusive comparisons; verify with tests for new, replaced, not better and needs review (`effective-quality-duplicate-checks` 3.2)
-- [ ] 3.3 Store the source and retrieval date per original and show them in the album view; verify with a test and a component test
-- [ ] 3.4 Build the orders list with counts and items in the Streaming view; verify with component tests and an E2E test that searches the fake service, orders an album and plays a downloaded track
+- [x] 3.1 Create orders and the job `source_download` with one item per track, present tracks finished at once, download via the service, progress, rate-limit waiting and takeover; verify with tests against the fake (`external-source-services` 3.2, `effective-quality-duplicate-checks` 3.1)
+- [x] 3.2 Import the order folder automatically (managed, `move`) with the import's comparison, map the outcomes to the items, remove what is not better, create review entries for inconclusive comparisons; verify with tests for new, replaced, not better and needs review (`effective-quality-duplicate-checks` 3.2)
+- [x] 3.3 Store the source and retrieval date per original and show them in the album view; verify with a test and a component test
+- [x] 3.4 Build the orders list with counts and items in the Streaming view; verify with component tests and an E2E test that searches the fake service, orders an album and plays a downloaded track
 
 ## Workflow follow-up
 

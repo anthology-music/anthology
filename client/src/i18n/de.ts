@@ -362,6 +362,7 @@ export default {
   },
   library: {
     title: 'Bibliothek',
+    source: '{source}, abgerufen am {date}',
     quality: {
       tiers: {
         hires_lossless: 'Hi-Res',
@@ -664,6 +665,44 @@ export default {
       video: 'Video',
       videoLater: 'Video-Aufträge kommen später.',
     },
+    order: 'Auftrag senden',
+    ordered: 'Auftrag gesendet: {n} Titel, davon {present} schon vorhanden.',
+    orders: {
+      title: 'Aufträge',
+      summary: 'Übersicht',
+      none: 'Noch keine Aufträge.',
+      counts: {
+        total: 'Titel gesamt',
+        done: 'Fertig',
+        running: 'Laufen',
+        waiting: 'Wartend',
+        failed: 'Fehler',
+      },
+      status: {
+        downloading: 'Lädt',
+        importing: 'Wird übernommen',
+        done: 'Fertig',
+        failed: 'Fehlgeschlagen',
+      },
+      states: {
+        queued: 'Wartet',
+        running: 'Lädt',
+        waiting: 'Wartet (Ratenbegrenzung)',
+        downloaded: 'Geladen',
+        done: 'Fertig',
+        skipped: 'Schon vorhanden',
+        failed: 'Fehler',
+      },
+      outcomes: {
+        new: 'Neu',
+        replaced: 'Ersetzt',
+        already_present: 'Schon vorhanden',
+        not_better_than_existing: 'Nicht besser als vorhanden',
+        needs_review: 'Prüfung nötig',
+        failed: 'Fehler',
+      },
+      progress: 'Fortschritt von {title}',
+    },
     search: 'Suchen',
     open: 'Link öffnen',
     source: 'Quelle',
@@ -680,6 +719,7 @@ export default {
       new: 'Neu',
     },
     errors: {
+      orderFailed: 'Der Auftrag konnte nicht gesendet werden.',
       failed: 'Die Quelle hat nicht geantwortet.',
       timeout: 'keine Antwort',
       noSourceForLink: 'Keine verfügbare Quelle kann diesen Link öffnen.',

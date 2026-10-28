@@ -53,7 +53,13 @@ export async function mountWithApp(
     locale = 'de',
     path = '/local',
     guard = false,
-  }: { locale?: MessageLanguages; path?: string; guard?: boolean } = {},
+    props = {},
+  }: {
+    locale?: MessageLanguages;
+    path?: string;
+    guard?: boolean;
+    props?: Record<string, unknown>;
+  } = {},
 ) {
   const pinia = createPinia();
   setActivePinia(pinia);
@@ -64,6 +70,7 @@ export async function mountWithApp(
   await router.push(path);
   await router.isReady();
   const wrapper = mount(component, {
+    props,
     global: { plugins: [Quasar, createAppI18n(locale), router, pinia] },
   });
   await flushPromises();

@@ -11,6 +11,7 @@ on:
       - "pnpm-workspace.yaml"
       - "docs/design/tokens.css"
       - "server/**"
+      - "tools/fake-source-service/**"
       - ".github/workflows/client.yml"
   pull_request:
     paths:
@@ -21,6 +22,7 @@ on:
       - "pnpm-workspace.yaml"
       - "docs/design/tokens.css"
       - "server/**"
+      - "tools/fake-source-service/**"
       - ".github/workflows/client.yml"
 
 permissions:

@@ -743,6 +743,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sources/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Order
+         * @description Order tracks of a resolved item (spec: Download orders); present tracks are not
+         *     downloaded.
+         */
+        post: operations["order_api_v1_sources_orders_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sources/resolve": {
         parameters: {
             query?: never;
@@ -1453,6 +1474,34 @@ export interface components {
             lossless: boolean;
             /** Sample Rate Hz */
             sample_rate_hz?: number | null;
+        };
+        /**
+         * OrderIn
+         * @description Order tracks (refs) of a resolved item (``ref``) from one service.
+         */
+        OrderIn: {
+            /**
+             * Quality
+             * @default best
+             */
+            quality: string;
+            /** Ref */
+            ref: string;
+            /** Service */
+            service: string;
+            /** Tracks */
+            tracks: string[];
+        };
+        /** OrderOut */
+        OrderOut: {
+            /** Already Present */
+            already_present: number;
+            /** Items */
+            items: number;
+            /** Job Id */
+            job_id: string;
+            /** Order Id */
+            order_id: string;
         };
         /** Page[DeviceOut] */
         Page_DeviceOut_: {
@@ -3203,6 +3252,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TokenResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    order_api_v1_sources_orders_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrderIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderOut"];
                 };
             };
             /** @description Validation Error */

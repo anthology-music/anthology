@@ -51,7 +51,7 @@ const RESOLVED = {
 };
 
 async function page(path: string, role = 'editor', loginStored = false) {
-  const bodies: Record<string, unknown[]> = { search: [], resolve: [], login: [] };
+  const bodies: Record<string, unknown[]> = { search: [], resolve: [], login: [], order: [] };
   const services = fakeServices(
     {
       'POST /api/v1/auth/refresh': () => json(tokens({ role })),
@@ -93,6 +93,10 @@ async function page(path: string, role = 'editor', loginStored = false) {
           logged_in: false,
           problem: 'login_missing',
         }),
+      'POST /api/v1/sources/orders': async (request) => {
+        bodies.order!.push(await request.json());
+        return json({ order_id: 'o1', job_id: 'j1', items: 2, already_present: 0 }, 202);
+      },
       'PUT /api/v1/sources/services/tidal/login': async (request) => {
         bodies.login!.push(await request.json());
         return json({
@@ -118,11 +122,15 @@ async function page(path: string, role = 'editor', loginStored = false) {
   return { wrapper, socket, bodies };
 }
 
-async function serveServices(socket: FakeSocket, rows: Record<string, unknown>[]) {
+async function serveServices(
+  socket: FakeSocket,
+  rows: Record<string, unknown>[],
+  stream = 'sources.services',
+) {
   const sub = () =>
     socket.sent.find(
       (message): message is Subscribe =>
-        message.type === 'subscribe' && message.data.stream === 'sources.services',
+        message.type === 'subscribe' && message.data.stream === stream,
     );
   await vi.waitFor(() => expect(sub()).toBeDefined());
   const { sub: id } = sub()!;
@@ -246,5 +254,99 @@ describe('sources', () => {
     expect(
       (wrapper.find('[data-testid="login-tidal-password"]').element as HTMLInputElement).value,
     ).toBe('••••••••');
+  });
+
+  it('sends the selected tracks as an order', async () => {
+    const { wrapper, socket, bodies } = await page('/streaming');
+    await serveServices(socket, [service('fake')]);
+    await wrapper.find('[data-testid="source-query"]').setValue('https://fake.example/album/1');
+    await wrapper.find('.source-search__form').trigger('submit');
+    await vi.waitFor(() => expect(wrapper.find('[data-testid="resolved"]').exists()).toBe(true));
+
+    await wrapper.find('[data-testid="source-order"]').trigger('click');
+    await vi.waitFor(() => expect(bodies.order).toHaveLength(1));
+
+    // Present tracks are left out (they start unselected).
+    expect(bodies.order![0]).toEqual({
+      service: 'fake',
+      ref: 'album:1',
+      tracks: ['track:102', 'track:103'],
+      quality: 'best',
+    });
+    await vi.waitFor(() =>
+      expect(wrapper.find('[data-testid="source-ordered"]').text()).toContain('2 Titel'),
+    );
+  });
+
+  it('lists the orders with their counts and items', async () => {
+    const { wrapper, socket } = await page('/streaming');
+    await serveServices(socket, [service('fake')]);
+    const order = (id: string, counts: Record<string, number>) => ({
+      id,
+      key: ['2026-10-28T10:00:00+00:00', id],
+      title: `Album ${id}`,
+      service_name: 'Fake',
+      short: 'FK',
+      status: 'downloading',
+      message: null,
+      created_at: '2026-10-28T10:00:00+00:00',
+      finished_at: null,
+      total: 0,
+      done: 0,
+      running: 0,
+      waiting: 0,
+      failed: 0,
+      ...counts,
+    });
+    await serveServices(
+      socket,
+      [
+        order('a', { total: 3, done: 1, running: 1, waiting: 1 }),
+        order('b', { total: 2, failed: 1, done: 1 }),
+      ],
+      'sources.orders',
+    );
+
+    expect(wrapper.find('[data-testid="orders-total"]').text()).toBe('5');
+    expect(wrapper.find('[data-testid="orders-done"]').text()).toBe('2');
+    expect(wrapper.find('[data-testid="orders-failed"]').text()).toBe('1');
+    await wrapper.find('[data-testid="order-a"]').trigger('click');
+    await serveServices(
+      socket,
+      [
+        {
+          id: 'i1',
+          key: [0, 'i1'],
+          position: 0,
+          title: 'Eisfeld',
+          artist: 'Nordlicht',
+          album: 'Polarnacht',
+          offered: null,
+          duplicate: 'new',
+          state: 'done',
+          progress: 1,
+          outcome: 'new',
+          message: null,
+        },
+        {
+          id: 'i2',
+          key: [1, 'i2'],
+          position: 1,
+          title: 'Treibeis',
+          artist: 'Nordlicht',
+          album: 'Polarnacht',
+          offered: null,
+          duplicate: 'new',
+          state: 'waiting',
+          progress: 0.4,
+          outcome: null,
+          message: null,
+        },
+      ],
+      'sources.order.items',
+    );
+
+    expect(wrapper.find('[data-testid="order-item-0"]').text()).toContain('Neu');
+    expect(wrapper.find('[data-testid="order-item-1"]').text()).toContain('Ratenbegrenzung');
   });
 });
