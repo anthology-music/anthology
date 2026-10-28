@@ -12,10 +12,16 @@
 
 ## 3. Tagged downloads
 
-- [ ] 3.1 Implement the tagger `POST /v1/tags/copy` endpoint in `services/tagger`; verify with a test per supported format (FLAC, MP3, M4A/ALAC, Opus, Ogg Vorbis, WAV, AIFF) that the copy carries the context tags and the source hash is unchanged
-- [ ] 3.2 Implement the download endpoint per context track that creates or reuses a `TAGGED_COPY` cache entry and serves it with range support; verify with tests for first download, cache hit, resumed range request and concurrent requests creating only one copy
-- [ ] 3.3 Invalidate tagged copies on context tag or original change and ignore them in duplicate detection and quality ranking; verify with tests for both invalidation triggers
+- [ ] 3.1 Implement the tagger `POST /v1/tags/copy` endpoint in `services/tagger` and add WAV and AIFF (ID3 chunk) to the tagger; verify with a test per supported format (FLAC, MP3, M4A/AAC, M4A/ALAC, Opus, Ogg Vorbis, WAV, AIFF) that the copy carries the context tags and the source hash is unchanged
+- [ ] 3.2 Implement the download endpoints per context track (`POST /api/v1/library/tracks/{id}/download`, `GET /media/downloads/tracks/{id}`) that create or reuse a `TAGGED_COPY` cache entry of the original and serve it with range support; verify with tests for first download, cache hit, resumed range request and concurrent requests creating only one copy
+- [ ] 3.3 Invalidate tagged copies of originals on context tag or original change and ignore them in duplicate detection and quality ranking; verify with tests for both invalidation triggers
 - [ ] 3.4 Fall back to the untagged original with a notice when the tagger is unavailable; verify with a test with the tagger stubbed as down
+- [ ] 3.5 Implement the album download (`POST /api/v1/library/releases/{id}/download`, streamed zip of tagged copies, temporary copies removed); verify with tests that the zip holds every track with its context tags and file name and that the cache holds no new entries afterwards
+
+## 4. Client
+
+- [ ] 4.1 Add "Download" to the track menu and "Download album" to the album page, with the notice when the files carry no context tags; verify with component tests and an E2E test that downloads a track
+- [ ] 4.2 Update `docs/architecture/sync-protocol.md` (download endpoints), the tagger README (formats), `docs/roadmap.md` (album export done) and regenerate the API types; verify `pnpm api-types` leaves no diff
 
 ## Workflow follow-up
 
