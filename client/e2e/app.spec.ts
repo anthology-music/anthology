@@ -406,3 +406,27 @@ test('ordering an album from a source and playing a downloaded track', async ({ 
   await expect(page.getByTestId('player-position')).not.toHaveText('0:00', { timeout: 15_000 });
   await page.getByTestId('player-toggle').click();
 });
+
+test('downloading a track and an album, untagged while the tagger is absent', async ({ page }) => {
+  await signIn(page);
+  await page.goto('/local/albums');
+  const kassette = page.locator('[data-testid^="release-"]').filter({ hasText: 'Kassette 1985' });
+  await kassette.first().click();
+  await expect(page.getByTestId('release-title')).toHaveText('Kassette 1985');
+
+  // The end-to-end server runs without the tagger: the original comes with a notice.
+  const more = page.locator('[data-testid^="more-"]').first();
+  const trackId = (await more.getAttribute('data-testid'))!.replace('more-', '');
+  await more.click();
+  const trackDownload = page.waitForEvent('download');
+  await page.getByTestId(`download-${trackId}`).click();
+  expect((await trackDownload).suggestedFilename()).toMatch(/^01 Frühling\.\w+$/);
+  await expect(page.getByTestId('download-notice')).toContainText('Ohne Kontext-Tags');
+  await page.getByTestId('download-notice-close').click();
+
+  const albumDownload = page.waitForEvent('download');
+  await page.getByTestId('download-release').click();
+  const zip = await albumDownload;
+  expect(zip.suggestedFilename()).toMatch(/Kassette 1985\.zip$/);
+  expect(await zip.failure()).toBeNull();
+});

@@ -1,7 +1,9 @@
-"""ID3v2.4 tags of MP3 files."""
+"""ID3v2.4 tags of MP3 files and of the ID3 chunk of WAV and AIFF files."""
 
 from mutagen import id3
+from mutagen.aiff import AIFF
 from mutagen.mp3 import MP3
+from mutagen.wave import WAVE
 
 from tagger.formats import PICTURE_NAMES, PICTURE_TYPES, RawImage, split_pair
 from tagger.models import AudioInfo
@@ -34,7 +36,7 @@ MUSICBRAINZ_OWNER = "http://musicbrainz.org"
 
 
 class Id3Family:
-    def __init__(self, file: MP3) -> None:
+    def __init__(self, file: MP3 | WAVE | AIFF) -> None:
         self.file = file
         if file.tags is None:
             file.add_tags()
@@ -136,16 +138,32 @@ class Id3Family:
 
     def audio(self) -> AudioInfo:
         info = self.file.info
+        if isinstance(self.file, MP3):
+            return AudioInfo(
+                format="mp3",
+                codec="mp3",
+                lossless=False,
+                duration_seconds=info.length,
+                sample_rate=info.sample_rate,
+                channels=info.channels,
+                bitrate_kbps=round(info.bitrate / 1000) if info.bitrate else None,
+            )
+        name = "wav" if isinstance(self.file, WAVE) else "aiff"
         return AudioInfo(
-            format="mp3",
-            codec="mp3",
-            lossless=False,
+            format=name,
+            codec="pcm",
+            lossless=True,
             duration_seconds=info.length,
             sample_rate=info.sample_rate,
+            bit_depth=info.bits_per_sample,
             channels=info.channels,
             bitrate_kbps=round(info.bitrate / 1000) if info.bitrate else None,
         )
 
     def save(self, *, replace_all: bool) -> None:
+        if not isinstance(self.file, MP3):
+            # WAV and AIFF: an ID3v2.4 chunk, no ID3v1.
+            self.file.save(v2_version=4)
+            return
         # ID3v2.4; replace_all also removes an ID3v1 tag, otherwise an existing one is updated.
         self.file.save(v2_version=4, v1=0 if replace_all else 1)

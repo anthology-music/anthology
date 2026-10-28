@@ -15,12 +15,17 @@ When the original is delivered for playback (own clients, network outputs), the 
 - **AND** the compilation's metadata is delivered through the API
 
 ### Requirement: Context-tagged downloads
-When a user downloads or exports an original, the system SHALL deliver a copy tagged with the complete context tags (including cover, ISRC and recording ID) of the context it was requested from, and SHALL support range requests on that copy.
+When a signed-in user downloads or exports an original, the system SHALL deliver a copy tagged with the complete context tags (including ISRC and recording ID, and the cover once the context has one) of the context it was requested from, and SHALL support range requests on that copy. While the tagger is unavailable, the system SHALL deliver the untagged original and the client SHALL tell the user that the file has no context tags.
 
 #### Scenario: Download from a compilation
 - **WHEN** a user downloads a track from a compilation
 - **THEN** the file contains the compilation's album title, track number and album artist
 - **AND** the original file is not modified
+
+#### Scenario: Tagger unavailable
+- **WHEN** a user downloads a track while the tagger is unavailable
+- **THEN** the user receives the unchanged original
+- **AND** the client shows that the file carries no context tags
 
 #### Scenario: Resumed download
 - **WHEN** a download of a tagged copy is interrupted and resumed with a range request
@@ -36,3 +41,15 @@ Tagged copies SHALL be cached per original and context, shared between users and
 #### Scenario: Copy is not an original
 - **WHEN** duplicate detection or quality ranking runs
 - **THEN** tagged copies are ignored
+
+### Requirement: Album download
+A signed-in user SHALL be able to download a whole album as one zip archive that contains a context-tagged copy of every track with its track number in the file name. The archive SHALL be streamed while it is created, and copies written only for the archive MUST NOT remain in the cache.
+
+#### Scenario: Album as zip
+- **WHEN** a user downloads an album with twelve tracks
+- **THEN** the download starts before all copies are written
+- **AND** the archive contains twelve files named by track number and title, each tagged with the album's tags
+
+#### Scenario: Cache untouched
+- **WHEN** an album without cached tagged copies is downloaded
+- **THEN** the cache holds no more tagged copies afterwards than before

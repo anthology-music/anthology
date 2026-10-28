@@ -361,6 +361,13 @@ export default {
     },
   },
   library: {
+    download: {
+      track: 'Herunterladen',
+      release: 'Album herunterladen',
+      untagged: 'Ohne Kontext-Tags geladen: Der Tagger ist gerade nicht erreichbar.',
+      failed: 'Der Download konnte nicht gestartet werden.',
+      dismiss: 'Hinweis schließen',
+    },
     title: 'Bibliothek',
     source: '{source}, abgerufen am {date}',
     quality: {

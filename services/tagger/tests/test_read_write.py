@@ -65,6 +65,8 @@ def test_all_fields_round_trip(
         ("alac", "mp4", "alac", True),
         ("vorbis", "ogg_vorbis", "vorbis", False),
         ("opus", "opus", "opus", False),
+        ("wav", "wav", "pcm", True),
+        ("aiff", "aiff", "pcm", True),
     ],
 )
 def test_audio_properties(
@@ -264,13 +266,15 @@ def test_in_place_write_keeps_hardlinks(
 # --- copies -----------------------------------------------------------------------------------
 
 
+@pytest.mark.parametrize("name", list(FORMATS))
 def test_copy_carries_the_tags_and_leaves_the_source_unchanged(
-    client: TestClient, volumes: Volumes, media: dict[str, Path]
+    client: TestClient, volumes: Volumes, media: dict[str, Path], name: str
 ) -> None:
-    source = volumes.put(media["flac"], volume="imports")
+    source = volumes.put(media[name], volume="imports")
     write(client, "in_place", {"path": str(source), "tags": {"title": "Source", "label": "L"}})
     before = checksum(source)
-    target = volumes.cache / "copies" / "track.flac"
+    file_name = FORMATS[name][0]
+    target = volumes.cache / "copies" / file_name
 
     response = client.post(
         "/v1/tags/copy",
@@ -279,7 +283,7 @@ def test_copy_carries_the_tags_and_leaves_the_source_unchanged(
                 {
                     "source": str(source),
                     "target": str(target),
-                    "tags": {"title": "Context title", "album": "Album"},
+                    "tags": {"title": "Context title", "album": "Album", "isrc": "DEA123456789"},
                     "images": [{"path": str(volumes.staging / "front.jpg")}],
                 }
             ]
@@ -288,7 +292,7 @@ def test_copy_carries_the_tags_and_leaves_the_source_unchanged(
 
     assert response.json()["results"] == [{"path": str(target), "ok": True}]
     copy = read(client, target)[0]
-    assert copy["tags"] == {"title": "Context title", "album": "Album"}
+    assert copy["tags"] == {"title": "Context title", "album": "Album", "isrc": "DEA123456789"}
     assert [image["type"] for image in copy["images"]] == ["front"]
     assert checksum(source) == before
-    assert [p.name for p in target.parent.iterdir()] == ["track.flac"]
+    assert [p.name for p in target.parent.iterdir()] == [file_name]

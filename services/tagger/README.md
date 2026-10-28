@@ -4,7 +4,7 @@ Tag reading and writing service for Anthology, based on [mutagen](https://github
 
 - **License: GPL-2.0-or-later** (see `LICENSE`) – because it uses mutagen. The Anthology core (MIT) does not import this code; it calls the service through its interface.
 - Runs as its own container (`anthology-tagger`, port 8410) in the Anthology pod, with the library, cache and imports volumes mounted at the same paths as in the server.
-- Formats: FLAC, MP3, MP4/M4A (AAC, ALAC), Ogg Vorbis, Opus.
+- Formats: FLAC, MP3, MP4/M4A (AAC, ALAC), Ogg Vorbis, Opus, WAV and AIFF (ID3 chunk).
 
 ## Interface v1
 

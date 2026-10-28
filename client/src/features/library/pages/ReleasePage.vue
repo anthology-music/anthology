@@ -54,6 +54,18 @@
             data-testid="play-release"
             @click="player.playList(listRule)"
           />
+          <q-btn
+            v-if="release && release.track_count"
+            outline
+            rounded
+            no-caps
+            icon="download"
+            :label="t('library.download.release')"
+            :loading="downloads.busy"
+            class="library-header__play"
+            data-testid="download-release"
+            @click="downloads.downloadRelease(releaseId)"
+          />
           <router-link
             v-if="release"
             :to="{ name: 'search', query: { q: '', release_id: releaseId, in: release.title } }"
@@ -144,6 +156,7 @@ import LibraryBreadcrumb from '../components/LibraryBreadcrumb.vue';
 import LibraryList from '../components/LibraryList.vue';
 import MissingEntry from '../components/MissingEntry.vue';
 import TrackRow from '../components/TrackRow.vue';
+import { useDownloadStore } from '../downloads';
 import { useEntry } from '../entry';
 import { useCounts } from '../numbers';
 
@@ -156,6 +169,7 @@ const { entry: release, state } = useEntry<LibraryReleaseRow>('library.release',
 });
 
 const auth = useAuthStore();
+const downloads = useDownloadStore();
 const player = usePlayerStore();
 const editing = ref(false);
 const editingRelease = ref(false);

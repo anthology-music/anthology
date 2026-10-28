@@ -12,9 +12,9 @@ def test_health_reports_versions_and_formats(client: TestClient) -> None:
     health = client.get("/v1/health").json()
 
     assert health["status"] == "ok"
-    assert health["interface"] == "1.0"
+    assert health["interface"] == "1.1"
     assert health["version"]
-    assert set(health["formats"]) == {"flac", "mp3", "mp4", "ogg_vorbis", "opus"}
+    assert set(health["formats"]) == {"flac", "mp3", "mp4", "ogg_vorbis", "opus", "wav", "aiff"}
 
 
 def test_paths_outside_the_roots_are_rejected(client: TestClient, volumes: Volumes) -> None:

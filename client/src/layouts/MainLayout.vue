@@ -55,6 +55,7 @@
     </q-page-container>
 
     <q-footer v-if="auth.user" class="main-footer">
+      <DownloadNotice />
       <PlayerBar />
     </q-footer>
   </q-layout>
@@ -67,6 +68,7 @@ import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 
 import ConnectionState from '@/components/ConnectionState.vue';
+import DownloadNotice from '@/features/library/components/DownloadNotice.vue';
 import PlayerBar from '@/features/playback/components/PlayerBar.vue';
 import ReviewNavCount from '@/features/review/components/ReviewNavCount.vue';
 import { useAuthStore } from '@/features/users/store';

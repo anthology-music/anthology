@@ -47,9 +47,8 @@ _Last updated: 2026-10-28_
   maintenance job with grace period and safety limit.
 - **Open, implemented in part:** `review-list` (PR #26 merged). Open: producers of
   works/publishers, sources and sheet-music (3.6–3.8).
-- **Open, implemented in part:** `tag-editing` (PR #27 and #28). Decided with the maintainer:
-  genres per recording; changing the album of selected tracks moves them. Only 3.3 is open
-  (waits for transcoding and tagged copies). `metadata-lookup` is archived with its refresh.
+- **Archived:** `tag-editing` (PR #27, #28; 3.3 with `context-tags-on-delivery`). Decided with
+  the maintainer: genres per recording; changing the album of selected tracks moves them.
 - **Archived:** `search` (PR #29). Decided with the maintainer: library items only (artists, albums, tracks; album and artist context); works,
   videos, playlists and their filters join with their domains (`docs/roadmap.md`); offline
   search moved to `offline-sync`; the server is the only parser of the syntax.
@@ -67,6 +66,11 @@ _Last updated: 2026-10-28_
   source status with reasons for every user, orders with a download job, an import that confirms
   itself, outcomes and the source per original. `effective-quality-duplicate-checks` 2.1 (CD
   import) stays open.
+- **Archived:** `context-tags-on-delivery` (branch `feat/context-tags-on-delivery`): track
+  downloads as cached context-tagged copies of the original, album downloads as streamed zips
+  with temporary copies, WAV and AIFF in the tagger (interface 1.1). Decided with the
+  maintainer: tagger extended for WAV/AIFF, copies without cover until `covers`, track and album
+  downloads, every signed-in user may download.
 - **Next:** see `docs/roadmap.md` (milestone 3).
   `effective-quality-duplicate-checks` covers CD import and sources only; it waits for them.
 
@@ -124,3 +128,7 @@ _Last updated: 2026-10-28_
   MusicBrainz and time out in CI.
 - The local FFmpeg must have the `chromaprint` and `hash` muxers (build the `ffmpeg` stage of
   `server/Containerfile` with `podman build --target ffmpeg` and copy `ffmpeg`/`ffprobe` out).
+  That build has no `lavfi` and no MP3/Vorbis/Opus encoders, which the tagger tests need: run
+  them in a container, e.g. `python:3.12-slim` with Debian's `ffmpeg`, from a copy of
+  `services/tagger` in the scratch directory (SELinux labels of the repository fail with `:Z`).
+- `tests/test_health.py` downgrades the schema to base; it needs empty tables (`clean_db`).

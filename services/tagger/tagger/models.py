@@ -40,7 +40,7 @@ class Tags(BaseModel):
 
 
 class AudioInfo(BaseModel):
-    format: Literal["flac", "mp3", "mp4", "ogg_vorbis", "opus"]
+    format: Literal["flac", "mp3", "mp4", "ogg_vorbis", "opus", "wav", "aiff"]
     codec: str
     lossless: bool
     duration_seconds: float

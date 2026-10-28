@@ -59,6 +59,11 @@ TOUCH_EVERY = timedelta(minutes=1)
 AAC_MAX_RATE = 48_000
 # A request waits at most this long for the tagger; then it plays the untagged transcode.
 TAGGING_TIMEOUT = 5.0
+# A download waits at most this long for its tagged copy; then it gets the untagged original.
+DOWNLOAD_TAGGING_TIMEOUT = 60.0
+# Copies for album downloads, below the cache folder (the tagger writes only there); the
+# sweep removes leftovers like files without an entry.
+TEMPORARY = "tmp"
 # Stale entries get this creation time, so that the next sweep removes them.
 STALE = datetime(2000, 1, 1, tzinfo=UTC)
 
@@ -69,6 +74,11 @@ class TranscodeFailed(Exception):
 
 def variant_key(kind: CacheKind, audio_file_id: uuid.UUID, variant: Variant, context=None) -> str:
     return f"{kind.value}:{audio_file_id}:{variant.name}:{context or '-'}"
+
+
+def original_key(audio_file_id: uuid.UUID, track_id: uuid.UUID) -> str:
+    """The variant key of the tagged copy of an original for one context track."""
+    return f"{CacheKind.TAGGED_COPY.value}:{audio_file_id}:original:{track_id}"
 
 
 def ffmpeg_args(ffmpeg: str, source: str, target: str, variant: Variant, rate: int) -> list[str]:
@@ -209,49 +219,128 @@ class Transcoder:
         the tagger if missing (spec: Tagged copies per context). None while the tagger is
         unavailable, slow or busy with it in another request: then the untagged transcode
         plays, and a later request tries again."""
-        if self.tagger is None:
-            return None
         variant = Variant(AudioFormat(transcode.format), transcode.bitrate_kbps)
-        key = variant_key(CacheKind.TAGGED_COPY, transcode.audio_file_id, variant, track_id)
+        return await self._tagged_copy(
+            variant_key(CacheKind.TAGGED_COPY, transcode.audio_file_id, variant, track_id),
+            transcode.audio_file_id,
+            transcode.format,
+            transcode.bitrate_kbps,
+            self.file(transcode),
+            ".m4a",
+            track_id,
+            seconds=TAGGING_TIMEOUT,
+            wait=False,
+        )
+
+    async def original_copy(
+        self, original: AudioFile, track_id: uuid.UUID
+    ) -> TranscodeCacheEntry | None:
+        """The copy of an original with the context tags of ``track_id`` for a download (spec:
+        library, Context-tagged downloads, Tagged copy cache). Concurrent requests wait for the
+        one that writes it. None while the tagger is unavailable or did not write it in time:
+        then the untagged original is delivered."""
+        return await self._tagged_copy(
+            original_key(original.id, track_id),
+            original.id,
+            original.format.value,
+            None,
+            Path(original.path),
+            Path(original.path).suffix.lower(),
+            track_id,
+            seconds=DOWNLOAD_TAGGING_TIMEOUT,
+            wait=True,
+        )
+
+    async def cached_copy(self, audio_file_id: uuid.UUID, track_id: uuid.UUID) -> Path | None:
+        """The file of a ready tagged copy of an original, if it is cached."""
+        key = original_key(audio_file_id, track_id)
         async with self.sessionmaker() as session, session.begin():
             entry = await self._entry(session, key)
-            now = utcnow()
-            if entry is not None and entry.status == CacheStatus.READY:
-                if now - entry.last_accessed_at > TOUCH_EVERY:
-                    entry.last_accessed_at = now
-                return entry
-            if entry is not None and entry.status == CacheStatus.RUNNING:
-                if (now - entry.created_at).total_seconds() < STUCK_SECONDS:
-                    return None
-            if entry is not None:
-                await session.delete(entry)
-                await session.flush()
+            if entry is None or entry.status != CacheStatus.READY:
+                return None
+            if utcnow() - entry.last_accessed_at > TOUCH_EVERY:
+                entry.last_accessed_at = utcnow()
+            path = self.file(entry)
+        return path if await asyncio.to_thread(path.is_file) else None
+
+    async def temporary_copy(self, original: AudioFile, track_id: uuid.UUID) -> Path | None:
+        """A copy of an original with the context tags of ``track_id`` outside the cache
+        entries, for an album download; the caller deletes it (spec: library, Album
+        download). None if the tagger did not write it."""
+        if self.tagger is None:
+            return None
+        async with self.sessionmaker() as session:
             tags = await self._context_tags(session, track_id)
-            if tags is None:
-                return None
-            entry_id = uuid.uuid4()
-            await session.execute(
-                self._insert(session)
-                .values(
-                    id=entry_id,
-                    variant_key=key,
-                    kind=CacheKind.TAGGED_COPY,
-                    audio_file_id=transcode.audio_file_id,
-                    format=transcode.format,
-                    bitrate_kbps=transcode.bitrate_kbps,
-                    context_track_id=track_id,
-                    status=CacheStatus.RUNNING,
-                    path=f"{str(entry_id)[:2]}/{entry_id}.m4a",
-                    size_bytes=0,
-                    created_at=now,
-                    last_accessed_at=now,
+        if tags is None:
+            return None
+        target = self.root / TEMPORARY / f"{uuid.uuid4()}{Path(original.path).suffix.lower()}"
+        size = await self._copy(Path(original.path), target, tags, DOWNLOAD_TAGGING_TIMEOUT)
+        return target if size is not None else None
+
+    async def _tagged_copy(
+        self,
+        key: str,
+        audio_file_id: uuid.UUID,
+        audio_format: str,
+        bitrate_kbps: int | None,
+        source: Path,
+        suffix: str,
+        track_id: uuid.UUID,
+        *,
+        seconds: float,
+        wait: bool,
+    ) -> TranscodeCacheEntry | None:
+        if self.tagger is None:
+            return None
+        deadline = time.monotonic() + seconds
+        while True:
+            async with self.sessionmaker() as session, session.begin():
+                entry = await self._entry(session, key)
+                now = utcnow()
+                if entry is not None and entry.status == CacheStatus.READY:
+                    if now - entry.last_accessed_at > TOUCH_EVERY:
+                        entry.last_accessed_at = now
+                    return entry
+                running = (
+                    entry is not None
+                    and entry.status == CacheStatus.RUNNING
+                    and (now - entry.created_at).total_seconds() < STUCK_SECONDS
                 )
-                .on_conflict_do_nothing(index_elements=["variant_key"])
-            )
-            entry = await self._entry(session, key)
-            if entry is None or entry.id != entry_id:
+                if not running:
+                    if entry is not None:
+                        await session.delete(entry)
+                        await session.flush()
+                    tags = await self._context_tags(session, track_id)
+                    if tags is None:
+                        return None
+                    entry_id = uuid.uuid4()
+                    await session.execute(
+                        self._insert(session)
+                        .values(
+                            id=entry_id,
+                            variant_key=key,
+                            kind=CacheKind.TAGGED_COPY,
+                            audio_file_id=audio_file_id,
+                            format=audio_format,
+                            bitrate_kbps=bitrate_kbps,
+                            context_track_id=track_id,
+                            status=CacheStatus.RUNNING,
+                            path=f"{str(entry_id)[:2]}/{entry_id}{suffix}",
+                            size_bytes=0,
+                            created_at=now,
+                            last_accessed_at=now,
+                        )
+                        .on_conflict_do_nothing(index_elements=["variant_key"])
+                    )
+                    entry = await self._entry(session, key)
+                    if entry is not None and entry.id == entry_id:
+                        break
+            # Another request writes it.
+            if not wait or time.monotonic() >= deadline:
                 return None
-        copied = await self._copy(transcode, entry, tags)
+            await asyncio.sleep(POLL_SECONDS)
+        remaining = max(0.1, deadline - time.monotonic())
+        copied = await self._copy(source, self.file(entry), tags, remaining)
         async with self.sessionmaker() as session, session.begin():
             if copied is None:
                 await session.execute(
@@ -276,18 +365,17 @@ class Transcoder:
         return context_tags(recording, track, release)
 
     async def _copy(
-        self, transcode: TranscodeCacheEntry, entry: TranscodeCacheEntry, tags: TagFields
+        self, source: Path, target: Path, tags: TagFields, seconds: float
     ) -> int | None:
         """The size of the tagged copy, or None if the tagger did not write it in time."""
-        target = self.file(entry)
-        copy = CopyFile(source=str(self.file(transcode)), target=str(target), tags=tags)
+        copy = CopyFile(source=str(source), target=str(target), tags=tags)
         try:
-            [result] = await asyncio.wait_for(self.tagger.copy([copy]), TAGGING_TIMEOUT)
+            [result] = await asyncio.wait_for(self.tagger.copy([copy]), seconds)
         except (TimeoutError, TaggerUnavailable, TaggerIncompatible, TaggerRequestError) as error:
-            logger.info("tagged copy of %s not written: %s", transcode.path, error)
+            logger.info("tagged copy of %s not written: %s", source, error)
             return None
         if not result.ok:
-            logger.warning("tagged copy of %s failed: %s", transcode.path, result.message)
+            logger.warning("tagged copy of %s failed: %s", source, result.message)
             return None
         try:
             return (await asyncio.to_thread(target.stat)).st_size
