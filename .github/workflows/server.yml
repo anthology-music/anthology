@@ -8,6 +8,7 @@ on:
       - "services/tagger/**"
       - "tools/library-generator/**"
       - "tools/fake-source-service/**"
+      - "tools/fake-raumfeld/**"
       - ".github/workflows/server.yml"
   pull_request:
     paths:
@@ -15,6 +16,7 @@ on:
       - "services/tagger/**"
       - "tools/library-generator/**"
       - "tools/fake-source-service/**"
+      - "tools/fake-raumfeld/**"
       - ".github/workflows/server.yml"
 
 permissions:
@@ -77,6 +79,14 @@ jobs:
 
       - name: Fake source service (lint and tests)
         working-directory: tools/fake-source-service
+        run: |
+          uv sync --frozen
+          uv run ruff check .
+          uv run ruff format --check .
+          uv run pytest
+
+      - name: Fake Raumfeld host (lint and tests)
+        working-directory: tools/fake-raumfeld
         run: |
           uv sync --frozen
           uv run ruff check .

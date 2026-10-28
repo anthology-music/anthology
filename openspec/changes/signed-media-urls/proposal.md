@@ -7,7 +7,7 @@ Media is served over HTTP, but the specs do not say how those requests are autho
 ## What Changes
 
 - All media requests (originals, transcodes, tagged copies, HLS playlists and segments) SHALL use **signed media URLs** issued by the server, bound to one media variant, the user, the device or output, and an expiry.
-- Client URLs SHALL be short-lived; URLs handed to network outputs SHALL live long enough for the handed-over queue (at most 24 hours).
+- Client URLs SHALL be short-lived; URLs handed to network outputs SHALL be issued per track and live for the track plus one hour (at most 24 hours).
 - Signed URLs SHALL stop working immediately when the device is signed out or the user is deactivated.
 - Clients SHALL renew their access token on an open WebSocket with an `auth` message; on expiry the server SHALL close the connection with a dedicated close code, and the client SHALL reconnect and resume via change sequence.
 

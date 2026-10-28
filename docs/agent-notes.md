@@ -26,8 +26,8 @@ _Last updated: 2026-10-28_
 - **Open changes** in `openspec/changes/` are mostly spec work from the concept phase; their
   implementation tasks wait for the milestone they belong to. Partially implemented:
   - `signed-media-urls` – signing, revocation and WebSocket token renewal done; protecting the
-    media endpoints (2.2), client URL refresh (3.1) and Raumfeld output URLs (3.2) wait until
-    those endpoints and the output adapter exist.
+    media endpoints (2.2) waits for the HLS endpoints; client URL refresh (3.1) and the
+    zone-bound per-track URLs (3.2, `raumfeld-output`) are done.
   - `media-delivery-wording` – only the audio extraction from videos (2.1) is open (video, milestone 4).
 - **Library:** `library-core` is merged (PR #15). Decided with the maintainer: one artist per
   recording and one album artist per release, with the credited text kept as display text.
@@ -59,7 +59,7 @@ _Last updated: 2026-10-28_
 - **Archived:** `transcoding-delivery` (PR #31 and the tagged copies): transcodes by device
   bitrate and formats, streamed while written, tagged per context through the tagger. Decided
   with the maintainer: streaming, tagging now, declared quality before the analysis.
-  `playable-delivery-format` 3.3 waits for the Raumfeld adapter.
+  `playable-delivery-format` is archived (its 3.3 was done with `raumfeld-output`).
 - **Archived:** `source-service-adapter` (PR #33 and the orders pull request) and
   `external-source-services`: interface v1 with the fake service in `tools/fake-source-service/`,
   detection, encrypted logins (shown masked once stored), search and links with duplicate status,
@@ -71,6 +71,12 @@ _Last updated: 2026-10-28_
   with temporary copies, WAV and AIFF in the tagger (interface 1.1). Decided with the
   maintainer: tagger extended for WAV/AIFF, copies without cover until `covers`, track and album
   downloads, every signed-in user may download.
+- **In progress:** `raumfeld-output` (branch `feat/raumfeld-output`): pull request 1 (server:
+  adapter interface, Raumfeld adapter, zone queues and player, fake host in
+  `tools/fake-raumfeld/`) is done; pull request 2 (client, end-to-end test, tasks 3.x) follows.
+  Decided with the maintainer: SSDP discovery plus manual host addresses, the zone takes over
+  the queue, full zone management, two pull requests. The maintainer checks it against real
+  Raumfeld speakers once the first release is published; do not archive the change before that.
 - **Next:** see `docs/roadmap.md` (milestone 3).
   `effective-quality-duplicate-checks` covers CD import and sources only; it waits for them.
 

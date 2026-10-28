@@ -78,9 +78,11 @@ class PlayQueueEntryRow(StreamRow):
 
 
 class PlayQueueStateRow(StreamRow):
-    """The queue of this device: its generation (the entries list to subscribe), the current
-    entry with its track, the position and whether it plays."""
+    """The queue of this device, or of the zone it controls (``output_zone_id``; the client is
+    then a remote control): its generation (the entries list to subscribe), the current entry
+    with its track, the position and whether it plays."""
 
+    output_zone_id: str | None = None
     generation: str
     current_entry_id: str | None
     current: LibraryTrackRow | None

@@ -35,7 +35,7 @@ The signing key is generated at first start and stored in the server's data volu
 
 ### Expiry
 
-Clients: 1 hour; the client requests new URLs for queued items 5 minutes before use. Outputs: queue duration plus a margin, capped at 24 hours; the output adapter refreshes URLs of unplayed items through the adapter interface (e.g. replacing queue entries on Raumfeld).
+Clients: 1 hour; the client requests new URLs for queued items 5 minutes before use. Outputs: the server's zone player hands over one track at a time (change `raumfeld-output`), so each URL lives for its track's duration plus one hour, capped at 24 hours; a track resumed after its URL expired is handed over again with a new URL.
 
 ### WebSocket token renewal
 

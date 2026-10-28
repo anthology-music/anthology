@@ -777,6 +777,11 @@ package "Users & Devices" {
     +lastUsedAt : DateTime [0..1]
     +revokedAt : DateTime [0..1]
   }
+  note right of UserDevice
+    outputZone: the zone this device
+    controls (change raumfeld-output);
+    none: it plays itself
+  end note
 
   class UserDeviceSettings {
     +audioBitrate : BitrateSetting
@@ -985,24 +990,51 @@ package "Users & Devices" {
 ' =====================================================================
 package "Playback" {
 
-  class OutputDevice {
+  class OutputSystem {
+    One system of an output adapter
+    (e.g. a Raumfeld host), discovered
+    or entered by an admin
+    ==
     +id : UUID
-    +adapter : OutputAdapter
-    +name : String
+    +adapter : String
     +address : String
-    +supportedFormats : Set<AudioFormat>
-    +online : Boolean
+    +origin : SystemOrigin
+    +name : String
+    +state : SystemState
+    +reason : String [0..1]
   }
 
   class OutputZone {
+    Rooms that play the same; the zone
+    player runs in the process holding
+    the lease
+    ==
     +id : UUID
+    +externalId : String
     +name : String
+    +control : String [0..1]
+    +formats : Set<AudioFormat>
+    +volume : Integer [0..1]
+    +muted : Boolean
+    +online : Boolean
+    +playerOwner : String [0..1]
+    +playerLeaseUntil : DateTime [0..1]
+  }
+
+  class OutputRoom {
+    +id : UUID
+    +externalId : String
+    +name : String
+    +volume : Integer [0..1]
+    +muted : Boolean
+    +online : Boolean
   }
 
   class PlayQueue {
-    Queue of one user on one device
-    (change local-playback); rewriting all
-    entries changes the generation
+    Queue of one user on one device, or of
+    one output zone (shared by everyone who
+    controls it); rewriting all entries
+    changes the generation
     ==
     +id : UUID
     +generation : UUID
@@ -1020,12 +1052,14 @@ package "Playback" {
     +position : Long
   }
 
-  enum OutputAdapter {
-    CLIENT
-    RAUMFELD
-    UPNP
-    SONOS
-    CHROMECAST
+  enum SystemOrigin {
+    DISCOVERED
+    MANUAL
+  }
+
+  enum SystemState {
+    ONLINE
+    UNREACHABLE
   }
 }
 
@@ -1362,7 +1396,7 @@ User "1" *-- "1" UserSettings
 User "1" *-- "0..*" UserDevice
 Device "1" *-- "0..*" UserDevice
 UserDevice "1" *-- "1" UserDeviceSettings
-UserDeviceSettings "0..*" -- "0..1" OutputDevice : default output >
+UserDevice "0..*" -- "0..1" OutputZone : controls >
 UserDevice "1" *-- "0..*" OfflineCopy
 UserDevice "1" *-- "0..*" OfflineSelection
 OfflineCopy "0..*" -- "1" Recording
@@ -1387,9 +1421,13 @@ DownloadOrder "0..1" -- "0..1" LibraryImport : imported by >
 DownloadOrder "0..*" -- "0..1" User : ordered by >
 
 ' Relationships – Playback
-OutputZone "0..1" o-- "1..*" OutputDevice
+OutputSystem "1" *-- "0..*" OutputZone
+OutputSystem "1" *-- "0..*" OutputRoom
+OutputZone "0..1" o-- "0..*" OutputRoom
 User "1" *-- "0..*" PlayQueue
 Device "1" *-- "0..*" PlayQueue
+OutputZone "1" *-- "0..1" PlayQueue : zone queue >
+PlayQueue "0..*" -- "0..1" User : controlled by >
 PlayQueue "1" *-- "0..*" PlayQueueEntry
 PlayQueueEntry "0..*" -- "1" Track
 

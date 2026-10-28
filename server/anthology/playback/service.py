@@ -1,10 +1,11 @@
-"""Play queues (spec: playback, Play queue, Starting playback, Resume).
+"""Play queues (spec: playback, Play queue, Starting playback, Resume, Zone play queue).
 
-One queue per user and device. Entries are ordered by an integer key: a new queue numbers
-them ``GAP`` apart, insertions take the room between two entries, and when there is none the
-queue is renumbered. Rewriting the queue as a whole (replace, renumber, clear) changes its
-``generation``: clients subscribe to the entries of one generation, so the rewrite needs one
-change entry instead of one per entry.
+One queue per user and device, and one per output zone, shared by everyone who controls the
+zone (its change entries are shared; the streams show a queue only to who controls it).
+Entries are ordered by an integer key: a new queue numbers them ``GAP`` apart, insertions take
+the room between two entries, and when there is none the queue is renumbered. Rewriting the
+queue as a whole (replace, renumber, clear) changes its ``generation``: clients subscribe to
+the entries of one generation, so the rewrite needs one change entry instead of one per entry.
 """
 
 import uuid
@@ -39,8 +40,17 @@ from anthology.core.changes import (
 )
 from anthology.db.types import utcnow
 from anthology.library.models import Recording, Release, Track
-from anthology.playback.models import GAP, MAX_ENTRIES, PlayQueue, PlayQueueEntry
+from anthology.playback.models import (
+    GAP,
+    MAX_ENTRIES,
+    OutputSystem,
+    OutputZone,
+    PlayQueue,
+    PlayQueueEntry,
+    SystemState,
+)
 from anthology.search import service as search
+from anthology.users import service as users
 
 QUEUE = "play_queue"
 ENTRY = "play_queue_entry"
@@ -76,12 +86,28 @@ async def queue_of(session: AsyncSession, user_id: uuid.UUID, device_id: uuid.UU
     return queue
 
 
+async def zone_queue(session: AsyncSession, zone_id: uuid.UUID) -> PlayQueue:
+    """The zone's queue, created on first use, locked for this transaction."""
+    query = select(PlayQueue).where(PlayQueue.output_zone_id == zone_id).with_for_update()
+    queue = await session.scalar(query)
+    if queue is None:
+        queue = PlayQueue(output_zone_id=zone_id)
+        session.add(queue)
+        await session.flush()
+    return queue
+
+
 async def find_queue(
     session: AsyncSession, user_id: uuid.UUID, device_id: uuid.UUID
 ) -> PlayQueue | None:
     return await session.scalar(
         select(PlayQueue).where(PlayQueue.user_id == user_id, PlayQueue.device_id == device_id)
     )
+
+
+def _scope(user_id: uuid.UUID | None) -> ChangeScope:
+    """Device queues are personal; zone queues (no user) are shared."""
+    return ChangeScope.USER if user_id is not None else ChangeScope.SHARED
 
 
 async def _queue_changed(session: AsyncSession, queue: PlayQueue) -> None:
@@ -92,7 +118,7 @@ async def _queue_changed(session: AsyncSession, queue: PlayQueue) -> None:
         entity_type=QUEUE,
         entity_id=queue.id,
         operation=ChangeOperation.UPDATE,
-        scope=ChangeScope.USER,
+        scope=_scope(queue.user_id),
         owner_user_id=queue.user_id,
     )
 
@@ -110,7 +136,7 @@ async def _entries_changed(
         entity_type=ENTRY,
         entity_ids=[entry_uuid(entry_id) for entry_id in ids],
         operation=operation,
-        scope=ChangeScope.USER,
+        scope=_scope(queue.user_id),
         owner_user_id=queue.user_id,
     )
 
@@ -492,6 +518,99 @@ async def clear(session: AsyncSession, queue: PlayQueue) -> None:
     await _queue_changed(session, queue)
 
 
+async def copy(
+    session: AsyncSession, source: PlayQueue, target: PlayQueue, *, playing: bool
+) -> None:
+    """Replace ``target`` with the entries, current entry and position of ``source`` (spec:
+    Zone play queue, Handover; Output picker, Back to this device)."""
+    await session.execute(delete(PlayQueueEntry).where(PlayQueueEntry.queue_id == target.id))
+    await session.execute(
+        insert(PlayQueueEntry).from_select(
+            ["queue_id", "track_id", "position"],
+            select(
+                literal(target.id, UuidType()), PlayQueueEntry.track_id, PlayQueueEntry.position
+            ).where(PlayQueueEntry.queue_id == source.id),
+        )
+    )
+    current = None
+    if source.current_entry_id is not None:
+        position = await session.scalar(
+            select(PlayQueueEntry.position).where(PlayQueueEntry.id == source.current_entry_id)
+        )
+        current = await session.scalar(
+            select(PlayQueueEntry.id).where(
+                PlayQueueEntry.queue_id == target.id, PlayQueueEntry.position == position
+            )
+        )
+    target.current_entry_id = current
+    target.position_ms = source.position_ms if current is not None else 0
+    target.playing = playing and current is not None
+    target.shortened = source.shortened
+    _rewritten(target)
+    await _queue_changed(session, target)
+
+
+# --- outputs ------------------------------------------------------------------------------
+
+
+class OutputUnavailable(ValueError):
+    """The zone does not exist or is offline."""
+
+
+async def controlled_queue(
+    session: AsyncSession, user_id: uuid.UUID, user_device_id: uuid.UUID, device_id: uuid.UUID
+) -> PlayQueue:
+    """The queue a device's commands act on: the zone's while it controls one (spec: Remote
+    control), else its own; locked for this transaction."""
+    zone_id = await users.output_zone(session, user_device_id)
+    if zone_id is None:
+        return await queue_of(session, user_id, device_id)
+    queue = await zone_queue(session, zone_id)
+    queue.controlled_by = user_id
+    return queue
+
+
+async def select_output(
+    session: AsyncSession,
+    user_id: uuid.UUID,
+    user_device_id: uuid.UUID,
+    device_id: uuid.UUID,
+    zone_id: uuid.UUID | None,
+) -> uuid.UUID | None:
+    """Hand the device's queue to a zone, or take it back to the device (None); a zone that
+    plays already keeps its queue and the device joins it. Returns the zone that has to stop
+    (spec: Output picker, Zone play queue)."""
+    current = await users.output_zone(session, user_device_id, lock=True)
+    if current == zone_id:
+        return None
+    device_queue = await queue_of(session, user_id, device_id)
+    if zone_id is None:
+        source = await zone_queue(session, current)
+        await copy(session, source, device_queue, playing=False)
+        source.playing = False
+        await _queue_changed(session, source)
+        await users.set_output_zone(session, user_device_id, None)
+        return current
+    zone = await session.get(OutputZone, zone_id)
+    system = await session.get(OutputSystem, zone.system_id) if zone is not None else None
+    if zone is None or not zone.online or system.state != SystemState.ONLINE:
+        raise OutputUnavailable(zone_id)
+    source = await zone_queue(session, current) if current is not None else device_queue
+    target = await zone_queue(session, zone_id)
+    if target.playing:
+        # The zone plays already: the device joins its queue (spec: Shared zone).
+        if source.playing:
+            source.playing = False
+            await _queue_changed(session, source)
+    else:
+        await copy(session, source, target, playing=source.playing)
+        target.controlled_by = user_id
+        source.playing = False
+        await _queue_changed(session, source)
+    await users.set_output_zone(session, user_device_id, zone_id)
+    return current
+
+
 # --- entries of deleted tracks ------------------------------------------------------------
 
 _DELETED = "playback.tracks"
@@ -541,7 +660,7 @@ def _remove_deleted(session: Session) -> None:
             "entity_type": ENTRY,
             "entity_id": entry_uuid(row.id),
             "operation": ChangeOperation.DELETE,
-            "scope": ChangeScope.USER,
+            "scope": _scope(row.user_id),
             "owner_user_id": row.user_id,
             "changed_at": now,
         }
@@ -551,7 +670,7 @@ def _remove_deleted(session: Session) -> None:
             "entity_type": QUEUE,
             "entity_id": queue_id,
             "operation": ChangeOperation.UPDATE,
-            "scope": ChangeScope.USER,
+            "scope": _scope(owners[queue_id]),
             "owner_user_id": owners[queue_id],
             "changed_at": now,
         }

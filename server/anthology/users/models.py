@@ -87,6 +87,10 @@ class UserDevice(Base):
     signed_in_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
     last_used_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
     revoked_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
+    # The output zone this device controls (spec: playback, Output picker); None: itself.
+    output_zone_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("output_zones.id", ondelete="SET NULL")
+    )
 
 
 class UserSettings(Base):

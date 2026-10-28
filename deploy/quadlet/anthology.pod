@@ -7,7 +7,9 @@
 [Pod]
 PodName=anthology
 PublishPort=8400:8400
-# For UPnP/Raumfeld discovery (multicast) host networking may be required:
+# Raumfeld speakers (docs/install.md): host networking lets the server find the Raumfeld host
+# by multicast. Without it, enter the host's address in the settings (or set
+# ANTHOLOGY_RAUMFELD_HOSTS) and set ANTHOLOGY_OUTPUT_MEDIA_URL in anthology-server.container.
 # Network=host
 
 [Install]

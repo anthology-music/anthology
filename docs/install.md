@@ -80,6 +80,20 @@ The password is a secret, never part of a unit file or environment variable: Pos
 
 Streaming sources (Tidal, Spotify, YouTube) are optional source services from the GitHub organisation `anthology-sources` (ADR 0017), each its own container in the pod with the imports volume mounted at `/data/imports`. List their URLs in `ANTHOLOGY_SOURCE_SERVICES`, comma-separated (Quadlet pod: `http://localhost:8420,http://localhost:8421`; Compose: `http://anthology-source-streamrip:8420`). The server checks them every minute; unavailable ones are left out of the Streaming view, and its "Source status" says why. Services that need a login ask for it in Settings › Sources (admins); the values are stored encrypted with the key `sources.key` in the keys volume and are never shown again.
 
+## Raumfeld speakers
+
+Anthology plays on Teufel Raumfeld zones (output picker in the player bar). It needs two things:
+
+- **Finding the Raumfeld host:**
+  - With host networking (`Network=host` in `anthology.pod`, `network_mode: host` in Compose), the server finds the host by SSDP multicast.
+  - In a rootless pod without host networking, multicast does not reach the server. An admin enters the host's address in Settings › Outputs (the IP address of the Raumfeld base or the speaker that serves as host), or the installation sets `ANTHOLOGY_RAUMFELD_HOSTS` (comma-separated, `host` or `host:47365`).
+  - `ANTHOLOGY_OUTPUT_DISCOVERY=false` turns the search off.
+- **Speakers reaching the server:**
+  - The speakers fetch the music from the server over HTTP. Set `ANTHOLOGY_OUTPUT_MEDIA_URL` to the server's address as the speakers see it, e.g. `http://192.168.1.10:8400`.
+  - Without it, the server uses its own address on the route to the speakers and port 8400 (`ANTHOLOGY_PORT`). Behind the pod's port forwarding that address is the container's, so set the URL there.
+
+The server's ports are not opened to the internet for this: speakers and server are in the same local network. Protocol details: `docs/architecture/raumfeld.md`.
+
 ## Metadata lookups
 
 Anthology identifies music with MusicBrainz (at most one request per second, cached). Set `ANTHOLOGY_MUSICBRAINZ_CONTACT` to your e-mail address or a URL; MusicBrainz asks every application to name a contact in its User-Agent. For fingerprint lookups, register an application at [AcoustID](https://acoustid.org/new-application) and set `ANTHOLOGY_ACOUSTID_API_KEY`. For large collections, a local MusicBrainz mirror removes the rate limit: `docs/architecture/musicbrainz-mirror.md`.

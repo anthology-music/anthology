@@ -14,6 +14,8 @@ rm -rf "$ANTHOLOGY_DATA_DIR"
 export ANTHOLOGY_IMPORT_ROOTS="$ANTHOLOGY_DATA_DIR/imports"
 # Never reach the real MusicBrainz (port 9 is closed): name searches fail and are skipped.
 export ANTHOLOGY_MUSICBRAINZ_PUBLIC_URL="http://127.0.0.1:9"
+# Never search the network for real Raumfeld speakers.
+export ANTHOLOGY_OUTPUT_DISCOVERY=false
 
 uv run alembic downgrade base
 uv run alembic upgrade head
