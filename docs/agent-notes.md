@@ -47,9 +47,8 @@ _Last updated: 2026-10-28_
   maintenance job with grace period and safety limit.
 - **Open, implemented in part:** `review-list` (PR #26 merged). Open: producers of
   works/publishers, sources and sheet-music (3.6–3.8).
-- **Open, implemented in part:** `tag-editing` (PR #27 and #28). Decided with the maintainer:
-  genres per recording; changing the album of selected tracks moves them. Only 3.3 is open
-  (waits for transcoding and tagged copies). `metadata-lookup` is archived with its refresh.
+- **Archived:** `tag-editing` (PR #27, #28; 3.3 with `context-tags-on-delivery`). Decided with
+  the maintainer: genres per recording; changing the album of selected tracks moves them.
 - **Archived:** `search` (PR #29). Decided with the maintainer: library items only (artists, albums, tracks; album and artist context); works,
   videos, playlists and their filters join with their domains (`docs/roadmap.md`); offline
   search moved to `offline-sync`; the server is the only parser of the syntax.
@@ -67,11 +66,11 @@ _Last updated: 2026-10-28_
   source status with reasons for every user, orders with a download job, an import that confirms
   itself, outcomes and the source per original. `effective-quality-duplicate-checks` 2.1 (CD
   import) stays open.
-- **In progress:** `context-tags-on-delivery` on branch `feat/context-tags-on-delivery`: track
+- **Archived:** `context-tags-on-delivery` (branch `feat/context-tags-on-delivery`): track
   downloads as cached context-tagged copies of the original, album downloads as streamed zips
   with temporary copies, WAV and AIFF in the tagger (interface 1.1). Decided with the
   maintainer: tagger extended for WAV/AIFF, copies without cover until `covers`, track and album
-  downloads, every signed-in user may download. Completes `tag-editing` 3.3.
+  downloads, every signed-in user may download.
 - **Next:** see `docs/roadmap.md` (milestone 3).
   `effective-quality-duplicate-checks` covers CD import and sources only; it waits for them.
 
