@@ -219,7 +219,9 @@ describe('player', () => {
     ]);
     audio.emit('ended');
     await vi.waitFor(() =>
-      expect(posted(calls, '/api/v1/playback/skip')).toEqual([{ by: 1, playing: true }]),
+      expect(posted(calls, '/api/v1/playback/skip')).toEqual([
+        { by: 1, playing: true, position_ms: expect.any(Number) },
+      ]),
     );
     await serveState(socket, state('2', { playing: true }), 3);
     await vi.waitFor(() => expect(audio.src).toContain('file-2'));
@@ -235,7 +237,9 @@ describe('player', () => {
     await serveState(socket, state('failed', { format: 'aiff', playing: true }), 2);
 
     await vi.waitFor(() =>
-      expect(posted(calls, '/api/v1/playback/skip')).toEqual([{ by: 1, playing: true }]),
+      expect(posted(calls, '/api/v1/playback/skip')).toEqual([
+        { by: 1, playing: true, position_ms: expect.any(Number) },
+      ]),
     );
     expect(wrapper.find('[data-testid="player-problem"]').text()).toContain(
       'Auf diesem Gerät nicht abspielbar',
@@ -259,7 +263,9 @@ describe('player', () => {
     audio.currentTime = 2;
     await wrapper.find('[data-testid="player-previous"]').trigger('click');
     await vi.waitFor(() =>
-      expect(posted(calls, '/api/v1/playback/skip')).toEqual([{ by: -1, playing: false }]),
+      expect(posted(calls, '/api/v1/playback/skip')).toEqual([
+        { by: -1, playing: false, position_ms: 2_000 },
+      ]),
     );
   });
 

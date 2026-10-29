@@ -46,6 +46,28 @@ const routes: RouteRecordRaw[] = [
             component: () => import('@/features/library/pages/TracksPage.vue'),
           },
           {
+            // Personal data (spec: personal-data): playlists, favorites, history.
+            path: 'playlists',
+            name: 'playlists',
+            component: () => import('@/features/personal-data/pages/PlaylistsPage.vue'),
+          },
+          {
+            path: 'playlists/:playlistId',
+            name: 'playlist',
+            props: true,
+            component: () => import('@/features/personal-data/pages/PlaylistPage.vue'),
+          },
+          {
+            path: 'favorites',
+            name: 'favorites',
+            component: () => import('@/features/personal-data/pages/FavoritesPage.vue'),
+          },
+          {
+            path: 'history',
+            name: 'history',
+            component: () => import('@/features/personal-data/pages/HistoryPage.vue'),
+          },
+          {
             // Search (spec: search): text, type and context in the query.
             path: 'search',
             name: 'search',

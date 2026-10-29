@@ -17,7 +17,16 @@
         </div>
         <div class="library-header__text">
           <span class="text-muted library-header__kind">{{ t('library.artist') }}</span>
-          <h1 class="library-header__title" data-testid="artist-name">{{ artist?.name ?? '…' }}</h1>
+          <h1 class="library-header__title" data-testid="artist-name">
+            {{ artist?.name ?? '…' }}
+          </h1>
+          <FavoriteButton
+            v-if="artist"
+            :id="artist.id"
+            type="artist"
+            :name="artist.name"
+            class="library-header__favorite"
+          />
           <p v-if="artist" class="text-muted library-header__meta" data-testid="artist-counts">
             {{ count('releases', artist.release_count) }} ·
             {{ count('tracks', artist.track_count) }}
@@ -49,6 +58,8 @@
 <script setup lang="ts">
 import type { LibraryArtistRow, LibraryReleaseRow } from '@anthology/api-types';
 import { useI18n } from 'vue-i18n';
+
+import FavoriteButton from '@/features/personal-data/components/FavoriteButton.vue';
 
 import LibraryBreadcrumb from '../components/LibraryBreadcrumb.vue';
 import LibraryList from '../components/LibraryList.vue';

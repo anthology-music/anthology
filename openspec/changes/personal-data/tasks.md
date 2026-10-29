@@ -23,7 +23,7 @@
 
 ## 4. Client (pull request 2)
 
-- [ ] 4.1 Create `client/src/features/personal-data/` with playlists (folders, sharing toggle, drag-and-drop ordering, added-by display, undo), favorites and history; verify with component tests and an E2E test of two users editing a shared playlist
+- [x] 4.1 Create `client/src/features/personal-data/` with playlists (folders, sharing toggle, drag-and-drop ordering, added-by display, undo), favorites and history; verify with component tests and an E2E test of two users editing a shared playlist
 
 ## Workflow follow-up
 

@@ -514,3 +514,57 @@ test('uploading a cover, seeing it in the list and the player, using the gallery
   await page.goto('/local/albums');
   await expect(page.getByTestId(`album-cover-${releaseId}`).locator('img')).toBeVisible();
 });
+
+test('two users editing a shared playlist, with undo', async ({ page, browser }) => {
+  await signIn(page);
+  // A second account (listener) for the other person.
+  await page.goto('/settings');
+  const form = page.locator('form.create-user');
+  await form.getByLabel('Anzeigename').fill('Lena');
+  await form.getByLabel('Benutzername').fill('lena');
+  await form.getByLabel('Passwort').fill('lenas good password');
+  await form.getByRole('button', { name: 'Anlegen' }).click();
+  await expect(page.locator('.item-list').filter({ hasText: 'Lena' }).first()).toBeVisible();
+
+  // The admin creates and shares a playlist and adds an album.
+  await page.goto('/local/playlists');
+  await page.getByTestId('playlist-new-name').fill('Party');
+  await page.getByTestId('playlist-create').click();
+  await expect(page.getByTestId('playlist-title')).toHaveText('Party');
+  await page.getByTestId('playlist-share').click();
+  await page.goto('/local/albums');
+  await page
+    .locator('[data-testid^="release-"]')
+    .filter({ hasText: 'Kassette 1985' })
+    .first()
+    .click();
+  await page.getByTestId('release-to-playlist').click();
+  await page.getByTestId('add-to-Party').click();
+  await expect(page.getByTestId('playlist-message')).toContainText('Party');
+
+  // Lena sees it, removes an entry and undoes the removal.
+  const other = await browser.newContext();
+  const lena = await other.newPage();
+  await lena.goto('/login');
+  await lena.getByLabel('Benutzername').fill('lena');
+  await lena.getByLabel('Passwort').fill('lenas good password');
+  await lena.getByRole('button', { name: 'Anmelden' }).click();
+  await expect(lena).toHaveURL(/\/local\/albums$/);
+  await lena.goto('/local/playlists');
+  await lena.getByTestId('playlist-Party').click();
+  const entries = lena.locator('[data-testid^="entry-"][draggable="true"]');
+  await expect(entries).toHaveCount(2);
+  await expect(entries.first()).toContainText('von Lukas');
+  const first = await entries.first().getAttribute('data-testid');
+  await lena.getByTestId(first!.replace('entry-', 'entry-remove-')).click();
+  await expect(entries).toHaveCount(1);
+  // The admin sees the removal live.
+  await page.goto('/local/playlists');
+  await page.getByTestId('playlist-Party').click();
+  await expect(page.locator('[data-testid^="entry-"][draggable="true"]')).toHaveCount(1);
+  await lena.getByTestId('playlist-undo').click();
+  await expect(entries).toHaveCount(2);
+  await expect(entries.first()).toHaveAttribute('data-testid', first!);
+  await expect(page.locator('[data-testid^="entry-"][draggable="true"]')).toHaveCount(2);
+  await other.close();
+});

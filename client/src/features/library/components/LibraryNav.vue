@@ -15,6 +15,17 @@
         {{ number(subscription.total === null ? null : subscription.counters[section.counter]) }}
       </span>
     </router-link>
+    <h2 class="library-nav__title library-nav__title--personal">{{ t('personal.title') }}</h2>
+    <router-link
+      v-for="section in personal"
+      :key="section"
+      :to="{ name: section }"
+      class="library-nav__link"
+      active-class="library-nav__link--active"
+      :data-testid="`library-nav-${section}`"
+    >
+      <span>{{ t(`personal.sections.${section}`) }}</span>
+    </router-link>
   </nav>
 </template>
 
@@ -36,6 +47,7 @@ const sections = [
   { name: 'library-artists', counter: 'artists' },
   { name: 'library-tracks', counter: 'tracks' },
 ] as const;
+const personal = ['playlists', 'favorites', 'history'] as const;
 </script>
 
 <style scoped>
@@ -53,6 +65,10 @@ const sections = [
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--color-text-muted);
+}
+
+.library-nav__title--personal {
+  margin-top: var(--space-4);
 }
 
 .library-nav__link {

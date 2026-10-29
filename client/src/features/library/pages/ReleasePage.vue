@@ -76,6 +76,13 @@
           <h1 class="library-header__title" data-testid="release-title">
             {{ release?.title ?? '…' }}
           </h1>
+          <FavoriteButton
+            v-if="release"
+            :id="releaseId"
+            type="release"
+            :name="release.title"
+            class="library-header__favorite"
+          />
           <p v-if="release" class="library-header__meta" data-testid="release-meta">
             <router-link
               :to="{ name: 'library-artist', params: { artistId: release.album_artist_id } }"
@@ -112,6 +119,17 @@
             data-testid="download-release"
             @click="downloads.downloadRelease(releaseId)"
           />
+          <q-btn
+            v-if="release && release.track_count"
+            outline
+            rounded
+            no-caps
+            icon="playlist_add"
+            :label="t('personal.playlists.addAlbum')"
+            class="library-header__play"
+            data-testid="release-to-playlist"
+            @click="addingToPlaylist = true"
+          />
           <router-link
             v-if="release"
             :to="{ name: 'search', query: { q: '', release_id: releaseId, in: release.title } }"
@@ -132,6 +150,20 @@
           />
         </div>
       </header>
+      <q-dialog v-model="addingToPlaylist">
+        <AddToPlaylist
+          :rule="listRule"
+          @added="
+            (name: string) => {
+              addingToPlaylist = false;
+              playlistMessage = t('personal.playlists.added', { name });
+            }
+          "
+        />
+      </q-dialog>
+      <p v-if="playlistMessage" role="status" data-testid="playlist-message">
+        {{ playlistMessage }}
+      </p>
       <q-dialog v-model="galleryOpen">
         <CoverGallery
           v-if="release"
@@ -200,6 +232,8 @@ import { useI18n } from 'vue-i18n';
 import { type CoverProblem, removeReleaseCover, uploadReleaseCover } from '@/features/covers/api';
 import CoverGallery from '@/features/covers/components/CoverGallery.vue';
 import CoverImage from '@/features/covers/components/CoverImage.vue';
+import AddToPlaylist from '@/features/personal-data/components/AddToPlaylist.vue';
+import FavoriteButton from '@/features/personal-data/components/FavoriteButton.vue';
 import PlayableTrackRow from '@/features/playback/components/PlayableTrackRow.vue';
 import { usePlayerStore } from '@/features/playback/store';
 import EditBar from '@/features/tagging/components/EditBar.vue';
@@ -231,6 +265,8 @@ const player = usePlayerStore();
 const editing = ref(false);
 const editingRelease = ref(false);
 const galleryOpen = ref(false);
+const addingToPlaylist = ref(false);
+const playlistMessage = ref<string | null>(null);
 const coverProblem = ref<CoverProblem | null>(null);
 
 /** The new cover arrives through the release stream. */
