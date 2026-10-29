@@ -6,6 +6,8 @@ All notable changes to Anthology are listed here. The format follows
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-29
+
 ### Fixed
 
 - **Compose installation:** the database password file is bind-mounted with an SELinux relabel, so PostgreSQL and the server start on SELinux hosts such as Fedora; the instructions no longer recommend `chmod 600`, which kept the non-root server from reading the file.
@@ -56,5 +58,6 @@ Anthology out; the review of the license separation (ADR 0004) is pending.
 - **Interface language:** Settings › Language switches the interface between German and English per device.
 - **User manual:** in English and German, with screenshots of the app, published per release on GitHub Pages.
 
-[Unreleased]: https://github.com/anthology-music/anthology/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/anthology-music/anthology/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/anthology-music/anthology/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/anthology-music/anthology/releases/tag/v0.1.0

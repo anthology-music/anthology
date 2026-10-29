@@ -1,6 +1,6 @@
 {
   "name": "client",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Anthology client (web/PWA; desktop and mobile shells follow in milestone 3)",
   "license": "MIT",

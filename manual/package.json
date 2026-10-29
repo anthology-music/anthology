@@ -1,6 +1,6 @@
 {
   "name": "@anthology/manual",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "User manual of Anthology (VitePress, English and German)",
   "license": "MIT",
