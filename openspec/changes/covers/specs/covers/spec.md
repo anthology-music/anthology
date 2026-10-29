@@ -43,7 +43,7 @@ A front cover set or removed manually, or accepted from the conflict list, SHALL
 - **THEN** the server refuses it
 
 ### Requirement: Covers for the existing library
-The system SHALL fetch covers for every release once after the covers are introduced, in a background job that can be paused and resumed, and SHALL fetch them again for releases a library import created or an identification gave a MusicBrainz release ID; while the tagger is unavailable, embedded images SHALL be read later.
+The system SHALL fetch covers for every release once after the covers are introduced, in a background job that can be paused and resumed, and SHALL fetch them again for the releases of every library import and on request of an editor; while the tagger is unavailable, embedded images SHALL be read later.
 
 #### Scenario: Library before covers
 - **WHEN** a server with 2,000 identified albums starts for the first time with covers

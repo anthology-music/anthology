@@ -79,6 +79,8 @@ class Settings(BaseSettings):
     transcode_cache_gb: float = 20.0
     # Transcodes running at once per server process.
     transcode_parallel: int = 2
+    # Size limit of the cover thumbnails (spec: covers, Sizes and delivery).
+    thumbnail_cache_mb: float = 512.0
     omr_url: str = ""
     source_services: str = ""
 
@@ -123,6 +125,16 @@ class Settings(BaseSettings):
     def transcodes_dir(self) -> Path:
         # In the cache volume, which the tagger shares (it writes the tagged copies there).
         return self.data_dir / "cache" / "transcodes"
+
+    @property
+    def images_dir(self) -> Path:
+        # Primary data (covers, gallery images): next to the originals, in the library's backups.
+        return self.library_path / "_images"
+
+    @property
+    def cache_dir(self) -> Path:
+        # The cache volume, shared with the tagger.
+        return self.data_dir / "cache"
 
     @property
     def keys_dir(self) -> Path:

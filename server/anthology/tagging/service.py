@@ -20,6 +20,7 @@ from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from anthology.core.changes import current_change_set, record_audit
+from anthology.covers.models import Image
 from anthology.db.types import utcnow
 from anthology.library import service as library
 from anthology.library.models import (
@@ -32,9 +33,11 @@ from anthology.library.models import (
     Track,
 )
 from anthology.tagging import conflicts, writes
-from anthology.tagging.fields import BASE_FIELDS, Level, plain, validate
+from anthology.tagging.fields import BASE_FIELDS, InvalidFields, Level, plain, validate
 from anthology.tagging.models import (
     PROTECTED,
+    RANKED,
+    RANKED_PROTECTED,
     ChangeSet,
     ChangeSetKind,
     FieldProvenance,
@@ -75,6 +78,8 @@ class Outcome:
     conflicts: int = 0
 
 
+# Fields that no file carries.
+FILELESS = frozenset({"cover"})
 # Edits by people: never conflicts (an accepted conflict counts as set by the accepting user).
 MANUAL_SOURCES = frozenset({ProvenanceSource.MANUAL, ProvenanceSource.REVIEW})
 
@@ -92,9 +97,31 @@ async def _protected(
     protected = []
     for name, (old, _new) in changes.items():
         row = rows.get(name)
-        if (row.source in PROTECTED) if row is not None else not _empty(old):
+        if name in RANKED:
+            if row is not None and row.source in RANKED_PROTECTED:
+                protected.append(name)
+        elif (row.source in PROTECTED) if row is not None else not _empty(old):
             protected.append(name)
     return protected
+
+
+async def _outranked(
+    session: AsyncSession,
+    level: Level,
+    entity_id: uuid.UUID,
+    changes: dict[str, list[Any]],
+    source: ProvenanceSource,
+) -> list[str]:
+    """Ranked fields whose current value comes from an automatic source of equal or higher
+    rank than ``source``: the new value is ignored."""
+    rows = await provenance(session, level, entity_id)
+    ignored = []
+    for name in changes.keys() & RANKED.keys():
+        ranks = RANKED[name]
+        row = rows.get(name)
+        if row is not None and row.source in ranks and ranks[row.source] >= ranks.get(source, 0):
+            ignored.append(name)
+    return ignored
 
 
 # --- change sets ------------------------------------------------------------------------------
@@ -159,6 +186,7 @@ async def current(session: AsyncSession, level: Level, entity: Any) -> dict[str,
             "mb_recording_id": plain(entity.mb_recording_id),
             "composers": list(entity.composers or []),
             "genres": list(entity.genres or []),
+            "cover": plain(entity.front_image_id),
         }
     if level == Level.RELEASE:
         return {
@@ -166,6 +194,7 @@ async def current(session: AsyncSession, level: Level, entity: Any) -> dict[str,
             "album_artist": entity.album_artist_display,
             "year": entity.release_date.year if entity.release_date else None,
             "label": entity.label,
+            "cover": plain(entity.front_image_id),
         }
     release = await session.get_one(Release, entity.release_id)
     return {
@@ -208,6 +237,11 @@ async def apply(
         if not changes:
             continue
         if source not in MANUAL_SOURCES:
+            for name in await _outranked(session, edit.level, entity.id, changes, source):
+                del changes[name]
+            values = {name: value for name, value in values.items() if name in changes}
+            if not changes:
+                continue
             conflicting = await _protected(session, edit.level, entity.id, changes)
             if conflicting:
                 outcome.conflicts += len(
@@ -304,6 +338,8 @@ async def _write_recording(session, recording: Recording, values, changes, user_
     fields: dict[str, Any] = {
         name: values[name] for name in ("title", "isrc", "composers", "genres") if name in changes
     }
+    if "cover" in changes:
+        fields["front_image_id"] = await _image(session, values["cover"])
     if "artist" in changes:
         fields["artist"] = await library.get_or_create_artist(
             session, values["artist"], user_id=user_id
@@ -340,6 +376,8 @@ async def _write_release(session, release: Release, values, changes, user_id) ->
         fields["title"] = values["title"]
     if "label" in changes:
         fields["label"] = values["label"]
+    if "cover" in changes:
+        fields["front_image_id"] = await _image(session, values["cover"])
     if "year" in changes:
         fields["release_date"] = _with_year(release.release_date, values["year"])
     if "album_artist" in changes:
@@ -348,6 +386,13 @@ async def _write_release(session, release: Release, values, changes, user_id) ->
         )
         fields["album_artist_display"] = values["album_artist"]
     await library.update_release(session, release, user_id=user_id, **fields)
+
+
+async def _image(session: AsyncSession, image_id: uuid.UUID | None) -> uuid.UUID | None:
+    """A cover must be a stored image (spec: covers)."""
+    if image_id is not None and await session.get(Image, image_id) is None:
+        raise InvalidFields(f"unknown image {image_id}")
+    return image_id
 
 
 def _with_year(value: date | None, year: int | None) -> date | None:
@@ -377,6 +422,19 @@ async def _write_track(session, track: Track, values, changes, user_id) -> None:
             session, title, artist, like=old, user_id=user_id
         )
         await library.move_track(session, track, target, user_id=user_id)
+
+
+async def record_choice(
+    session: AsyncSession,
+    level: Level,
+    entity_id: uuid.UUID,
+    field: str,
+    source: ProvenanceSource,
+    user_id: uuid.UUID | None,
+) -> None:
+    """Record who decided a field without changing its value (e.g. "no cover" chosen for a
+    release that has none, so that automatic sources leave it empty)."""
+    await _provenance(session, level, entity_id, {field: [None, None]}, source, user_id)
 
 
 async def _provenance(
@@ -430,7 +488,10 @@ async def _files(
     session: AsyncSession, level: Level, entity: Any, changes: dict[str, list[Any]]
 ) -> set[uuid.UUID]:
     """Active originals whose tags change: managed ones for base fields of their recording,
-    referenced ones with tag writing enabled for every field of their home context."""
+    referenced ones with tag writing enabled for every field of their home context. Covers
+    are never written into originals (spec: covers, Covers in files)."""
+    if not changes.keys() - FILELESS:
+        return set()
     if level == Level.RECORDING:
         original = await library.active_original(session, entity.id)
         if original is None or not _writable(original):

@@ -57,6 +57,8 @@ class RecordingFields(_Fields):
     mb_recording_id: uuid.UUID | None = None
     composers: list[str] | None = None
     genres: list[str] | None = None
+    # The recording's own front cover (an image ID; spec: covers).
+    cover: uuid.UUID | None = None
 
     @field_validator("isrc", mode="before")
     @classmethod
@@ -69,7 +71,7 @@ class RecordingFields(_Fields):
             raise ValueError("not an ISRC")
         return normalised
 
-    @field_validator("mb_recording_id", mode="before")
+    @field_validator("mb_recording_id", "cover", mode="before")
     @classmethod
     def _uuid(cls, value: Any) -> Any:
         return _empty_to_none(value)
@@ -85,8 +87,10 @@ class ReleaseFields(_Fields):
     album_artist: Text | None = None
     year: int | None = Field(default=None, ge=1000, le=9999)
     label: OptionalText = None
+    # The front cover (an image ID; spec: covers).
+    cover: uuid.UUID | None = None
 
-    @field_validator("year", "label", mode="before")
+    @field_validator("year", "label", "cover", mode="before")
     @classmethod
     def _optional(cls, value: Any) -> Any:
         return _empty_to_none(value)

@@ -160,24 +160,30 @@ package "Library" {
 
   class Image {
     +id : UUID
-    +contentHash : String
+    +sha256 : String
     +mime : String
     +width : Integer
     +height : Integer
     +sizeBytes : Long
-    +source : ProvenanceSource
-    +blobKey : String
   }
   note right of Image
-    Stored once per content hash
-    in the BlobStore (ADR 0019);
-    thumbnails are cache entries.
+    Stored once per content hash in the
+    BlobStore (ADR 0019) at _images/xx/sha256;
+    thumbnails are cache files by hash and
+    size. Front covers are the tagging field
+    "cover" (provenance, ranked sources).
   end note
 
   class ReleaseImage {
     +kind : ImageKind
-    +order : Integer
+    +position : Integer
+    +remoteUrl : String [0..1]
   }
+  note right of ReleaseImage
+    Gallery entry; a Cover Art Archive
+    image keeps its URL until the gallery
+    is first opened.
+  end note
 
   enum ImageKind {
     FRONT
@@ -1369,7 +1375,7 @@ Release "0..*" -- "1" Artist : album artist >
 Release "0..*" -- "0..1" Image : front cover >
 Recording "0..*" -- "0..1" Image : own front cover >
 Release "1" *-- "0..*" ReleaseImage : gallery >
-ReleaseImage "0..*" -- "1" Image
+ReleaseImage "0..*" -- "0..1" Image
 
 ' Relationships – Jobs & Import
 Job "1" *-- "0..*" JobItem

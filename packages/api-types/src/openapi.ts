@@ -52,6 +52,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/covers/fetch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Fetch
+         * @description Fetch covers again: for one release or for the whole library (a job).
+         */
+        post: operations["fetch_api_v1_covers_fetch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/covers/grant": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Grant
+         * @description One signature for all image URLs of this device (images carry no personal data and
+         *     every signed-in user may see every image).
+         */
+        post: operations["grant_api_v1_covers_grant_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/dev/jobs/demo": {
         parameters: {
             query?: never;
@@ -531,6 +572,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/media/images/{image_id}/{size}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Media Image
+         * @description An image at 64, 256 or 600 pixels (``full``: the stored image), immutable: an image ID
+         *     always names the same content.
+         */
+        get: operations["media_image_api_v1_media_images__image_id___size__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/media/originals/{audio_file_id}": {
         parameters: {
             query?: never;
@@ -879,6 +941,107 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/recordings/{recording_id}/cover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Upload Recording Cover
+         * @description A recording's own front cover (a single).
+         */
+        put: operations["upload_recording_cover_api_v1_recordings__recording_id__cover_put"];
+        post?: never;
+        /** Remove Recording Cover */
+        delete: operations["remove_recording_cover_api_v1_recordings__recording_id__cover_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/releases/{release_id}/cover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Upload Release Cover
+         * @description The front cover of an album, as the request body (JPEG, PNG or WebP).
+         */
+        put: operations["upload_release_cover_api_v1_releases__release_id__cover_put"];
+        post?: never;
+        /**
+         * Remove Release Cover
+         * @description No cover, chosen by a person: automatic sources do not fill it again.
+         */
+        delete: operations["remove_release_cover_api_v1_releases__release_id__cover_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/releases/{release_id}/images": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Release Images
+         * @description The gallery in order; images that are only Cover Art Archive URLs are fetched now
+         *     (spec: Image gallery, loaded only when opened).
+         */
+        get: operations["release_images_api_v1_releases__release_id__images_get"];
+        put?: never;
+        /** Add Release Image */
+        post: operations["add_release_image_api_v1_releases__release_id__images_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/releases/{release_id}/images/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Order Release Images */
+        put: operations["order_release_images_api_v1_releases__release_id__images_order_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/releases/{release_id}/images/{entry_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Release Image */
+        delete: operations["remove_release_image_api_v1_releases__release_id__images__entry_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/review/decisions": {
         parameters: {
             query?: never;
@@ -1221,6 +1384,15 @@ export interface components {
             /** Value */
             value: string;
         };
+        /** CoverOut */
+        CoverOut: {
+            /** Changed */
+            changed: boolean;
+            /** Image Id */
+            image_id: string;
+            /** Sha256 */
+            sha256: string;
+        };
         /** DeletionStarted */
         DeletionStarted: {
             /** Job Id */
@@ -1390,6 +1562,19 @@ export interface components {
             release_id?: string | null;
         };
         /**
+         * FetchIn
+         * @description One release, or every release (None).
+         */
+        FetchIn: {
+            /** Release Id */
+            release_id?: string | null;
+        };
+        /** FetchOut */
+        FetchOut: {
+            /** Job Id */
+            job_id: string | null;
+        };
+        /**
          * FieldValue
          * @description One field of a selection: its value if all items share it, otherwise ``mixed``.
          */
@@ -1417,6 +1602,20 @@ export interface components {
             /** Path */
             path: string | null;
         };
+        /** GalleryImage */
+        GalleryImage: {
+            /** Height */
+            height?: number | null;
+            /** Id */
+            id: string;
+            /** Image Id */
+            image_id: string | null;
+            kind: components["schemas"]["ImageKind"];
+            /** Position */
+            position: number;
+            /** Width */
+            width?: number | null;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -1442,6 +1641,29 @@ export interface components {
             /** Job Id */
             job_id: string | null;
         };
+        /**
+         * ImageGrant
+         * @description Query parameters valid for every image URL below ``prefix`` for this device:
+         *     ``{prefix}/{image_id}/{size}?{params}``.
+         */
+        ImageGrant: {
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** Params */
+            params: {
+                [key: string]: string;
+            };
+            /** Prefix */
+            prefix: string;
+        };
+        /**
+         * ImageKind
+         * @enum {string}
+         */
+        ImageKind: "front" | "back" | "booklet" | "disc" | "other";
         /** ImportAccepted */
         ImportAccepted: {
             /** Import Id */
@@ -1685,23 +1907,6 @@ export interface components {
             lossless: boolean;
             /** Sample Rate Hz */
             sample_rate_hz?: number | null;
-        };
-        /**
-         * OrderIn
-         * @description Order tracks (refs) of a resolved item (``ref``) from one service.
-         */
-        OrderIn: {
-            /**
-             * Quality
-             * @default best
-             */
-            quality: string;
-            /** Ref */
-            ref: string;
-            /** Service */
-            service: string;
-            /** Tracks */
-            tracks: string[];
         };
         /** OrderOut */
         OrderOut: {
@@ -2205,6 +2410,28 @@ export interface components {
             /** Volume */
             volume?: number | null;
         };
+        /** OrderIn */
+        anthology__covers__api__OrderIn: {
+            /** Ids */
+            ids: string[];
+        };
+        /**
+         * OrderIn
+         * @description Order tracks (refs) of a resolved item (``ref``) from one service.
+         */
+        anthology__sources__schemas__OrderIn: {
+            /**
+             * Quality
+             * @default best
+             */
+            quality: string;
+            /** Ref */
+            ref: string;
+            /** Service */
+            service: string;
+            /** Tracks */
+            tracks: string[];
+        };
     };
     responses: never;
     parameters: never;
@@ -2294,6 +2521,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fetch_api_v1_covers_fetch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FetchIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FetchOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    grant_api_v1_covers_grant_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImageGrant"];
                 };
             };
         };
@@ -3135,6 +3415,40 @@ export interface operations {
             };
         };
     };
+    media_image_api_v1_media_images__image_id___size__get: {
+        parameters: {
+            query?: {
+                format?: "webp" | "jpeg";
+            };
+            header?: never;
+            path: {
+                image_id: string;
+                size: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     media_original_api_v1_media_originals__audio_file_id__get: {
         parameters: {
             query?: never;
@@ -3742,6 +4056,255 @@ export interface operations {
             };
         };
     };
+    upload_recording_cover_api_v1_recordings__recording_id__cover_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recording_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoverOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_recording_cover_api_v1_recordings__recording_id__cover_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recording_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_release_cover_api_v1_releases__release_id__cover_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoverOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_release_cover_api_v1_releases__release_id__cover_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    release_images_api_v1_releases__release_id__images_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GalleryImage"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_release_image_api_v1_releases__release_id__images_post: {
+        parameters: {
+            query?: {
+                kind?: components["schemas"]["ImageKind"];
+            };
+            header?: never;
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GalleryImage"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    order_release_images_api_v1_releases__release_id__images_order_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["anthology__covers__api__OrderIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GalleryImage"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_release_image_api_v1_releases__release_id__images__entry_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                release_id: string;
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     decide_api_v1_review_decisions_post: {
         parameters: {
             query?: never;
@@ -3868,7 +4431,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["OrderIn"];
+                "application/json": components["schemas"]["anthology__sources__schemas__OrderIn"];
             };
         };
         responses: {

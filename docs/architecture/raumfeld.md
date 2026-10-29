@@ -86,9 +86,10 @@ MIME types of the sink list map to formats: `audio/flac`, `audio/x-flac` → FLA
 
 One `item` of class `object.item.audioItem.musicTrack` with the tags of the track's context:
 `dc:title`, `dc:creator` and `upnp:artist`, `upnp:album`, `upnp:artist role="AlbumArtist"`,
-`upnp:originalTrackNumber`, and a `res` with `protocolInfo` (`http-get:*:<mime>:*`), the
+`upnp:originalTrackNumber`, `upnp:albumArtURI` (the 600-pixel JPEG of the cover in the track's
+context, signed for the zone), and a `res` with `protocolInfo` (`http-get:*:<mime>:*`), the
 `duration` (`H:MM:SS.mmm`) and the URL. A track played from a compilation shows the
-compilation. Covers come with change `covers`.
+compilation and its cover.
 
 ## How Anthology plays a zone
 

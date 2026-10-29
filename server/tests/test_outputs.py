@@ -16,9 +16,11 @@ import pytest
 from anthology_fake_raumfeld.app import create_app as fake_host
 from fastapi import FastAPI
 from httpx import AsyncClient
+from PIL import Image as PillowImage
 from sqlalchemy import select, update
 
 from anthology.core.config import Settings
+from anthology.covers import service as covers
 from anthology.db.types import utcnow
 from anthology.library import service as library
 from anthology.library.models import AudioFormat
@@ -45,6 +47,8 @@ from anthology.playback.outputs.raumfeld import RaumfeldAdapter, ssdp
 from anthology.playback.outputs.raumfeld.adapter import formats
 from anthology.playback.outputs.registry import Outputs, media_base
 from anthology.playback.schemas import PlaybackOutputRow
+from anthology.tagging.fields import Level
+from anthology.tagging.models import ProvenanceSource
 from anthology.transcoding.models import CacheStatus, TranscodeCacheEntry
 from tests.library_helpers import album
 from tests.media_helpers import require_ffmpeg, tone_wav
@@ -711,3 +715,31 @@ async def test_an_open_state_stream_follows_the_output(
         local = await _delta(ws, "s", output(None, False))
 
     assert remote["id"] == local["id"] == before["id"]
+
+
+async def test_the_zone_shows_the_cover_of_the_context(
+    app: FastAPI, client: AsyncClient, rig: Rig, tmp_path: Path
+) -> None:
+    admin = await setup_admin(client)
+    release, tracks = await _library(app, tmp_path, ["Eisfeld"])
+    path = app.state.settings.cache_dir / "staging" / "zone-cover.png"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    PillowImage.new("RGB", (900, 900), "navy").save(path, "PNG")
+    async with app.state.sessionmaker() as session, session.begin():
+        image = await covers.store(session, app.state.image_store, path, move=True)
+        await covers.set_cover(
+            session, Level.RELEASE, release.id, image.id, source=ProvenanceSource.MANUAL
+        )
+    [zone] = await _zones(app)
+    await _play(client, admin, tracks)
+    await _choose(client, admin, zone.id)
+
+    await rig.tick()
+    metadata = (await rig.fake())["zones"]["uuid:zone-living"]["metadata"]
+    art = metadata.split("<upnp:albumArtURI>")[1].split("</upnp:albumArtURI>")[0]
+    art = art.replace("&amp;", "&")
+    fetched = await client.get(art.removeprefix(MEDIA))
+
+    assert art.startswith(f"{MEDIA}/api/v1/media/images/{image.id}/600?format=jpeg&")
+    assert _query(art)["d"] == str(zone.id)
+    assert fetched.status_code == 200 and fetched.headers["content-type"] == "image/jpeg"

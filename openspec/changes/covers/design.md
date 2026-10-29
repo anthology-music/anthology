@@ -64,10 +64,10 @@ The front cover is the field `cover` on the levels release and recording. Its pr
   1. read the images of one file of each track through the tagger, with `extract_images_to` below `<cache>/staging/images`;
   2. store each new image once, and take the front image as `import`, or as `source` when the original came from a source service;
   3. with a MusicBrainz release ID, ask the Cover Art Archive (`priority` background). Its front image is stored with rank 3; the other images become gallery entries with their `remote_url`.
-- **Without the tagger,** step 1 waits and the item is retried. Without network access to the archive, step 3 fails softly and the item is retried later.
+- **Without the tagger,** step 1 is skipped at once: waiting would hold a job slot and starve imports. When the tagger is available again, a job fetches the releases that have no cover and no decision about one (embedded images rank lowest, so only they can gain). Without network access to the archive, step 3 fails softly; the next run or a request fetches again.
 - **When it runs:**
   - once per installation over all releases (`ensure_backfill` at start, like `review_backfill`; a job of `covers_fetch` with every release);
-  - after every library import (its releases) and after every identification that set a MusicBrainz release ID;
+  - after every library import, for its releases (MusicBrainz release IDs come only from imports; the identification sets recording IDs);
   - from `POST /api/v1/covers/fetch` (editors and admins), for one release or for all.
 - **Uploads:** `PUT /api/v1/releases/{id}/cover` and `PUT /api/v1/recordings/{id}/cover` take the image as the raw request body (`Content-Type` `image/jpeg`, `image/png` or `image/webp`, at most 20 MB, no multipart dependency).
   - `DELETE` on the same paths removes the cover; it is recorded as a manual choice (no cover), so automatic sources do not fill it again.
@@ -80,9 +80,9 @@ The front cover is the field `cover` on the levels release and recording. Its pr
   - Stored as files `<cache>/thumbnails/<xx>/<sha256>-<size>.<ext>`: the key is the content, so no database rows are needed. They are swept by age when above `ANTHOLOGY_THUMBNAIL_CACHE_MB` (default 512).
 - **One signed grant per device:** a list shows many images, so instead of signing every URL the client gets one grant.
   - `POST /api/v1/covers/grant` returns query parameters signed over the path prefix `/api/v1/media/images` for the user device, valid for an hour like other client URLs.
-  - Image URLs are `/api/v1/media/images/{sha256}/{size}?…`; the server verifies the grant against the prefix, and the revocation check is the same as for media.
-  - Images carry no personal data, and every signed-in user may see every image: a prefix grant leaks nothing a per-path URL would protect. The content hash in the path makes responses `immutable`.
-- **Rows:** library rows (artists aside) gain `cover` (the SHA-256 of the front image in this context, or null). Releases use their front image; tracks use the recording's own or the release's.
+  - Image URLs are `/api/v1/media/images/{image_id}/{size}?…`; the server verifies the grant against the prefix, and the revocation check is the same as for media.
+  - Images carry no personal data, and every signed-in user may see every image: a prefix grant leaks nothing a per-path URL would protect. An image ID always names the same content (one row per hash), so responses are `immutable`.
+- **Rows:** library rows (artists aside) gain `cover` (the image ID of the front cover in this context, or null; no join needed). Releases use their front image; tracks use the recording's own or the release's.
 - **Zones:** the zone player adds `upnp:albumArtURI` with the 600-pixel JPEG, signed for the zone like the track URL (track plus an hour).
 
 ### Covers in files

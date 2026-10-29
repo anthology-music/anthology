@@ -24,6 +24,17 @@ class ProvenanceSource(enum.StrEnum):
 # Values from these sources are not overwritten by automatic updates (spec: Automatic updates
 # and tag conflicts). A value without a provenance row counts as imported.
 PROTECTED = frozenset({ProvenanceSource.MANUAL, ProvenanceSource.IMPORT, ProvenanceSource.REVIEW})
+# Fields whose automatic sources rank among themselves (spec: covers, Cover sources and
+# priority): a higher rank replaces a lower one, an equal or lower one is ignored, and only
+# choices by people are protected.
+RANKED = {
+    "cover": {
+        ProvenanceSource.IMPORT: 1,
+        ProvenanceSource.SOURCE: 2,
+        ProvenanceSource.MUSICBRAINZ: 3,
+    }
+}
+RANKED_PROTECTED = frozenset({ProvenanceSource.MANUAL, ProvenanceSource.REVIEW})
 
 
 class FieldProvenance(Base):

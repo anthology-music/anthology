@@ -496,6 +496,7 @@ async def update_release(
     label: str | None = _UNSET,
     disc_count: int = _UNSET,
     mb_release_id: uuid.UUID | None = _UNSET,
+    front_image_id: uuid.UUID | None = _UNSET,
     user_id: uuid.UUID | None = None,
 ) -> None:
     """Change a release; its tracks follow title and album artist."""
@@ -510,6 +511,7 @@ async def update_release(
             "label": label,
             "disc_count": disc_count,
             "mb_release_id": mb_release_id,
+            "front_image_id": front_image_id,
         }.items()
         if value is not _UNSET
     }
@@ -562,6 +564,7 @@ async def update_recording(
     acoust_id: uuid.UUID | None = _UNSET,
     composers: list[str] = _UNSET,
     genres: list[str] = _UNSET,
+    front_image_id: uuid.UUID | None = _UNSET,
     user_id: uuid.UUID | None = None,
 ) -> None:
     """Change a recording; all its track contexts follow (unless they override a value)."""
@@ -576,6 +579,7 @@ async def update_recording(
             "acoust_id": acoust_id,
             "composers": list(composers) if composers is not _UNSET else _UNSET,
             "genres": list(genres) if genres is not _UNSET else _UNSET,
+            "front_image_id": front_image_id,
         }.items()
         if value is not _UNSET
     }

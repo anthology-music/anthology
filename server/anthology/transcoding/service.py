@@ -13,7 +13,7 @@ import logging
 import os
 import time
 import uuid
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -23,6 +23,7 @@ from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from anthology.core.config import Settings
+from anthology.covers.models import Image
 from anthology.db.types import utcnow
 from anthology.library.models import (
     AudioFile,
@@ -32,7 +33,7 @@ from anthology.library.models import (
     Release,
     Track,
 )
-from anthology.tagging.schemas import CopyFile, TagFields
+from anthology.tagging.schemas import CopyFile, ImageRef, TagFields
 from anthology.tagging.tagger_client import (
     TaggerClient,
     TaggerIncompatible,
@@ -120,6 +121,9 @@ class Transcoder:
         self._slots = asyncio.Semaphore(max(1, settings.transcode_parallel))
         self._tasks: dict[uuid.UUID, asyncio.Task] = {}
         self.ffmpeg_runs = 0
+        # The front cover to embed in tagged copies, as a file below the cache root (spec:
+        # covers, Covers in files): set by the app; None embeds nothing.
+        self.cover_file: Callable[[str], Awaitable[Path | None]] | None = None
 
     def file(self, entry: TranscodeCacheEntry) -> Path:
         return self.root / entry.path
@@ -270,11 +274,14 @@ class Transcoder:
         if self.tagger is None:
             return None
         async with self.sessionmaker() as session:
-            tags = await self._context_tags(session, track_id)
-        if tags is None:
+            context = await self._context_tags(session, track_id)
+        if context is None:
             return None
+        tags, cover = context
         target = self.root / TEMPORARY / f"{uuid.uuid4()}{Path(original.path).suffix.lower()}"
-        size = await self._copy(Path(original.path), target, tags, DOWNLOAD_TAGGING_TIMEOUT)
+        size = await self._copy(
+            Path(original.path), target, tags, DOWNLOAD_TAGGING_TIMEOUT, cover=cover
+        )
         return target if size is not None else None
 
     async def _tagged_copy(
@@ -310,9 +317,10 @@ class Transcoder:
                     if entry is not None:
                         await session.delete(entry)
                         await session.flush()
-                    tags = await self._context_tags(session, track_id)
-                    if tags is None:
+                    context = await self._context_tags(session, track_id)
+                    if context is None:
                         return None
+                    tags, cover = context
                     entry_id = uuid.uuid4()
                     await session.execute(
                         self._insert(session)
@@ -340,7 +348,7 @@ class Transcoder:
                 return None
             await asyncio.sleep(POLL_SECONDS)
         remaining = max(0.1, deadline - time.monotonic())
-        copied = await self._copy(source, self.file(entry), tags, remaining)
+        copied = await self._copy(source, self.file(entry), tags, remaining, cover=cover)
         async with self.sessionmaker() as session, session.begin():
             if copied is None:
                 await session.execute(
@@ -356,19 +364,35 @@ class Transcoder:
         async with self.sessionmaker() as session:
             return await session.get(TranscodeCacheEntry, entry.id)
 
-    async def _context_tags(self, session: AsyncSession, track_id: uuid.UUID) -> TagFields | None:
+    async def _context_tags(
+        self, session: AsyncSession, track_id: uuid.UUID
+    ) -> tuple[TagFields, str | None] | None:
+        """The tags of a track context and the SHA-256 of its front cover."""
         track = await session.get(Track, track_id)
         if track is None:
             return None
         recording = await session.get_one(Recording, track.recording_id)
         release = await session.get_one(Release, track.release_id)
-        return context_tags(recording, track, release)
+        image_id = recording.front_image_id or release.front_image_id
+        cover = await session.get(Image, image_id) if image_id is not None else None
+        return context_tags(recording, track, release), cover.sha256 if cover else None
 
     async def _copy(
-        self, source: Path, target: Path, tags: TagFields, seconds: float
+        self,
+        source: Path,
+        target: Path,
+        tags: TagFields,
+        seconds: float,
+        *,
+        cover: str | None = None,
     ) -> int | None:
         """The size of the tagged copy, or None if the tagger did not write it in time."""
-        copy = CopyFile(source=str(source), target=str(target), tags=tags)
+        images = []
+        if cover is not None and self.cover_file is not None:
+            scaled = await self.cover_file(cover)
+            if scaled is not None:
+                images = [ImageRef(path=str(scaled), type="front")]
+        copy = CopyFile(source=str(source), target=str(target), tags=tags, images=images)
         try:
             [result] = await asyncio.wait_for(self.tagger.copy([copy]), seconds)
         except (TimeoutError, TaggerUnavailable, TaggerIncompatible, TaggerRequestError) as error:
