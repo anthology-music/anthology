@@ -20,8 +20,54 @@
     />
     <template v-else>
       <header class="library-header">
-        <div class="library-header__cover" aria-hidden="true">
-          <q-icon name="album" size="48px" />
+        <div class="library-header__cover-column">
+          <button
+            type="button"
+            class="library-header__cover-button"
+            :aria-label="t('covers.gallery.open', { title: release?.title ?? '' })"
+            :disabled="!release"
+            data-testid="open-gallery"
+            @click="galleryOpen = true"
+          >
+            <CoverImage
+              :image-id="release?.cover"
+              :title="release?.title ?? ''"
+              :artist="release?.album_artist ?? ''"
+              :px="200"
+              testid="album-cover"
+            />
+          </button>
+          <span v-if="auth.canEdit && release" class="library-header__cover-actions">
+            <label class="library-header__upload">
+              <q-icon name="upload" aria-hidden="true" />
+              {{ t('covers.upload') }}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                class="library-header__file"
+                data-testid="cover-upload"
+                @change="upload"
+              />
+            </label>
+            <q-btn
+              v-if="release.cover"
+              flat
+              dense
+              no-caps
+              icon="hide_image"
+              :label="t('covers.remove')"
+              data-testid="cover-remove"
+              @click="removeCover"
+            />
+          </span>
+          <span
+            v-if="coverProblem"
+            class="library-header__problem"
+            role="alert"
+            data-testid="cover-problem"
+          >
+            {{ t(`covers.problem.${coverProblem}`) }}
+          </span>
         </div>
         <div class="library-header__text">
           <span class="text-muted library-header__kind">
@@ -86,6 +132,14 @@
           />
         </div>
       </header>
+      <q-dialog v-model="galleryOpen">
+        <CoverGallery
+          v-if="release"
+          :release-id="releaseId"
+          :title="release.title"
+          :can-edit="auth.canEdit"
+        />
+      </q-dialog>
       <EditBar v-if="editing" :selection="selection" />
       <TagEditor
         v-if="release"
@@ -143,6 +197,9 @@ import type { LibraryReleaseRow, LibraryTrackRow } from '@anthology/api-types';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import { type CoverProblem, removeReleaseCover, uploadReleaseCover } from '@/features/covers/api';
+import CoverGallery from '@/features/covers/components/CoverGallery.vue';
+import CoverImage from '@/features/covers/components/CoverImage.vue';
 import PlayableTrackRow from '@/features/playback/components/PlayableTrackRow.vue';
 import { usePlayerStore } from '@/features/playback/store';
 import EditBar from '@/features/tagging/components/EditBar.vue';
@@ -173,6 +230,21 @@ const downloads = useDownloadStore();
 const player = usePlayerStore();
 const editing = ref(false);
 const editingRelease = ref(false);
+const galleryOpen = ref(false);
+const coverProblem = ref<CoverProblem | null>(null);
+
+/** The new cover arrives through the release stream. */
+async function upload(event: Event): Promise<void> {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+  coverProblem.value = await uploadReleaseCover(props.releaseId, file);
+  input.value = '';
+}
+
+async function removeCover(): Promise<void> {
+  coverProblem.value = (await removeReleaseCover(props.releaseId)) ? null : 'failed';
+}
 const list = ref<InstanceType<typeof LibraryList> | null>(null);
 const listRule: EditRule = { list: 'release_tracks', release_id: props.releaseId };
 const selection = useSelection(

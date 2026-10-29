@@ -66,7 +66,23 @@
               <span class="conflict-row__subject">
                 {{ entry(row).summary.subject }} · {{ fieldLabel(entry(row)) }}
               </span>
-              <span class="text-muted item-list__sub">
+              <span v-if="isCover(entry(row))" class="item-list__sub conflict-row__covers">
+                <CoverImage
+                  :image-id="entry(row).summary.current"
+                  :title="entry(row).summary.subject"
+                  :px="40"
+                  :testid="`conflict-current-${row.id}`"
+                />
+                <q-icon name="arrow_forward" aria-hidden="true" />
+                <CoverImage
+                  :image-id="entry(row).summary.proposed"
+                  :title="entry(row).summary.subject"
+                  :px="40"
+                  :testid="`conflict-proposed-${row.id}`"
+                />
+                <span class="text-muted">· {{ t(`review.origins.${entry(row).origin}`) }}</span>
+              </span>
+              <span v-else class="text-muted item-list__sub">
                 <span class="mono">{{ entry(row).summary.current ?? '–' }}</span>
                 →
                 <span class="mono">{{ entry(row).summary.proposed ?? '–' }}</span>
@@ -123,6 +139,7 @@ import { reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import VirtualList from '@/components/VirtualList.vue';
+import CoverImage from '@/features/covers/components/CoverImage.vue';
 import { useCounts } from '@/features/library/numbers';
 import { type DecisionResult, decide, entry } from '@/features/review/review';
 import { useSubscription } from '@/sync/useSubscription';
@@ -142,6 +159,11 @@ const busy = ref(false);
 const message = ref<string | null>(null);
 const confirming = ref(false);
 const pending = ref<'accept' | 'reject'>('accept');
+
+/** Cover conflicts show both images (spec: covers, Manual covers are protected). */
+function isCover(item: ReviewItemRow): boolean {
+  return (item.proposal as unknown as TagConflictProposal).field === 'cover';
+}
 
 function fieldLabel(item: ReviewItemRow): string {
   const field = (item.proposal as unknown as TagConflictProposal).field;
@@ -193,6 +215,12 @@ async function decideGroup(): Promise<void> {
 </script>
 
 <style scoped>
+.conflict-row__covers {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
 .conflicts {
   display: flex;
   flex-direction: column;

@@ -13,6 +13,12 @@
       data-testid="track-source"
       >{{ track.source_short ?? track.source }}</span
     >
+    <CoverImage
+      :image-id="track.cover"
+      :title="track.album"
+      :artist="track.album_artist"
+      :px="40"
+    />
     <span class="item-list__main">
       <span class="library-row__title">{{ track.title }}</span>
       <span class="text-muted item-list__sub library-row__title">
@@ -59,6 +65,8 @@
 import type { LibraryTrackRow } from '@anthology/api-types';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
+
+import CoverImage from '@/features/covers/components/CoverImage.vue';
 
 import { formatDuration, formatLabel, trackNumber } from '../format';
 import QualityBadge from './QualityBadge.vue';
