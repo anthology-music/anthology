@@ -70,8 +70,11 @@ export const usePlayerStore = defineStore('player', () => {
     if (audio) return audio;
     const element = createAudio();
     element.volume = volume.value;
+    // While a zone plays, the state comes from the zone queue: events of the silenced local
+    // audio (a late `pause` after the handover) must not change it.
+    const local = () => outputZone.value === null;
     element.addEventListener('timeupdate', () => {
-      positionMs.value = Math.round(element.currentTime * 1000);
+      if (local()) positionMs.value = Math.round(element.currentTime * 1000);
     });
     element.addEventListener('durationchange', () => {
       durationMs.value = Number.isFinite(element.duration)
@@ -83,13 +86,13 @@ export const usePlayerStore = defineStore('player', () => {
       pendingSeek = null;
     });
     element.addEventListener('play', () => {
-      playing.value = true;
+      if (local()) playing.value = true;
     });
     element.addEventListener('pause', () => {
-      playing.value = false;
+      if (local()) playing.value = false;
     });
     element.addEventListener('ended', () => {
-      void step(1);
+      if (local()) void step(1);
     });
     element.addEventListener('error', () => {
       if (loaded.value) problems.set(loaded.value, 'missing');
