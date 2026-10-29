@@ -242,8 +242,9 @@ export const usePlayerStore = defineStore('player', () => {
       await api().POST('/api/v1/playback/skip', { body: { by, playing: playing.value } });
       return;
     }
+    // Where the current entry was left: it may complete a play (spec: personal-data).
     const { data } = await api().POST('/api/v1/playback/skip', {
-      body: { by, playing: wanted },
+      body: { by, playing: wanted, position_ms: Math.round((audio?.currentTime ?? 0) * 1000) },
     });
     // At the end of the queue the server keeps the last entry and stops.
     if (by === 1 && data && data.current_entry_id === loaded.value) {

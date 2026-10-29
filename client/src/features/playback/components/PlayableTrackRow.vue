@@ -44,6 +44,28 @@
           <q-item
             v-close-popup
             clickable
+            :data-testid="`to-playlist-${track.id}`"
+            @click="adding = true"
+          >
+            <q-item-section>{{ t('personal.playlists.addTrack') }}</q-item-section>
+          </q-item>
+          <q-item
+            v-close-popup
+            clickable
+            :data-testid="`favorite-track-${track.id}`"
+            @click="favorites.toggle('recording', track.recording_id)"
+          >
+            <q-item-section>
+              {{
+                favorites.has('recording', track.recording_id)
+                  ? t('personal.favorites.removeShort')
+                  : t('personal.favorites.addShort')
+              }}
+            </q-item-section>
+          </q-item>
+          <q-item
+            v-close-popup
+            clickable
             :disable="downloads.busy"
             :data-testid="`download-${track.id}`"
             @click="downloads.downloadTrack(track.id)"
@@ -53,15 +75,21 @@
         </q-list>
       </q-menu>
     </q-btn>
+    <q-dialog v-model="adding">
+      <AddToPlaylist :ids="[track.id]" @added="adding = false" />
+    </q-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { LibraryTrackRow } from '@anthology/api-types';
+import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import TrackRow from '@/features/library/components/TrackRow.vue';
 import { useDownloadStore } from '@/features/library/downloads';
+import AddToPlaylist from '@/features/personal-data/components/AddToPlaylist.vue';
+import { useFavoritesStore } from '@/features/personal-data/favorites';
 
 import { type PlayRule, usePlayerStore } from '../store';
 
@@ -79,6 +107,8 @@ const props = withDefaults(
 const { t } = useI18n();
 const player = usePlayerStore();
 const downloads = useDownloadStore();
+const favorites = useFavoritesStore();
+const adding = ref(false);
 
 function play(): void {
   if (props.rule) void player.playList(props.rule, props.track.id);

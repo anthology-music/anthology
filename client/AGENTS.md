@@ -48,6 +48,10 @@ API types come from `@anthology/api-types` (REST: `paths`/`components` from Open
 
 Show covers only with `features/covers/components/CoverImage.vue` (lazy `<img>` of the next thumbnail size up, placeholder with title and artist when there is none or it fails). Rows carry the cover's image ID (`cover`); URLs come from `useImageGrant().url(id, size)`, one signed grant per device that is renewed before it expires (no request per image). Upload helpers live in `features/covers/api.ts` (the file is the raw request body).
 
+## Personal data
+
+Playlists, favorites and history live in `features/personal-data/` (spec: personal-data). REST helpers are in `api.ts`; `usePlaylists()` holds own and shared playlists and own folders as one window each; `useFavoritesStore()` holds the user's favorites as one set (toggled optimistically) for the marks on rows. Every playlist edit answers with an `edit_id`; offer its undo. Entries are moved by drag and drop and by buttons (keyboard, touch) with `moveEntries(ids, after)`.
+
 ## Data loading
 
 - Every list is a subscription (`useSubscription`) shown with `VirtualList`: counts immediately, skeleton rows for unloaded ranges, only the visible window (+ buffer) requested, rows far outside the window dropped.

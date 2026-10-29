@@ -304,6 +304,10 @@ a.library-row:focus-visible {
   overflow-wrap: anywhere;
 }
 
+.library-header__favorite {
+  align-self: flex-start;
+}
+
 .library-header__meta {
   margin: 0;
 }
