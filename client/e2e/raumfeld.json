@@ -1,0 +1,7 @@
+{
+  "rooms": [
+    { "udn": "uuid:room-wohnzimmer", "name": "Wohnzimmer" },
+    { "udn": "uuid:room-kueche", "name": "Küche" }
+  ],
+  "zones": [{ "udn": "uuid:zone-wohnzimmer", "rooms": ["uuid:room-wohnzimmer"] }]
+}

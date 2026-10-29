@@ -4,6 +4,7 @@
     <div class="settings">
       <MyDevices />
       <PlaybackSettings />
+      <OutputSettings />
       <UserAdministration v-if="auth.isAdmin" />
       <SourceSettings v-if="auth.isAdmin" />
       <IdentificationSettings v-if="auth.isAdmin || auth.user?.role === 'editor'" />
@@ -26,6 +27,7 @@ import AdoptionSettings from '@/features/library/components/AdoptionSettings.vue
 import SupersededSettings from '@/features/library/components/SupersededSettings.vue';
 import IdentificationSettings from '@/features/library/components/IdentificationSettings.vue';
 import MaintenanceSettings from '@/features/library/components/MaintenanceSettings.vue';
+import OutputSettings from '@/features/playback/components/OutputSettings.vue';
 import PlaybackSettings from '@/features/playback/components/PlaybackSettings.vue';
 import QualitySettings from '@/features/quality-analysis/components/QualitySettings.vue';
 import SourceSettings from '@/features/sources/components/SourceSettings.vue';

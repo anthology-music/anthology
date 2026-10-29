@@ -13,6 +13,10 @@
           :effective="player.current.effective_quality"
           :status="player.current.quality_status"
         />
+        <span v-if="zone" class="player-bar__remote" role="status" data-testid="player-remote">
+          <q-icon name="speaker_group" aria-hidden="true" />
+          {{ t('playback.outputs.remote', { name: zone.name }) }}
+        </span>
         <span v-if="problem" class="player-bar__problem" role="status" data-testid="player-problem">
           <q-icon name="info" aria-hidden="true" /> {{ t(`playback.problem.${problem}`) }}
         </span>
@@ -68,8 +72,19 @@
     </div>
 
     <div class="player-bar__end">
-      <q-icon name="volume_up" aria-hidden="true" />
+      <VolumeControl
+        v-if="zone"
+        class="player-bar__zone-volume"
+        :label="t('playback.outputs.zoneVolume', { name: zone.name })"
+        :volume="zone.volume ?? null"
+        :muted="zone.muted ?? false"
+        :disabled="!zone.online"
+        testid="player-zone-volume"
+        @change="(change) => setZoneVolume(zone!.id, change)"
+      />
+      <q-icon v-if="!zone" name="volume_up" aria-hidden="true" />
       <q-slider
+        v-if="!zone"
         :model-value="player.volume"
         :min="0"
         :max="1"
@@ -78,6 +93,7 @@
         class="player-bar__volume"
         @update:model-value="(value: number | null) => player.setVolume(value ?? 0)"
       />
+      <OutputPicker :outputs="outputs" />
       <q-btn
         flat
         round
@@ -108,14 +124,20 @@ import { useI18n } from 'vue-i18n';
 import QualityBadge from '@/features/library/components/QualityBadge.vue';
 import { formatDuration } from '@/features/library/format';
 
+import { setZoneVolume, useOutputs } from '../outputs';
 import { usePlayerStore } from '../store';
+import OutputPicker from './OutputPicker.vue';
 import QueuePanel from './QueuePanel.vue';
+import VolumeControl from './VolumeControl.vue';
 
 /** The player bar of this device (spec: playback, Player controls; mockup Lokal-Hoeren). */
 const { t } = useI18n();
 const player = usePlayerStore();
 const queueOpen = ref(false);
 const problem = computed(() => (player.loaded ? player.problems.get(player.loaded) : undefined));
+const outputs = useOutputs();
+/** The zone this device controls (remote control, spec: playback, Remote control). */
+const zone = computed(() => outputs.value.zones.find((z) => z.id === player.outputZone) ?? null);
 
 onMounted(() => player.start());
 onBeforeUnmount(() => player.stop());
@@ -169,6 +191,14 @@ onBeforeUnmount(() => player.stop());
 
 .player-bar__quality {
   align-self: flex-start;
+}
+
+.player-bar__remote {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--color-accent-strong);
 }
 
 .player-bar__problem {

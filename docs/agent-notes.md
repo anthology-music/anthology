@@ -71,12 +71,11 @@ _Last updated: 2026-10-28_
   with temporary copies, WAV and AIFF in the tagger (interface 1.1). Decided with the
   maintainer: tagger extended for WAV/AIFF, copies without cover until `covers`, track and album
   downloads, every signed-in user may download.
-- **In progress:** `raumfeld-output` (branch `feat/raumfeld-output`): pull request 1 (server:
-  adapter interface, Raumfeld adapter, zone queues and player, fake host in
-  `tools/fake-raumfeld/`) is done; pull request 2 (client, end-to-end test, tasks 3.x) follows.
-  Decided with the maintainer: SSDP discovery plus manual host addresses, the zone takes over
-  the queue, full zone management, two pull requests. The maintainer checks it against real
-  Raumfeld speakers once the first release is published; do not archive the change before that.
+- **Implemented, open until the hardware check:** `raumfeld-output` (PR #36 server, branch
+  `feat/raumfeld-output-client` client and end-to-end test). Decided with the maintainer: SSDP
+  discovery plus manual host addresses, the zone takes over the queue, full zone management,
+  two pull requests. The maintainer checks it against real Raumfeld speakers once the first
+  release is published; do not archive the change before that.
 - **Next:** see `docs/roadmap.md` (milestone 3).
   `effective-quality-duplicate-checks` covers CD import and sources only; it waits for them.
 

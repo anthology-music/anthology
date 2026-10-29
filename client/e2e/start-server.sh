@@ -27,6 +27,13 @@ uv run python ../client/e2e/import-folder.py "$ANTHOLOGY_IMPORT_ROOTS"
 FAKE_SOURCE_PORT="${ANTHOLOGY_E2E_FAKE_SOURCE_PORT:-8429}"
 uv run anthology-fake-source --port "$FAKE_SOURCE_PORT" &
 FAKE_SOURCE_PID=$!
-trap 'kill "$FAKE_SOURCE_PID" 2>/dev/null' EXIT INT TERM
 export ANTHOLOGY_SOURCE_SERVICES="http://127.0.0.1:$FAKE_SOURCE_PORT"
-uv run uvicorn anthology.api.app:create_app --factory --port "${ANTHOLOGY_E2E_SERVER_PORT:-8490}"
+# The fake Raumfeld host (tools/fake-raumfeld): a zone whose speakers fetch from this server.
+FAKE_RAUMFELD_PORT="${ANTHOLOGY_E2E_FAKE_RAUMFELD_PORT:-8431}"
+uv run anthology-fake-raumfeld --port "$FAKE_RAUMFELD_PORT" --setup ../client/e2e/raumfeld.json &
+FAKE_RAUMFELD_PID=$!
+trap 'kill "$FAKE_SOURCE_PID" "$FAKE_RAUMFELD_PID" 2>/dev/null' EXIT INT TERM
+export ANTHOLOGY_RAUMFELD_HOSTS="127.0.0.1:$FAKE_RAUMFELD_PORT"
+SERVER_PORT="${ANTHOLOGY_E2E_SERVER_PORT:-8490}"
+export ANTHOLOGY_OUTPUT_MEDIA_URL="http://127.0.0.1:$SERVER_PORT"
+uv run uvicorn anthology.api.app:create_app --factory --port "$SERVER_PORT"

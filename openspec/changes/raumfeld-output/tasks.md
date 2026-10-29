@@ -19,10 +19,10 @@
 
 ## 3. Client and end-to-end (pull request 2)
 
-- [ ] 3.1 Output picker in the player bar and remote-control mode (state from the zone queue, commands to the server, no local audio); verify with component tests
-- [ ] 3.2 Zone and room management with volumes; admin settings for host addresses; system state with reasons; verify with component tests
-- [ ] 3.3 End-to-end test with the fake Raumfeld (start-server script): hand an album to a zone, pause from the client, reload, take it back; verify it passes in CI
-- [ ] 3.4 Update `docs/architecture/sync-protocol.md`, `server/AGENTS.md` and the API types; verify `pnpm api-types` leaves no diff
+- [x] 3.1 Output picker in the player bar and remote-control mode (state from the zone queue, commands to the server, no local audio); verify with component tests
+- [x] 3.2 Zone and room management with volumes; admin settings for host addresses; system state with reasons; verify with component tests
+- [x] 3.3 End-to-end test with the fake Raumfeld (start-server script): hand an album to a zone, pause from the client, reload, take it back; verify it passes in CI
+- [x] 3.4 Update `docs/architecture/sync-protocol.md`, `server/AGENTS.md` and the API types; verify `pnpm api-types` leaves no diff
 
 ## Workflow follow-up
 

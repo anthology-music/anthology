@@ -44,6 +44,7 @@ from anthology.playback.outputs.player import Media
 from anthology.playback.outputs.raumfeld import RaumfeldAdapter, ssdp
 from anthology.playback.outputs.raumfeld.adapter import formats
 from anthology.playback.outputs.registry import Outputs, media_base
+from anthology.playback.schemas import PlaybackOutputRow
 from anthology.transcoding.models import CacheStatus, TranscodeCacheEntry
 from tests.library_helpers import album
 from tests.media_helpers import require_ffmpeg, tone_wav
@@ -287,6 +288,8 @@ async def test_a_new_adapter_needs_no_core_changes(
     ]
     zone = rows[1]
     assert zone["online"] is True and rows[3]["zone_id"] == zone["id"]
+    for row in rows:
+        PlaybackOutputRow.model_validate(row)
     assert rows[2]["zone_id"] is None
 
 

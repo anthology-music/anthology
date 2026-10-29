@@ -73,6 +73,7 @@ export interface SyncProtocol {
     'search.tracks'?: LibraryTrackRow;
     'playback.queue'?: PlayQueueEntryRow;
     'playback.state'?: PlayQueueStateRow;
+    'playback.outputs'?: PlaybackOutputRow;
     'sources.services'?: SourceServiceRow;
     'sources.orders'?: OrderRow;
     'sources.order.items'?: OrderItemRow;
@@ -448,6 +449,27 @@ export interface PlayQueueStateRow {
   entries: number;
   shortened: boolean;
   updated_at: string;
+}
+/**
+ * One row of ``playback.outputs``: an output system, a zone or a room (``kind``). Fields
+ * of another kind are left out.
+ */
+export interface PlaybackOutputRow {
+  id: string;
+  key: unknown[];
+  kind: 'system' | 'zone' | 'room';
+  name: string;
+  system_id: string;
+  zone_id: string | null;
+  adapter?: string | null;
+  address?: string | null;
+  origin?: ('discovered' | 'manual') | null;
+  state?: ('online' | 'unreachable') | null;
+  reason?: string | null;
+  online?: boolean | null;
+  volume?: number | null;
+  muted?: boolean | null;
+  formats?: string[] | null;
 }
 /**
  * A configured source service; ``problem`` explains why it is unavailable (spec: Source

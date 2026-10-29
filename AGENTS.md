@@ -131,6 +131,7 @@ Run the relevant tests and linters before finishing a task.
 
 - Conventional Commits (`feat(library): …`, `fix(sync): …`, `docs(specs): …`).
 - One OpenSpec change per pull request where possible; reference the change name in the PR.
+- When the tasks of a change (or of its pull request) are implemented and all checks pass (tests, linters, `openspec validate --all --strict`), commit, push and open the pull request without asking first; then watch CI and fix failures. Merging stays with the maintainer.
 
 ## License
 
