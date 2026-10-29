@@ -20,7 +20,17 @@ Background and rationale: `docs/concept/anthology-six-pager.md`. Decisions: `doc
 - **Conversation:** reply in the language the user writes in.
 - **Everything in the repository is English:** code, identifiers, comments, commit messages, specs, ADRs and documentation.
 - **Exception:** files named `*.local.md` (e.g. a maintainer's German concept notes in `docs/concept/`) are private, git-ignored working notes. They may be in any language, are never the source of truth and must not be referenced from committed files.
+- **Exception:** the German pages of the user manual in `manual/de/` (ADR 0023).
 - UI texts: via i18n only; German is the first UI language, English second.
+
+## User manual
+
+The user manual in `manual/` (VitePress, ADR 0023) has the same pages in English (root) and German (`manual/de/`).
+
+- A change with user-visible behavior updates the affected pages in both languages in the same pull request, and the walkthrough (`manual/walkthrough/`) when screens change.
+- Address the reader directly ("you", the informal "du"); quote interface labels as the interface shows them in that language.
+- Screenshots come only from the walkthrough (generated data) and are not committed; pages show them with `<Screenshot name="…" alt="…" />`.
+- `docs/` stays the contributor documentation; the Source service API part includes `docs/architecture/source-service-api.md`.
 
 ## Spec-driven workflow (OpenSpec)
 
@@ -99,6 +109,7 @@ services/        separate containers with their own licenses:
                  (source services for streaming services live in separate repositories, ADR 0017)
 deploy/          Podman Quadlet files (primary) and compose.yaml (Podman/Docker)
 docs/            concept, architecture, ADRs, design
+manual/          user manual (VitePress, English and German), published on GitHub Pages
 tools/           test data generator, scripts
 ```
 
@@ -113,6 +124,9 @@ pnpm install && pnpm lint && pnpm test && pnpm build
 
 # tagger service (needs ffmpeg for the generated test media)
 cd services/tagger && uv sync && uv run pytest && uv run ruff check . && uv run ruff format --check .
+
+# user manual (the walkthrough needs the end-to-end setup, see manual/README.md)
+pnpm --filter @anthology/manual test && pnpm --filter @anthology/manual build
 
 # api types (after changing the server API or the sync messages; commit the result)
 pnpm api-types

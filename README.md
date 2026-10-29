@@ -63,7 +63,7 @@ cd deploy && mkdir -p secrets && openssl rand -base64 32 > secrets/db_password
 docker compose up -d
 ```
 
-Then open `http://<host>:8400`. Details (volumes, backups, HTTPS, updates): [`docs/install.md`](docs/install.md). While Anthology is below 1.0, the `latest` tag follows pre-releases; pin a version (`:0.1.0`) to stay on it.
+Then open `http://<host>:8400`. Details (volumes, backups, HTTPS, updates): [`docs/install.md`](docs/install.md) and the [user manual](https://anthology-music.github.io/anthology/) (English and German). While Anthology is below 1.0, the `latest` tag follows pre-releases; pin a version (`:0.1.0`) to stay on it.
 
 ## Sheet music and your responsibility
 

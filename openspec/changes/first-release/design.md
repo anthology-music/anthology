@@ -84,10 +84,12 @@ Decided with the maintainer:
 - **Screenshots:**
   - Playwright walkthrough tests (`manual/walkthrough/`) drive the end-to-end server (`client/e2e/start-server.sh`: fresh database, generated library and import folder, fake source service, fake Raumfeld host) and the client.
   - They save each screenshot under a stable name in `manual/public/screenshots/<language>/<name>.png`, once with the German and once with the English interface. The images use generated data only, and covers are generated images.
+  - The English screenshots need the English interface: the client gets a language setting per device (Settings › Language, kept in the browser's local storage, German by default), which the walkthrough sets before it starts.
   - Pages show them with `<Screenshot name="…" alt="…" />`. Screenshots are not committed: builds without them (pull requests, local preview) show a placeholder, and publication builds fail if one is missing.
 - **Versions and publication** (`.github/workflows/pages.yml`, branch `gh-pages`):
-  - a push to `main` publishes the manual under `/next/`, and at the root while no release exists, with a notice "unreleased";
-  - a tag `vX.Y.Z` publishes under `/vX.Y/` (a patch release replaces its minor version) and, for the newest version, at the root;
+  - a push to `main` publishes the manual under `/next/`, with a notice "unreleased";
+  - a tag `vX.Y.Z` publishes under `/vX.Y/` (a patch release replaces its minor version);
+  - the site root leads to the newest release (to `/next/` while there is none) with redirect pages (`index.html`, and `404.html` for deep links), because a VitePress build only works below the base it was built for;
   - `versions.json` at the root lists the releases, and a version selector reads it at runtime, so older manuals offer newer releases;
   - only the publishing job may write the branch, and only the deploy job may write to Pages; the build runs with a read-only token.
 - **Definition of done:** a change with user-visible behavior updates the manual in both languages and its walkthrough screenshots in the same pull request (`AGENTS.md`).

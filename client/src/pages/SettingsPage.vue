@@ -3,6 +3,7 @@
     <PageHeader :title="t('pages.settings.title')" :description="t('pages.settings.description')" />
     <div class="settings">
       <MyDevices />
+      <LanguageSettings />
       <PlaybackSettings />
       <OutputSettings />
       <UserAdministration v-if="auth.isAdmin" />
@@ -23,6 +24,7 @@
 import { useI18n } from 'vue-i18n';
 
 import AboutSettings from '@/components/AboutSettings.vue';
+import LanguageSettings from '@/components/LanguageSettings.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import ServiceOverview from '@/components/ServiceOverview.vue';
 import AdoptionSettings from '@/features/library/components/AdoptionSettings.vue';

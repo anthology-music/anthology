@@ -759,6 +759,10 @@ const en: typeof de = {
       failed: 'That did not work.',
     },
   },
+  language: {
+    title: 'Language',
+    hint: 'Language of the interface on this device',
+  },
   about: {
     title: 'About Anthology',
     prerelease:

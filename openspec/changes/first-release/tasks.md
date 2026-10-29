@@ -17,10 +17,10 @@
 
 ## 4. User manual (pull request 2)
 
-- [ ] 4.1 ADR 0023 and the `AGENTS.md` rules (German in `manual/de/`, the definition of done); verify both files
-- [ ] 4.2 VitePress site `manual/` (English root, German `/de/`, the four parts, version selector, notice for unreleased builds, `Screenshot` component) and `check-pages.mjs`; verify the build has no dead links and the check fails for a page in one language only
-- [ ] 4.3 Write the pages of all four parts in English and German; the Source service API part includes `docs/architecture/source-service-api.md`; verify every page exists in both languages
-- [ ] 4.4 Walkthrough tests that take the screenshots in both interface languages against the end-to-end server; verify a publication build fails without a referenced screenshot and passes with the walkthrough's output
+- [x] 4.1 ADR 0023 and the `AGENTS.md` rules (German in `manual/de/`, the definition of done); verify both files
+- [x] 4.2 VitePress site `manual/` (English root, German `/de/`, the four parts, version selector, notice for unreleased builds, `Screenshot` component) and `check-pages.mjs`; verify the build has no dead links and the check fails for a page in one language only
+- [x] 4.3 Write the pages of all four parts in English and German; the Source service API part includes `docs/architecture/source-service-api.md`; verify every page exists in both languages
+- [x] 4.4 Walkthrough tests that take the screenshots in both interface languages against the end-to-end server; verify a publication build fails without a referenced screenshot and passes with the walkthrough's output
 - [ ] 4.5 `pages.yml` (walkthrough, build, publication to `gh-pages` with `/next/`, `/vX.Y/`, the root and `versions.json`, least privileges); verify with a run on `main` that the site is published and the selector lists the versions
 
 ## Workflow follow-up

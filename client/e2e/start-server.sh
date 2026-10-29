@@ -36,4 +36,6 @@ trap 'kill "$FAKE_SOURCE_PID" "$FAKE_RAUMFELD_PID" 2>/dev/null' EXIT INT TERM
 export ANTHOLOGY_RAUMFELD_HOSTS="127.0.0.1:$FAKE_RAUMFELD_PORT"
 SERVER_PORT="${ANTHOLOGY_E2E_SERVER_PORT:-8490}"
 export ANTHOLOGY_OUTPUT_MEDIA_URL="http://127.0.0.1:$SERVER_PORT"
-uv run uvicorn anthology.api.app:create_app --factory --port "$SERVER_PORT"
+# The walkthrough of the manual serves without the developer demo (it only seeds with it).
+ANTHOLOGY_DEV_DEMO="${ANTHOLOGY_E2E_SERVE_DEMO:-true}" \
+  uv run uvicorn anthology.api.app:create_app --factory --port "$SERVER_PORT"

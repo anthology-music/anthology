@@ -1,0 +1,26 @@
+---
+layout: home
+hero:
+  name: Anthology
+  text: Your music, self-hosted
+  tagline: Acquire music, listen on every device and across rooms, edit tags – one app for the whole household.
+  actions:
+    - theme: brand
+      text: What Anthology is
+      link: /general/
+    - theme: alt
+      text: Install it
+      link: /administration/installation
+    - theme: alt
+      text: User guide
+      link: /guide/
+features:
+  - title: One original per recording
+    details: Albums and compilations reference the same recording; tags come from the album you play it from.
+  - title: Quality you can trust
+    details: Anthology measures the effective quality of every file and never upscales.
+  - title: Every room
+    details: Play on Teufel Raumfeld speakers, with your phone as the remote control.
+  - title: Built for large libraries
+    details: Lists load progressively and stay fast with 500,000 tracks.
+---
