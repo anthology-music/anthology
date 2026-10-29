@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Anthology manual</title>
+<meta name="robots" content="noindex">
+<noscript><meta http-equiv="refresh" content="0; url=/anthology/next/"></noscript>
+</head>
+<body>
+<p><a href="/anthology/next/">Anthology manual</a></p>
+<script>
+const root = "/anthology/";
+const target = "next/";
+const rest = location.pathname.startsWith(root) ? location.pathname.slice(root.length) : '';
+if (/^(next|v\d+\.\d+)(\/|$)/.test(rest)) document.body.textContent = 'Page not found.';
+else location.replace(root + target + rest + location.search + location.hash);
+</script>
+</body>
+</html>
