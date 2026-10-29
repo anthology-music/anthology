@@ -2,7 +2,10 @@
 
 Open-source, self-hosted music application: acquire music, listen to it on any device or across rooms, edit tags, link works, arrangements and medleys, and follow sheet music – in one integrated app.
 
-> Status: concept and specifications. No release yet.
+> **Status: pre-release 0.1.** Milestones 1 to 3 (without the desktop and mobile apps) are
+> implemented. Pre-releases are meant for trying Anthology out, not for production use: the review
+> of the license separation by an open-source license expert (ADR 0004) is pending. Changes:
+> [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Highlights
 
@@ -37,9 +40,9 @@ openspec init        # select Claude Code and OpenCode
 openspec list
 ```
 
-## Running (planned)
+## Running
 
-Anthology runs as one pod of OCI containers. **Podman is the primary platform** (rootless, managed by Quadlet); Docker works via Compose.
+Anthology runs as one pod of OCI containers. **Podman is the primary platform** (rootless, managed by Quadlet); Docker works via Compose. The images are packages of this repository on ghcr.io, for `linux/amd64` and `linux/arm64`, and work with Docker and Podman alike. Every [release](https://github.com/anthology-music/anthology/releases) also offers an installation package for Compose and one for Quadlet with the images pinned to that release.
 
 | Container | License | Required |
 |---|---|---|
@@ -60,7 +63,7 @@ cd deploy && mkdir -p secrets && openssl rand -base64 32 > secrets/db_password
 docker compose up -d
 ```
 
-Then open `http://<host>:8400`. Details (volumes, backups, HTTPS, updates): [`docs/install.md`](docs/install.md).
+Then open `http://<host>:8400`. Details (volumes, backups, HTTPS, updates): [`docs/install.md`](docs/install.md). While Anthology is below 1.0, the `latest` tag follows pre-releases; pin a version (`:0.1.0`) to stay on it.
 
 ## Sheet music and your responsibility
 

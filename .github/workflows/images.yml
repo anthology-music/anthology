@@ -61,9 +61,23 @@ jobs:
       runner: ${{ matrix.runner }}
       push: false
 
+  version:
+    # v* tags: the tag must equal the versions of server, client and workspace before anything
+    # is built or published (change first-release).
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Check the version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: python3 tools/release/release.py check "$GITHUB_REF_NAME"
+
   build:
     # main and v* tags: push by digest; the manifests are created after the smoke tests.
     if: github.event_name == 'push'
+    needs: [version]
     strategy:
       fail-fast: false
       matrix:
@@ -227,3 +241,31 @@ jobs:
             $(printf 'ghcr.io/anthology-music/anthology-${{ matrix.image }}@sha256:%s ' *)
           docker buildx imagetools inspect \
             "ghcr.io/anthology-music/anthology-${{ matrix.image }}:${{ steps.meta.outputs.version }}"
+
+  release:
+    # v* tags: the release page with the changelog section and the installation packages for
+    # Compose and Quadlet (images pinned to the release), after the images are published.
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [publish]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          python3 tools/release/release.py notes "$TAG" > "${{ runner.temp }}/notes.md"
+          python3 tools/release/release.py package "$TAG" "${{ runner.temp }}/packages"
+          prerelease=""
+          if [ "$(python3 tools/release/release.py prerelease "$TAG")" = true ]; then
+            prerelease="--prerelease"
+          fi
+          gh release create "$TAG" $prerelease \
+            --title "Anthology ${TAG#v}" \
+            --notes-file "${{ runner.temp }}/notes.md" \
+            "${{ runner.temp }}"/packages/*.tar.gz

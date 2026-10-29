@@ -763,6 +763,20 @@ export default {
       failed: 'Das hat nicht geklappt.',
     },
   },
+  about: {
+    title: 'Über Anthology',
+    prerelease:
+      'Vorabversion: noch nicht für den produktiven Einsatz gedacht. Die Prüfung der Lizenztrennung steht aus.',
+    server: 'Server',
+    client: 'App',
+    mismatch: 'andere Version als der Server – die Seite neu laden',
+    license: 'Lizenz',
+    source: 'Quellcode',
+    thirdParty: 'Lizenzen der verwendeten Komponenten',
+    close: 'Schließen',
+    loading: 'Wird geladen …',
+    unavailable: 'Die Lizenzliste ist auf diesem Server nicht vorhanden.',
+  },
   covers: {
     alt: 'Cover von {title} ({artist})',
     upload: 'Cover hochladen',

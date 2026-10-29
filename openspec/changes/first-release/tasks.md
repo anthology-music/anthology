@@ -2,18 +2,18 @@
 
 ## 1. Licenses (pull request 1)
 
-- [ ] 1.1 Add `tools/licenses/` (generator with `--check`, exceptions file with reasons) and generate sections 1 and 2 of `THIRD_PARTY_LICENSES.md`; replace its placeholders (status, date, version, section 7 and 8); verify the check passes and fails for a stale file and for a GPL dependency without exception
-- [ ] 1.2 CI job `licenses` (blocking) and license texts in the server image under `/app/licenses`; verify the job runs on lockfile changes and the image contains `LICENSE`, `THIRD_PARTY_LICENSES.md` and the collected texts
+- [x] 1.1 Add `tools/licenses/` (generator with `--check`, exceptions file with reasons) and generate sections 1 and 2 of `THIRD_PARTY_LICENSES.md`; replace its placeholders (status, date, version, section 7 and 8); verify the check passes and fails for a stale file and for a GPL dependency without exception
+- [x] 1.2 CI job `licenses` (blocking) and license texts in the server image under `/app/licenses`; verify the job runs on lockfile changes and the image contains `LICENSE`, `THIRD_PARTY_LICENSES.md` and the collected texts
 
 ## 2. Versions and About (pull request 1)
 
-- [ ] 2.1 Build information in the images and `GET /api/v1/about` and `GET /api/v1/about/licenses`; verify with API tests (signed-in only, values from the environment)
-- [ ] 2.2 Settings page "About Anthology" with server and client versions, commit, pre-release notice, links and third-party licenses; verify with a component test
+- [x] 2.1 Build information in the images and `GET /api/v1/about` and `GET /api/v1/about/licenses`; verify with API tests (signed-in only, values from the environment)
+- [x] 2.2 Settings page "About Anthology" with server and client versions, commit, pre-release notice, links and third-party licenses; verify with a component test
 
 ## 3. Release and packages (pull request 1)
 
-- [ ] 3.1 Release job on `v*` tags (version check, GitHub release from the changelog section, pre-release below 1.0) with the installation packages for Compose and Quadlet (`tools/release/package.sh`, pinned image tags); verify the version check and the packages with a test of the scripts and the job with a dry run on a branch
-- [ ] 3.2 `CHANGELOG.md` with 0.1.0, `docs/releasing.md`, pre-release notice in the README, `docs/install.md` (pinned versions, the packages, updating, ghcr.io packages for Docker and Podman); verify the links and that `docs/install.md` matches `deploy/`
+- [x] 3.1 Release job on `v*` tags (version check, GitHub release from the changelog section, pre-release below 1.0) with the installation packages for Compose and Quadlet (`tools/release/package.sh`, pinned image tags); verify the version check and the packages with a test of the scripts and the job with a dry run on a branch
+- [x] 3.2 `CHANGELOG.md` with 0.1.0, `docs/releasing.md`, pre-release notice in the README, `docs/install.md` (pinned versions, the packages, updating, ghcr.io packages for Docker and Podman); verify the links and that `docs/install.md` matches `deploy/`
 
 ## 4. User manual (pull request 2)
 
