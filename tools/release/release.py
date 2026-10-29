@@ -33,7 +33,7 @@ NOTICE = (
 )
 COMPOSE_README = """# Anthology {version} with Docker Compose or Podman Compose
 
-    mkdir -p secrets && openssl rand -base64 32 > secrets/db_password
+    mkdir -p secrets && chmod 700 secrets && openssl rand -base64 32 > secrets/db_password
     docker compose up -d        # or: podman compose up -d
 
 Then open http://localhost:8400 and create the first admin. The images are pinned to {version}.

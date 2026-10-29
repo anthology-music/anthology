@@ -2,7 +2,10 @@
 # Installation: docs/install.md. Podman users: the recommended setup is Quadlet (deploy/quadlet/).
 #
 # Before the first start, create the database password (kept out of the repository):
-#   mkdir -p secrets && openssl rand -base64 32 > secrets/db_password
+#   mkdir -p secrets && chmod 700 secrets && openssl rand -base64 32 > secrets/db_password
+# The file itself stays readable (0644): the server and PostgreSQL read it as non-root users.
+# It is bind-mounted with ":z" instead of a Compose secret, so that SELinux hosts (Fedora, RHEL)
+# relabel it for the containers.
 
 name: anthology
 
@@ -23,9 +26,8 @@ services:
       ANTHOLOGY_IMPORT_ROOTS: /data/imports                      # folders admins may import from, comma-separated (docs/install.md)
       ANTHOLOGY_RAUMFELD_HOSTS: ""                               # Raumfeld host addresses if multicast does not reach the server (docs/install.md)
       ANTHOLOGY_OUTPUT_MEDIA_URL: ""                             # URL the speakers fetch music from, e.g. http://192.168.1.10:8400
-    secrets:
-      - db_password
     volumes:
+      - ./secrets/db_password:/run/secrets/db_password:ro,z
       - keys:/data/keys
       - library:/data/library
       - cache:/data/cache
@@ -61,19 +63,14 @@ services:
       POSTGRES_USER: anthology
       POSTGRES_DB: anthology
       POSTGRES_PASSWORD_FILE: /run/secrets/db_password
-    secrets:
-      - db_password
     volumes:
+      - ./secrets/db_password:/run/secrets/db_password:ro,z
       - db:/var/lib/postgresql          # PostgreSQL 18+: data below /var/lib/postgresql/18/docker
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "anthology", "-d", "anthology"]
       interval: 5s
       retries: 20
     restart: unless-stopped
-
-secrets:
-  db_password:
-    file: ./secrets/db_password
 
 volumes:
   keys:

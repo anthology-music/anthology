@@ -6,6 +6,10 @@ All notable changes to Anthology are listed here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- **Compose installation:** the database password file is bind-mounted with an SELinux relabel, so PostgreSQL and the server start on SELinux hosts such as Fedora; the instructions no longer recommend `chmod 600`, which kept the non-root server from reading the file.
+
 ## [0.1.0] - 2026-10-29
 
 The first pre-release: the foundation, the core library and sources and delivery without the

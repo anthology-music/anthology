@@ -41,11 +41,11 @@ To keep the pod running without an open login session: `loginctl enable-linger $
 ## Docker or Podman with Compose
 
 ```sh
-mkdir -p secrets && openssl rand -base64 32 > secrets/db_password
+mkdir -p secrets && chmod 700 secrets && openssl rand -base64 32 > secrets/db_password
 docker compose up -d        # or: podman compose up -d
 ```
 
-Keep `secrets/db_password` private (`chmod 600`).
+The `secrets` folder is private (`chmod 700`). Leave the file itself readable: the server and PostgreSQL read it as non-root users inside their containers, so `chmod 600` on the file stops them from starting.
 
 ## Check the installation
 
