@@ -6,7 +6,7 @@ from typing import Annotated
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from anthology.core.media_urls import InvalidMediaUrlError, MediaGrant
+from anthology.core.media_urls import IMAGE_PREFIX, InvalidMediaUrlError, MediaGrant
 from anthology.core.security import InvalidTokenError, decode_access_token
 from anthology.users.models import Role
 from anthology.users.service import SessionInfo
@@ -51,10 +51,10 @@ def require_role(*roles: Role) -> Callable[[SessionInfo], Awaitable[SessionInfo]
 AdminSession = Annotated[SessionInfo, Depends(require_role(Role.ADMIN))]
 
 
-async def media_grant(request: Request) -> MediaGrant:
-    """Verify a signed media URL and check that user and target are still allowed."""
+async def _verified(request: Request, path: str) -> MediaGrant:
+    """Verify a signature over ``path`` and check that user and target are still allowed."""
     try:
-        grant = request.app.state.media_signer.verify(request.url.path, dict(request.query_params))
+        grant = request.app.state.media_signer.verify(path, dict(request.query_params))
     except InvalidMediaUrlError as error:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="invalid_url") from error
     info = await request.app.state.session_cache.get(grant.target_id)
@@ -71,4 +71,17 @@ async def media_grant(request: Request) -> MediaGrant:
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="revoked")
 
 
+async def media_grant(request: Request) -> MediaGrant:
+    """Verify a signed media URL and check that user and target are still allowed."""
+    return await _verified(request, request.url.path)
+
+
+async def image_grant(request: Request) -> MediaGrant:
+    """Verify an image URL: the signature covers the image prefix, not the single image."""
+    if not request.url.path.startswith(f"{IMAGE_PREFIX}/"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="invalid_url")
+    return await _verified(request, IMAGE_PREFIX)
+
+
 MediaAccess = Annotated[MediaGrant, Depends(media_grant)]
+ImageAccess = Annotated[MediaGrant, Depends(image_grant)]

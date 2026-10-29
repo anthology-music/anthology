@@ -193,6 +193,7 @@ def _release_row(release: Release, key: SortKey) -> Row:
         year=release.release_date.year if release.release_date else None,
         disc_count=release.disc_count,
         track_count=release.track_count,
+        cover=str(release.front_image_id) if release.front_image_id else None,
     )
     return Row(id=model.id, key=key, data=_data(model))
 
@@ -368,8 +369,13 @@ def _track_row(result_row, key: SortKey) -> Row:
         source=source,
         source_short=source_short,
         retrieved_at=retrieved_at,
+        cover=_cover(recording.front_image_id or release.front_image_id),
     )
     return Row(id=model.id, key=key, data=_data(model))
+
+
+def _cover(image_id: uuid.UUID | None) -> str | None:
+    return str(image_id) if image_id is not None else None
 
 
 def _track_key(track: Track) -> SortKey:

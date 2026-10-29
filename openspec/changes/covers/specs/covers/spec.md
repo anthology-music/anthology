@@ -21,18 +21,33 @@ Each image SHALL be stored once, identified by its content hash, regardless of h
 - **THEN** the image is stored once and used as the album's front cover
 
 ### Requirement: Cover sources and priority
-The system SHALL obtain covers from manual upload, the Cover Art Archive, source services and images embedded in imported files, and SHALL prefer them in this order.
+The system SHALL obtain covers from manual upload, the Cover Art Archive, files delivered by source services and images embedded in imported files, and SHALL prefer them in this order; an automatic cover SHALL replace the current one only when its source ranks higher.
 
 #### Scenario: Cover Art Archive over embedded
 - **WHEN** an imported album has an embedded cover and the Cover Art Archive has a front cover for its release
 - **THEN** the Cover Art Archive image becomes the front cover unless a cover was set manually
 
+#### Scenario: Embedded cover after the archive
+- **WHEN** a release has its front cover from the Cover Art Archive and a later import brings a different embedded cover
+- **THEN** the Cover Art Archive image stays
+
 ### Requirement: Manual covers are protected
-A front cover set manually or imported SHALL NOT be replaced automatically; a different automatic cover SHALL create a conflict in the conflict list (see tagging).
+A front cover set or removed manually, or accepted from the conflict list, SHALL NOT be changed automatically; a different automatic cover SHALL create a conflict in the conflict list (see tagging). Only editors and admins SHALL set, remove or reorder covers and gallery images.
 
 #### Scenario: Manual cover and new automatic cover
 - **WHEN** a release with a manually uploaded cover receives a different cover from the Cover Art Archive
 - **THEN** the manual cover stays and a conflict showing both images appears
+
+#### Scenario: Listener cannot change covers
+- **WHEN** a listener tries to upload a cover
+- **THEN** the server refuses it
+
+### Requirement: Covers for the existing library
+The system SHALL fetch covers for every release once after the covers are introduced, in a background job that can be paused and resumed, and SHALL fetch them again for the releases of every library import and on request of an editor; while the tagger is unavailable, embedded images SHALL be read later.
+
+#### Scenario: Library before covers
+- **WHEN** a server with 2,000 identified albums starts for the first time with covers
+- **THEN** a job fetches their covers in the background and the albums show them as the job progresses
 
 ### Requirement: Image gallery
 The system SHALL keep additional images per release (back, booklet, disc, other) in a defined order, from the Cover Art Archive or upload, and SHALL load them only when the gallery is opened.
@@ -42,7 +57,7 @@ The system SHALL keep additional images per release (back, booklet, disc, other)
 - **THEN** the pages are shown in order and loaded only when the gallery is opened
 
 ### Requirement: Sizes and delivery
-The system SHALL keep the original image and SHALL deliver thumbnails of 64, 256 and 600 pixels generated on demand and cached; images SHALL be delivered over HTTP with signed URLs (see sync-protocol), also to network outputs.
+The system SHALL keep the original image and SHALL deliver thumbnails of 64, 256 and 600 pixels generated on demand and cached; images SHALL be delivered over HTTP with signed URLs (see sync-protocol), also to network outputs. A client MAY use one signed grant for all image URLs of its device instead of one signature per image.
 
 #### Scenario: Track list thumbnails
 - **WHEN** a client shows a track list

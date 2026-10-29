@@ -232,6 +232,7 @@ export interface LibraryReleaseRow {
   year: number | null;
   disc_count: number;
   track_count: number;
+  cover?: string | null;
 }
 export interface LibraryTrackRow {
   id: string;
@@ -254,6 +255,7 @@ export interface LibraryTrackRow {
   source?: string | null;
   source_short?: string | null;
   retrieved_at?: string | null;
+  cover?: string | null;
 }
 /**
  * A superseded referenced original (spec: library, Superseded referenced originals).

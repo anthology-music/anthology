@@ -161,6 +161,7 @@ class _Loader:
             sort_title=release_sort,
             sort_album_artist=self.artist_sort[release.album_artist_id],
             mb_release_id=None,
+            front_image_id=None,
         )
         self.totals[Counter.RELEASES] += 1
         self.counts[release.album_artist_id][0] += 1
@@ -179,6 +180,7 @@ class _Loader:
                 genres=[],
                 isrc=None,
                 mb_recording_id=None,
+                front_image_id=None,
                 acoust_id=None,
                 identification_status=IdentificationStatus.UNCHECKED,
                 identification_checked_at=None,

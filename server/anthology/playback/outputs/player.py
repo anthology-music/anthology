@@ -14,13 +14,14 @@ pause, another entry, a seek); the player's own writes are remembered, so they a
 import logging
 import uuid
 from collections.abc import Awaitable, Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timedelta
 from urllib.parse import urlencode
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from anthology.core.media_urls import IMAGE_PREFIX
 from anthology.library.models import AudioFile, AudioFormat, OriginalStatus, Recording, Release
 from anthology.library.models import Track as LibraryTrack
 from anthology.playback import service
@@ -77,6 +78,8 @@ class Delivery:
     duration_ms: int
     metadata: TrackMetadata
     next_audio: tuple[uuid.UUID, delivery.Variant | None] | None = None
+    # The image ID of the cover in the track's context.
+    cover: uuid.UUID | None = None
 
 
 class Undeliverable(Exception):
@@ -193,8 +196,15 @@ class ZonePlayer:
                 return
             ttl = min(found.duration_ms // 1000 + URL_MARGIN_SECONDS, self._media.max_ttl_seconds)
             params = self._media.sign(found.path, user_id, self.zone_id, ttl)
-            uri = f"{await self._media.base_url(ref.address)}{found.path}?{urlencode(params)}"
-            await self._adapter.play(ref, uri, found.metadata, start_ms)
+            base = await self._media.base_url(ref.address)
+            uri = f"{base}{found.path}?{urlencode(params)}"
+            metadata = found.metadata
+            if found.cover is not None:
+                # One grant for the image prefix, bound to the zone like the track URL.
+                grant = self._media.sign(IMAGE_PREFIX, user_id, self.zone_id, ttl)
+                art = f"{base}{IMAGE_PREFIX}/{found.cover}/600?format=jpeg&{urlencode(grant)}"
+                metadata = replace(metadata, art_uri=art)
+            await self._adapter.play(ref, uri, metadata, start_ms)
             now = self._clock()
             self.handed = Handed(entry_id, uri, now + timedelta(seconds=ttl), now)
             self._seen_playing = False
@@ -308,7 +318,8 @@ class ZonePlayer:
             duration_ms=recording.duration_ms,
             mime_type=mime,
         )
-        return user_id, Delivery(path, mime, recording.duration_ms, metadata, next_audio)
+        cover = recording.front_image_id or release.front_image_id
+        return user_id, Delivery(path, mime, recording.duration_ms, metadata, next_audio, cover)
 
 
 def _variant(audio: AudioFile, formats) -> delivery.Variant | None:

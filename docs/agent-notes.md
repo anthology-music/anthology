@@ -76,6 +76,11 @@ _Last updated: 2026-10-28_
   discovery plus manual host addresses, the zone takes over the queue, full zone management,
   two pull requests. The maintainer checks it against real Raumfeld speakers once the first
   release is published; do not archive the change before that.
+- **In progress:** `covers` (branch `feat/covers`): pull request 1 (server: image store, the
+  ranked `cover` field, fetch job with backfill, gallery, thumbnails with one image grant per
+  device, covers in rows, copies and DIDL-Lite); pull request 2 (client, tasks 3.x) follows.
+  Decided with the maintainer: gallery included, a backfill job at start, two pull requests;
+  embedded covers rank lowest among the automatic sources, only people's choices are protected.
 - **Next:** see `docs/roadmap.md` (milestone 3).
   `effective-quality-duplicate-checks` covers CD import and sources only; it waits for them.
 

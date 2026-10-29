@@ -30,6 +30,8 @@ class LibraryReleaseRow(StreamRow):
     year: int | None
     disc_count: int
     track_count: int
+    # The front cover's image ID (spec: covers), or None.
+    cover: str | None = None
 
 
 class LibraryTrackRow(StreamRow):
@@ -53,6 +55,8 @@ class LibraryTrackRow(StreamRow):
     source: str | None = None
     source_short: str | None = None
     retrieved_at: datetime | None = None
+    # The cover in this context: the recording's own, else the release's (spec: covers).
+    cover: str | None = None
 
 
 class LibrarySupersededRow(StreamRow):

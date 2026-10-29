@@ -96,6 +96,8 @@ class TrackMetadata:
     track_number: int | None
     duration_ms: int
     mime_type: str
+    # The cover (spec: covers, Cover on Raumfeld): a signed URL of the 600-pixel JPEG.
+    art_uri: str | None = None
     extra: dict[str, str] = field(default_factory=dict)
 
 

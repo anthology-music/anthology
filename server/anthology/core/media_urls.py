@@ -18,6 +18,9 @@ from uuid import UUID
 from anthology.core.security import load_or_create_key
 from anthology.db.types import utcnow
 
+# Image URLs are signed once per device or zone for this prefix (spec: covers, Sizes and
+# delivery): ``{IMAGE_PREFIX}/{image_id}/{size}``.
+IMAGE_PREFIX = "/api/v1/media/images"
 CURRENT_KEY = "media.key"
 PREVIOUS_KEY = "media.key.previous"
 

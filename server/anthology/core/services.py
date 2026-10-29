@@ -111,6 +111,8 @@ class ServiceMonitor:
         self._wake = asyncio.Event()
         self._task: asyncio.Task | None = None
         self.current: Observation | None = None
+        # Called when the service becomes available again (after being unavailable).
+        self.on_available: list[Callable[[], Awaitable[None]]] = []
 
     @property
     def state(self) -> ServiceState | None:
@@ -127,6 +129,13 @@ class ServiceMonitor:
         if previous is None or previous.status != seen.status:
             logger.info("service %s is %s", self.name, seen.status.value)
         await store_status(self._sessionmaker, self.name, seen)
+        back = previous is not None and previous.status != ServiceState.AVAILABLE
+        if back and seen.status == ServiceState.AVAILABLE:
+            for listener in self.on_available:
+                try:
+                    await listener()
+                except Exception:
+                    logger.exception("listener of %s failed", self.name)
         return seen
 
     def request_check(self) -> None:

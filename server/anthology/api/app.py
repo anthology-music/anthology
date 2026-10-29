@@ -9,10 +9,14 @@ from fastapi import FastAPI
 from anthology import __version__
 from anthology.api import health
 from anthology.api.web import mount_web
+from anthology.core.blobs import FileBlobStore
 from anthology.core.config import Settings, get_settings
 from anthology.core.media_urls import MediaKeys, MediaUrlSigner
 from anthology.core.security import load_or_create_key
 from anthology.core.services import ServiceMonitor
+from anthology.covers import api as covers_api
+from anthology.covers import jobs as covers_jobs
+from anthology.covers.thumbnails import Thumbnails
 from anthology.db import create_engine, create_sessionmaker
 from anthology.jobs import api as jobs_api
 from anthology.jobs.handlers import HandlerRegistry
@@ -122,6 +126,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.tag_writer = tag_writer
         transcoder = Transcoder(sessionmaker, settings, tagger)
         app.state.transcoder = transcoder
+        image_store = FileBlobStore(settings.images_dir)
+        app.state.image_store = image_store
+        thumbnails = Thumbnails(
+            image_store,
+            settings.cache_dir / "thumbnails",
+            int(settings.thumbnail_cache_mb * 1024 * 1024),
+        )
+        app.state.thumbnails = thumbnails
+        transcoder.cover_file = thumbnails.embedded
         outputs = Outputs(
             sessionmaker,
             settings,
@@ -149,6 +162,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             identification.JOB_TYPE, lambda: identification.backlog(sessionmaker)
         )
         app.state.mirror_monitor = mirror_monitor
+        covers_fetcher = covers_jobs.Fetcher(
+            sessionmaker,
+            settings,
+            image_store,
+            tagger,
+            lookups,
+        )
+        app.state.covers_fetcher = covers_fetcher
+        app.state.job_handlers.get(covers_jobs.JOB_TYPE).bind(covers_fetcher)
+        tagger_monitor.on_available.append(lambda: covers_jobs.fetch_uncovered(sessionmaker))
         importer = library_import_jobs.Importer(sessionmaker, settings)
         for handler in library_import_jobs.HANDLERS:
             app.state.job_handlers.get(handler.type).bind(importer)
@@ -175,6 +198,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             async with sessionmaker() as session, session.begin():
                 await review_jobs.ensure_backfill(session, app.state.review_handlers)
                 await search_jobs.ensure_index(session)
+                await covers_jobs.ensure_backfill(session)
             await background.start()
             await runner.start()
             await scheduler.start()
@@ -224,6 +248,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(search_api.router, prefix=API_PREFIX)
     app.include_router(playback_api.router, prefix=API_PREFIX)
     app.include_router(outputs_api.router, prefix=API_PREFIX)
+    app.include_router(covers_api.router, prefix=API_PREFIX)
     app.include_router(sources_api.router, prefix=API_PREFIX)
     if settings.web_dir is not None:
         mount_web(app, settings.web_dir)  # last: its fallback must not shadow API routes
@@ -285,6 +310,7 @@ def _job_handlers(settings: Settings) -> HandlerRegistry:
     registry.register(metadata_refresh.MetadataRefreshHandler())
     registry.register(search_jobs.SearchReindexHandler())
     registry.register(source_orders.SourceDownloadHandler())
+    registry.register(covers_jobs.CoversFetchHandler())
     for handler in library_import_jobs.HANDLERS:
         registry.register(handler())
     if settings.dev_demo:

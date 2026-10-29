@@ -273,7 +273,13 @@ class _Target:
         self.single_attempt = turns is None
 
     async def send(
-        self, method: str, path: str, params: dict[str, Any], priority: Priority
+        self,
+        method: str,
+        path: str,
+        params: dict[str, Any],
+        priority: Priority,
+        *,
+        follow_redirects: bool = False,
     ) -> httpx.Response:
         overloaded = 0
         failures = 0
@@ -282,7 +288,9 @@ class _Target:
                 await self.turns.turn(priority)
             try:
                 if method == "GET":
-                    response = await self.http.get(path, params=params)
+                    response = await self.http.get(
+                        path, params=params, follow_redirects=follow_redirects
+                    )
                 else:
                     response = await self.http.post(path, data=params)
             except httpx.TransportError as error:
@@ -418,9 +426,28 @@ class CoverArtArchive:
         cached = await self._cache.get(self.service, path)
         if cached is not None:
             return cached
-        data = _json(await self._target.send("GET", path, {}, priority), self.service)
+        # The archive may answer with a redirect to the Internet Archive.
+        response = await self._target.send("GET", path, {}, priority, follow_redirects=True)
+        data = _json(response, self.service)
         await self._cache.put(self.service, path, data, Kind.ENTITY)
         return LookupResult(found=data is not None, data=data, cached=False)
+
+    async def image(
+        self, url: str, *, max_bytes: int, priority: Priority = Priority.BACKGROUND
+    ) -> bytes | None:
+        """An image the archive's answer names (it redirects to the Internet Archive); None if
+        it is gone or larger than ``max_bytes``. Only the archive's own URLs are fetched."""
+        host = httpx.URL(url).host
+        if host != "coverartarchive.org" and not host.endswith(".archive.org"):
+            raise LookupFailed(f"coverart: not an archive URL: {url}")
+        response = await self._target.send("GET", url, {}, priority, follow_redirects=True)
+        if response.status_code == 404:
+            return None
+        if response.status_code != 200:
+            raise LookupFailed(f"coverart: HTTP {response.status_code}")
+        if len(response.content) > max_bytes:
+            return None
+        return response.content
 
 
 class AcoustId:

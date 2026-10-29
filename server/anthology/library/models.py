@@ -187,6 +187,10 @@ class Release(Base):
     sort_album_artist: Mapped[str] = mapped_column(sort_text(SORT))
     mb_release_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, unique=True)
     label: Mapped[str | None] = mapped_column(String(NAME))
+    # The front cover (spec: covers, Front covers).
+    front_image_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("images.id", ondelete="SET NULL"), index=True
+    )
 
 
 class Recording(Base):
@@ -213,6 +217,10 @@ class Recording(Base):
     genres: Mapped[list[str]] = mapped_column(JSON, default=list)
     isrc: Mapped[str | None] = mapped_column(String(12), index=True)
     mb_recording_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, unique=True)
+    # The recording's own front cover (a single); None: the cover of its context.
+    front_image_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("images.id", ondelete="SET NULL"), index=True
+    )
     acoust_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, index=True)
     identification_status: Mapped[IdentificationStatus] = mapped_column(
         str_enum(IdentificationStatus, "identification_status"),

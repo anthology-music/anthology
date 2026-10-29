@@ -18,6 +18,11 @@ def didl(uri: str, metadata: TrackMetadata) -> str:
         if metadata.track_number
         else ""
     )
+    art = (
+        f"<upnp:albumArtURI>{escape(metadata.art_uri)}</upnp:albumArtURI>"
+        if metadata.art_uri
+        else ""
+    )
     return (
         '<DIDL-Lite xmlns="urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/" '
         'xmlns:dc="http://purl.org/dc/elements/1.1/" '
@@ -29,6 +34,7 @@ def didl(uri: str, metadata: TrackMetadata) -> str:
         f"<upnp:album>{escape(metadata.album)}</upnp:album>"
         f'<upnp:artist role="AlbumArtist">{escape(metadata.album_artist)}</upnp:artist>'
         f"{number}"
+        f"{art}"
         "<upnp:class>object.item.audioItem.musicTrack</upnp:class>"
         f"<res protocolInfo={quoteattr(f'http-get:*:{metadata.mime_type}:*')} "
         f'duration="{duration(metadata.duration_ms)}">{escape(uri)}</res>'
