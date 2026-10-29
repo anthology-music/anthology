@@ -44,6 +44,10 @@ API types come from `@anthology/api-types` (REST: `paths`/`components` from Open
 - Edit mode: checkbox per row, highlighted selection, sticky action bar with the **count** of selected items.
 - Touch targets ≥ 44 px; real `<button>`, `<a>`, `<input>`/`<label>` elements; text contrast ≥ 4.5:1.
 
+## Covers
+
+Show covers only with `features/covers/components/CoverImage.vue` (lazy `<img>` of the next thumbnail size up, placeholder with title and artist when there is none or it fails). Rows carry the cover's image ID (`cover`); URLs come from `useImageGrant().url(id, size)`, one signed grant per device that is renewed before it expires (no request per image). Upload helpers live in `features/covers/api.ts` (the file is the raw request body).
+
 ## Data loading
 
 - Every list is a subscription (`useSubscription`) shown with `VirtualList`: counts immediately, skeleton rows for unloaded ranges, only the visible window (+ buffer) requested, rows far outside the window dropped.

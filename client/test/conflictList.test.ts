@@ -85,6 +85,22 @@ async function serve(socket: FakeSocket, rows: Record<string, unknown>[]) {
 }
 
 describe('conflict list', () => {
+  it('shows both images of a cover conflict', async () => {
+    const { wrapper, socket } = await conflictsPage();
+    const cover = {
+      ...conflict('c', 'cover'),
+      subject_type: 'release',
+      summary: { subject: 'Nordlicht - Polarnacht', current: 'manual-image', proposed: 'archive' },
+    };
+    await serve(socket, [cover]);
+
+    const row = wrapper.find('[data-testid="conflict-c"]');
+    expect(row.text()).toContain('Nordlicht - Polarnacht · Cover');
+    expect(row.find('[data-testid="conflict-current-c"]').exists()).toBe(true);
+    expect(row.find('[data-testid="conflict-proposed-c"]').exists()).toBe(true);
+    expect(row.text()).not.toContain('manual-image');
+  });
+
   it('shows groups and conflicts and decides one entry', async () => {
     const { wrapper, socket, bodies, groupQueries } = await conflictsPage();
     await serve(socket, [conflict('a'), conflict('b', 'genres')]);

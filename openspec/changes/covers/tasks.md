@@ -18,9 +18,9 @@
 
 ## 3. Client (pull request 2)
 
-- [ ] 3.1 Lazy thumbnails in album, artist and track lists, on the album page and in the player bar, with the grant renewed before expiry, and the placeholder; verify with component tests
-- [ ] 3.2 Gallery on demand, cover upload and removal and gallery editing for editors, and both images in cover conflicts of the conflict list; verify with component tests
-- [ ] 3.3 End-to-end test: upload a cover, see it in the album list and the player bar, open the gallery; verify it passes in CI
+- [x] 3.1 Lazy thumbnails in album, artist and track lists, on the album page and in the player bar, with the grant renewed before expiry, and the placeholder; verify with component tests
+- [x] 3.2 Gallery on demand, cover upload and removal and gallery editing for editors, and both images in cover conflicts of the conflict list; verify with component tests
+- [x] 3.3 End-to-end test: upload a cover, see it in the album list and the player bar, open the gallery; verify it passes in CI
 
 ## Workflow follow-up
 

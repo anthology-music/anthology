@@ -475,3 +475,42 @@ test('handing an album to a Raumfeld zone, pausing it, reloading and taking it b
   await expect(page.getByTestId('player-toggle')).toHaveAttribute('aria-label', 'Abspielen');
   await expect.poll(async () => (await zone()).state, { timeout: 15_000 }).toBe('stopped');
 });
+
+// A generated 1×1 pixel PNG (no copyrighted artwork).
+const PIXEL = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+  'base64',
+);
+
+test('uploading a cover, seeing it in the list and the player, using the gallery', async ({
+  page,
+}) => {
+  await signIn(page);
+  await page.goto('/local/albums');
+  const kassette = page.locator('[data-testid^="release-"]').filter({ hasText: 'Kassette 1985' });
+  const releaseId = (await kassette.first().getAttribute('data-testid'))!.replace('release-', '');
+  await kassette.first().click();
+  await expect(page.getByTestId('release-title')).toHaveText('Kassette 1985');
+
+  await page
+    .getByTestId('cover-upload')
+    .setInputFiles({ name: 'cover.png', mimeType: 'image/png', buffer: PIXEL });
+  const cover = page.getByTestId('album-cover').locator('img');
+  await expect(cover).toHaveAttribute('src', /\/api\/v1\/media\/images\/[0-9a-f-]+\/256\?/);
+  await expect.poll(() => cover.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(1);
+
+  await page.getByTestId('play-release').click();
+  await expect(page.getByTestId('player-cover').locator('img')).toBeVisible();
+  await page.getByTestId('player-toggle').click();
+
+  await page.getByTestId('open-gallery').click();
+  await expect(page.getByTestId('gallery-empty')).toBeVisible();
+  await page
+    .getByTestId('gallery-file')
+    .setInputFiles({ name: 'booklet.png', mimeType: 'image/png', buffer: PIXEL });
+  await expect(page.getByTestId('gallery-image-0')).toContainText('Booklet');
+  await page.keyboard.press('Escape');
+
+  await page.goto('/local/albums');
+  await expect(page.getByTestId(`album-cover-${releaseId}`).locator('img')).toBeVisible();
+});

@@ -1,7 +1,13 @@
 <template>
   <div v-if="player.current" class="player-bar" role="region" :aria-label="t('playback.title')">
     <div class="player-bar__track" data-testid="player-track">
-      <div class="player-bar__cover" aria-hidden="true"><q-icon name="music_note" /></div>
+      <CoverImage
+        :image-id="player.current.cover"
+        :title="player.current.album"
+        :artist="player.current.album_artist"
+        :px="48"
+        testid="player-cover"
+      />
       <div class="player-bar__text">
         <span class="player-bar__title" data-testid="player-title">{{ player.current.title }}</span>
         <span class="text-muted player-bar__sub">
@@ -121,6 +127,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import CoverImage from '@/features/covers/components/CoverImage.vue';
 import QualityBadge from '@/features/library/components/QualityBadge.vue';
 import { formatDuration } from '@/features/library/format';
 
@@ -159,17 +166,6 @@ onBeforeUnmount(() => player.stop());
   align-items: center;
   gap: var(--space-3);
   min-width: 0;
-}
-
-.player-bar__cover {
-  display: flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  border-radius: var(--radius-sm);
-  background: var(--color-hover);
 }
 
 .player-bar__text {
