@@ -88,6 +88,13 @@ _Last updated: 2026-10-28_
   marks and history. Decided with the maintainer: iTunes ratings (3.3) and favorite works (3.4)
   wait for the iTunes import and `works`; undo of playlist edits; two pull requests. Archive only
   once 3.3 and 3.4 are done (or moved to those changes).
+- **In progress:** `first-release` (branch `feat/first-release`): pull request 1 (third-party
+  licenses generated and checked in CI, license texts in the image, Settings › About Anthology,
+  version check, release job with Compose and Quadlet packages, changelog and releasing docs);
+  pull request 2 (VitePress user manual on GitHub Pages, English and German, walkthrough
+  screenshots, published per release) follows. Decided with the maintainer: 0.1.0 is a
+  pre-release until the license review; the license check blocks; the manual has four parts
+  (General, Installation and administration, User guide, Source service API).
 - **Next:** see `docs/roadmap.md` (milestone 3).
   `effective-quality-duplicate-checks` covers CD import and sources only; it waits for them.
 

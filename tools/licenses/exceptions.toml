@@ -1,0 +1,3 @@
+# Dependencies of the server or the client whose declared license the check would refuse
+# (copyleft or unknown), after a manual review. Each entry: package, license, why it is
+# acceptable, and when it was reviewed. Copyleft code belongs in services/ (ADR 0004).

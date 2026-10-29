@@ -759,6 +759,20 @@ const en: typeof de = {
       failed: 'That did not work.',
     },
   },
+  about: {
+    title: 'About Anthology',
+    prerelease:
+      'Pre-release: not meant for production use yet. The review of the license separation is pending.',
+    server: 'Server',
+    client: 'App',
+    mismatch: 'differs from the server – reload the page',
+    license: 'License',
+    source: 'Source code',
+    thirdParty: 'Licenses of the components used',
+    close: 'Close',
+    loading: 'Loading …',
+    unavailable: 'The license list is not available on this server.',
+  },
   covers: {
     alt: 'Cover of {title} ({artist})',
     upload: 'Upload cover',

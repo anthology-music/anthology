@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from anthology import __version__
-from anthology.api import health
+from anthology.api import about, health
 from anthology.api.web import mount_web
 from anthology.core.blobs import FileBlobStore
 from anthology.core.config import Settings, get_settings
@@ -238,6 +238,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.job_handlers = _job_handlers(settings)
     app.state.schedules = _schedules()
     app.include_router(health.router, prefix=API_PREFIX)
+    app.include_router(about.router, prefix=API_PREFIX)
     app.include_router(users_api.router, prefix=API_PREFIX)
     app.include_router(sync_api.router, prefix=API_PREFIX)
     app.include_router(jobs_api.router, prefix=API_PREFIX)

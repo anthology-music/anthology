@@ -39,6 +39,13 @@ class Settings(BaseSettings):
     # IANA time zone of the installation; schedules (e.g. the maintenance) run in it.
     time_zone: str = "UTC"
 
+    # Set by the image build (change first-release): the release, or "edge" for builds of main,
+    # and the commit.
+    build_version: str = ""
+    build_commit: str = ""
+    # Where LICENSE and THIRD_PARTY_LICENSES.md are (default: the image's /app/licenses, else
+    # the repository root).
+    licenses_dir: Path | None = None
     # The port the server listens on (the container publishes 8400).
     port: int = 8400
     # Playback on network outputs (spec: playback, Output discovery and addresses). Discovery

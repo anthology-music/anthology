@@ -15,6 +15,9 @@ COPY packages ./packages
 COPY client ./client
 COPY docs/design/tokens.css ./docs/design/tokens.css
 RUN pnpm install --frozen-lockfile && pnpm build
+# License files of the client's production dependencies (THIRD_PARTY_LICENSES.md, section 8)
+COPY tools/licenses/collect-client.mjs ./tools/licenses/collect-client.mjs
+RUN node tools/licenses/collect-client.mjs /licenses/client
 
 
 # FFmpeg with Chromaprint: an own minimal LGPL build (ADR 0020). Chromaprint uses its bundled
@@ -109,6 +112,11 @@ RUN uv sync --frozen --no-dev --no-install-project
 COPY server/anthology ./anthology
 RUN uv sync --frozen --no-dev --no-editable
 
+# License files of the server's production dependencies (THIRD_PARTY_LICENSES.md, section 8)
+COPY tools/licenses/generate.py /repo/tools/licenses/generate.py
+COPY server/uv.lock /repo/server/uv.lock
+RUN /app/.venv/bin/python /repo/tools/licenses/generate.py --server-texts /licenses/server
+
 
 FROM docker.io/library/python:3.12-slim
 
@@ -130,12 +138,23 @@ COPY server/alembic.ini ./alembic.ini
 COPY server/migrations ./migrations
 COPY server/entrypoint.sh ./entrypoint.sh
 COPY --from=web /src/client/dist/spa ./web
+# Licenses: Anthology's, the list of third-party components and their license files
+COPY LICENSE THIRD_PARTY_LICENSES.md ./licenses/
+COPY --from=builder /licenses/server ./licenses/server
+COPY --from=web /licenses/client ./licenses/client
 
 ENV PATH=/app/.venv/bin:$PATH \
     PYTHONUNBUFFERED=1 \
     ANTHOLOGY_DATA_DIR=/data \
     ANTHOLOGY_MIGRATIONS_DIR=/app/migrations \
     ANTHOLOGY_WEB_DIR=/app/web
+
+# Build information (change first-release): last, so that it does not invalidate the layers above.
+ARG ANTHOLOGY_BUILD_VERSION=""
+ARG ANTHOLOGY_BUILD_COMMIT=""
+ENV ANTHOLOGY_BUILD_VERSION=$ANTHOLOGY_BUILD_VERSION \
+    ANTHOLOGY_BUILD_COMMIT=$ANTHOLOGY_BUILD_COMMIT \
+    ANTHOLOGY_LICENSES_DIR=/app/licenses
 
 USER anthology
 EXPOSE 8400

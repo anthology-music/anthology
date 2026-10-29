@@ -46,6 +46,10 @@ jobs:
           context: .
           file: ${{ inputs.containerfile }}
           platforms: linux/${{ inputs.platform }}
+          # Shown in Settings › About Anthology (change first-release).
+          build-args: |
+            ANTHOLOGY_BUILD_VERSION=${{ github.ref_type == 'tag' && github.ref_name || 'edge' }}
+            ANTHOLOGY_BUILD_COMMIT=${{ github.sha }}
           cache-from: type=gha,scope=${{ inputs.image }}-${{ inputs.platform }}
           cache-to: type=gha,mode=max,scope=${{ inputs.image }}-${{ inputs.platform }}
           outputs: >-

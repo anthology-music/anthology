@@ -4,8 +4,21 @@ Anthology runs as one pod: `anthology-server` (MIT, API and web client, the only
 
 | Image | Tags |
 |---|---|
-| `ghcr.io/anthology-music/anthology-server` | `latest` and `X.Y.Z` / `X.Y` for releases, `edge` and `sha-<commit>` for the current `main` |
+| `ghcr.io/anthology-music/anthology-server` | `X.Y.Z` and `X.Y` for releases, `latest` for the newest release, `edge` and `sha-<commit>` for the current `main` |
 | `ghcr.io/anthology-music/anthology-tagger` | same |
+
+The images are OCI images and work with Docker and Podman alike. While Anthology is below 1.0, every release is a pre-release and `latest` follows it; to stay on one version, use its tag (`:0.1.0`) instead of `latest`.
+
+## Installation packages
+
+Every [release](https://github.com/anthology-music/anthology/releases) offers two packages with the images pinned to that release:
+
+| Package | For |
+|---|---|
+| `anthology-X.Y.Z-compose.tar.gz` | Docker Compose or Podman Compose (`compose.yaml`) |
+| `anthology-X.Y.Z-quadlet.tar.gz` | Podman Quadlet (rootless systemd units) |
+
+Unpack one and follow its `README.md`; it contains the same files as `deploy/` below, with fixed image tags. The user manual (installation, administration, usage) is published at <https://anthology-music.github.io/anthology/>.
 
 After the start, open `http://<host>:8400` and create the first account – it becomes the administrator.
 
@@ -104,4 +117,9 @@ The server speaks plain HTTP on port 8400. For access beyond the local network, 
 
 ## Updates
 
-Quadlet: `podman auto-update` works if you add `AutoUpdate=registry` to the container units; otherwise `podman pull` the images and `systemctl --user restart anthology-pod`. Compose: `docker compose pull && docker compose up -d`. Database migrations run automatically when the server starts.
+Read the [changelog](../CHANGELOG.md) of the new version first, and back up the database and the library volume.
+
+- **Pinned version** (an installation package, or `:X.Y.Z` in the units): change the tags to the new version, or unpack the new release's package over the old files, then restart (`systemctl --user daemon-reload && systemctl --user restart anthology-pod`, or `docker compose up -d`).
+- **`latest`:** Quadlet: `podman auto-update` works if you add `AutoUpdate=registry` to the container units; otherwise `podman pull` the images and `systemctl --user restart anthology-pod`. Compose: `docker compose pull && docker compose up -d`.
+
+Database migrations run automatically when the server starts. Settings › About Anthology shows the running version.
