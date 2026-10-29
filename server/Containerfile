@@ -33,7 +33,10 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
-RUN curl -fsSLo chromaprint.tar.gz \
+# Downloads are retried: a source host that is briefly unreachable must not fail the build
+# (the checksums still decide what is used).
+ENV CURL_RETRY="--retry 5 --retry-all-errors --retry-delay 10 --connect-timeout 30"
+RUN curl -fsSL $CURL_RETRY -o chromaprint.tar.gz \
         "https://github.com/acoustid/chromaprint/releases/download/v${CHROMAPRINT_VERSION}/chromaprint-${CHROMAPRINT_VERSION}.tar.gz" \
     && echo "${CHROMAPRINT_SHA256}  chromaprint.tar.gz" | sha256sum -c - \
     && tar xzf chromaprint.tar.gz \
@@ -43,7 +46,7 @@ RUN curl -fsSLo chromaprint.tar.gz \
     && cmake --build chromaprint-build -j"$(nproc)" \
     && cmake --install chromaprint-build
 
-RUN curl -fsSLo ffmpeg.tar.xz "https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.xz" \
+RUN curl -fsSL $CURL_RETRY -o ffmpeg.tar.xz "https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.xz" \
     && echo "${FFMPEG_SHA256}  ffmpeg.tar.xz" | sha256sum -c - \
     && tar xJf ffmpeg.tar.xz \
     && cd "ffmpeg-${FFMPEG_VERSION}" \
