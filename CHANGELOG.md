@@ -6,7 +6,7 @@ All notable changes to Anthology are listed here. The format follows
 
 ## [Unreleased]
 
-## [0.1.0] - 2026-10-30
+## [0.1.0] - 2026-10-29
 
 The first pre-release: the foundation, the core library and sources and delivery without the
 desktop and mobile apps (milestones 1 to 3 of `docs/roadmap.md`). It is meant for trying
