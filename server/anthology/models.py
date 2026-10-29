@@ -9,6 +9,7 @@ from anthology.jobs import models as jobs
 from anthology.library import models as library
 from anthology.library_import import models as library_import
 from anthology.metadata_lookup import models as metadata_lookup
+from anthology.personal_data import models as personal_data
 from anthology.playback import models as playback
 from anthology.quality_analysis import models as quality_analysis
 from anthology.review import models as review
@@ -27,6 +28,7 @@ __all__ = [
     "library",
     "library_import",
     "metadata_lookup",
+    "personal_data",
     "playback",
     "quality_analysis",
     "review",

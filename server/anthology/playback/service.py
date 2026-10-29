@@ -9,7 +9,7 @@ the entries of one generation, so the rewrite needs one change entry instead of 
 """
 
 import uuid
-from collections.abc import Iterable
+from collections.abc import Awaitable, Callable, Iterable
 from dataclasses import dataclass
 from typing import Any, Literal
 
@@ -147,9 +147,20 @@ def _rewritten(queue: PlayQueue) -> None:
 
 # --- tracks of a selection in list order --------------------------------------------------
 
+# Lists of other domains (e.g. playlists): the tracks of a rule (one column ``track_id``) and
+# the list's order.
+ListQuery = Callable[[dict[str, Any]], tuple[Select, list[ColumnElement]]]
+_lists: dict[str, ListQuery] = {}
+
+
+def register_list(name: str, query: ListQuery) -> None:
+    _lists[name] = query
+
 
 def _ordered(rule: dict[str, Any], postgresql: bool) -> tuple[Select, list[ColumnElement]]:
     """The tracks of a list rule (one column ``track_id``) and the list's order."""
+    if rule["list"] in _lists:
+        return _lists[rule["list"]](rule)
     match rule["list"]:
         case "release_tracks":
             query = select(Track.id.label("track_id")).where(
@@ -192,6 +203,16 @@ def _ranked(rule: dict[str, Any], postgresql: bool):
     return query.with_only_columns(
         track_id.label("track_id"), func.row_number().over(order_by=order).label("rn")
     ).subquery()
+
+
+async def rule_tracks(session: AsyncSession, rule: dict[str, Any], limit: int) -> list[uuid.UUID]:
+    """The first ``limit`` tracks of a list rule in the list's order."""
+    ranked = _ranked(rule, search.postgresql(session))
+    return list(
+        await session.scalars(
+            select(ranked.c.track_id).where(ranked.c.rn <= limit).order_by(ranked.c.rn)
+        )
+    )
 
 
 async def _existing(session: AsyncSession, ids: list[uuid.UUID]) -> list[uuid.UUID]:
@@ -411,6 +432,28 @@ async def _entry(session: AsyncSession, queue: PlayQueue, entry_id: int) -> Play
     return entry
 
 
+# Called with the queue whenever its current entry or position changed (e.g. play counts in
+# personal-data), in the writing transaction.
+PositionListener = Callable[[AsyncSession, PlayQueue], Awaitable[None]]
+_position_listeners: list[PositionListener] = []
+
+
+def on_position(listener: PositionListener) -> None:
+    if listener not in _position_listeners:
+        _position_listeners.append(listener)
+
+
+async def _positioned(session: AsyncSession, queue: PlayQueue) -> None:
+    for listener in _position_listeners:
+        await listener(session, queue)
+
+
+def _current(queue: PlayQueue, entry_id: int | None) -> None:
+    if entry_id != queue.current_entry_id:
+        queue.counted_entry_id = None
+    queue.current_entry_id = entry_id
+
+
 async def set_state(
     session: AsyncSession,
     queue: PlayQueue,
@@ -421,9 +464,10 @@ async def set_state(
 ) -> None:
     if current_entry_id is not None:
         await _entry(session, queue, current_entry_id)
-    queue.current_entry_id = current_entry_id
+    _current(queue, current_entry_id)
     queue.position_ms = max(position_ms, 0)
     queue.playing = playing and current_entry_id is not None
+    await _positioned(session, queue)
     await _queue_changed(session, queue)
 
 
@@ -461,16 +505,22 @@ async def neighbour(session: AsyncSession, queue: PlayQueue, by: int) -> int | N
     return await (_successor if by > 0 else _predecessor)(session, entry)
 
 
-async def skip(session: AsyncSession, queue: PlayQueue, by: int) -> int | None:
+async def skip(
+    session: AsyncSession, queue: PlayQueue, by: int, *, position_ms: int | None = None
+) -> int | None:
     """Make the next (1) or previous (-1) entry current from its start; at the end of the
-    queue playback stops on the last entry. Returns the new current entry."""
+    queue playback stops on the last entry. ``position_ms`` is where the current entry was
+    left (it may complete a play). Returns the new current entry."""
+    if position_ms is not None and queue.current_entry_id is not None:
+        queue.position_ms = max(position_ms, 0)
+        await _positioned(session, queue)
     target = await neighbour(session, queue, by)
     if target is None:
         if by > 0:
             queue.playing = False
         await _queue_changed(session, queue)
         return queue.current_entry_id
-    queue.current_entry_id = target
+    _current(queue, target)
     queue.position_ms = 0
     await _queue_changed(session, queue)
     return target

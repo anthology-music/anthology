@@ -69,6 +69,7 @@ class Handed:
     uri: str
     expires_at: datetime
     at: datetime
+    duration_ms: int = 0
 
 
 @dataclass(frozen=True)
@@ -206,7 +207,9 @@ class ZonePlayer:
                 metadata = replace(metadata, art_uri=art)
             await self._adapter.play(ref, uri, metadata, start_ms)
             now = self._clock()
-            self.handed = Handed(entry_id, uri, now + timedelta(seconds=ttl), now)
+            self.handed = Handed(
+                entry_id, uri, now + timedelta(seconds=ttl), now, found.duration_ms
+            )
             self._seen_playing = False
             if found.next_audio is not None:
                 await self._prepare(*found.next_audio)
@@ -249,7 +252,8 @@ class ZonePlayer:
             seconds=STOPPED_GRACE_SECONDS
         )
         if state.transport == Transport.STOPPED and settled:
-            entry_id = await self._write(skip=True)
+            # The track played to its end (it may complete a play).
+            entry_id = await self._write(skip=True, position_ms=handed.duration_ms)
             if entry_id is not None and self.applied is not None and self.applied.playing:
                 await self._hand_over(ref, entry_id, 0, formats)
 
@@ -260,7 +264,7 @@ class ZonePlayer:
         async with self._sessionmaker() as session, session.begin():
             queue = await service.zone_queue(session, self.zone_id)
             if skip:
-                await service.skip(session, queue, 1)
+                await service.skip(session, queue, 1, position_ms=position_ms)
             else:
                 await service.set_state(
                     session,

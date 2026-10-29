@@ -149,6 +149,9 @@ class PlayQueue(Base):
     playing: Mapped[bool] = mapped_column(Boolean, default=False)
     # The last start was cut to MAX_ENTRIES entries.
     shortened: Mapped[bool] = mapped_column(Boolean, default=False)
+    # The current entry whose play was counted (spec: personal-data, Play history); reset
+    # when another entry becomes current.
+    counted_entry_id: Mapped[int | None] = mapped_column(BigInteger)
     updated_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
 
 

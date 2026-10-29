@@ -11,6 +11,13 @@ from anthology.sync.messages import StreamRow
 from anthology.tagging.edits import MAX_IDS, EditRule
 
 
+class PlaylistRule(BaseModel):
+    """The tracks of a playlist in its order (spec: personal-data)."""
+
+    list: Literal["playlist"]
+    playlist_id: str
+
+
 class StartIn(BaseModel):
     """Tracks to play (``ids`` in their order, or the tracks of a list ``rule`` in the list's
     order): ``replace`` the queue and start at ``start``, insert them after the current entry
@@ -18,7 +25,7 @@ class StartIn(BaseModel):
 
     mode: Literal["replace", "next", "append"] = "replace"
     ids: list[str] | None = Field(default=None, min_length=1, max_length=MAX_IDS)
-    rule: EditRule | None = None
+    rule: EditRule | PlaylistRule | None = None
     start: str | None = None
 
     @model_validator(mode="after")
@@ -44,6 +51,8 @@ class SkipIn(BaseModel):
     by: Literal[1, -1]
     # Whether to keep playing (false: the client only moves while paused).
     playing: bool = True
+    # Where the current entry was left (it may complete a play, spec: personal-data).
+    position_ms: int | None = Field(default=None, ge=0)
 
 
 class SkipOut(BaseModel):

@@ -113,6 +113,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/favorites/{target_type}/{target_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Add Favorite
+         * @description Mark a recording, album or artist as a favorite of this user (private).
+         */
+        put: operations["add_favorite_api_v1_favorites__target_type___target_id__put"];
+        post?: never;
+        /** Remove Favorite */
+        delete: operations["remove_favorite_api_v1_favorites__target_type___target_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/health": {
         parameters: {
             query?: never;
@@ -883,6 +904,191 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/playlist-folders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Folder */
+        post: operations["create_folder_api_v1_playlist_folders_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/playlist-folders/{folder_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Folder */
+        delete: operations["delete_folder_api_v1_playlist_folders__folder_id__delete"];
+        options?: never;
+        head?: never;
+        /** Rename Folder */
+        patch: operations["rename_folder_api_v1_playlist_folders__folder_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/playlists": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Playlist */
+        post: operations["create_playlist_api_v1_playlists_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/playlists/edits/{edit_id}/undo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Undo Edit
+         * @description Undo an edit (its author or the playlist's owner; spec: Undo playlist edits).
+         */
+        post: operations["undo_edit_api_v1_playlists_edits__edit_id__undo_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/playlists/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Playlist
+         * @description A playlist file (M3U, M3U8, PLS, XSPF) as the request body, as a new private playlist;
+         *     the answer lists what the library does not have.
+         */
+        post: operations["import_playlist_api_v1_playlists_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/playlists/{playlist_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Playlist */
+        delete: operations["delete_playlist_api_v1_playlists__playlist_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Playlist
+         * @description Rename, share or move to a folder (the owner only).
+         */
+        patch: operations["update_playlist_api_v1_playlists__playlist_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/playlists/{playlist_id}/entries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Entries
+         * @description Add tracks (every user may add to a shared playlist); the answer names the edit.
+         */
+        post: operations["add_entries_api_v1_playlists__playlist_id__entries_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/playlists/{playlist_id}/entries/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move Entries */
+        post: operations["move_entries_api_v1_playlists__playlist_id__entries_move_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/playlists/{playlist_id}/entries/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Remove Entries */
+        post: operations["remove_entries_api_v1_playlists__playlist_id__entries_remove_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/playlists/{playlist_id}/export.m3u8": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export Playlist */
+        get: operations["export_playlist_api_v1_playlists__playlist_id__export_m3u8_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/quality-analysis": {
         parameters: {
             query?: never;
@@ -1329,6 +1535,15 @@ export interface components {
          * @enum {string}
          */
         AccountOrigin: "local" | "oidc";
+        /** AddedOut */
+        AddedOut: {
+            /** Edit Id */
+            edit_id: string | null;
+            /** Entries */
+            entries: number;
+            /** Shortened */
+            shortened: boolean;
+        };
         /** AdoptionStart */
         AdoptionStart: {
             /** Folder */
@@ -1530,20 +1745,6 @@ export interface components {
             rule?: components["schemas"]["EditRule"] | null;
         };
         /**
-         * EditOut
-         * @description The count (preview), the change set of a direct edit, or the job of a bulk edit.
-         */
-        EditOut: {
-            /** Change Set Id */
-            change_set_id?: string | null;
-            /** Changed */
-            changed?: number | null;
-            /** Items */
-            items: number;
-            /** Job Id */
-            job_id?: string | null;
-        };
-        /**
          * EditRule
          * @description The tracks of a library list: one release, one artist's releases, all tracks, or the
          *     tracks of a search (``q``, optionally within ``release_id`` or ``artist_id``).
@@ -1561,6 +1762,33 @@ export interface components {
             /** Release Id */
             release_id?: string | null;
         };
+        /**
+         * EntriesIn
+         * @description Tracks in order (``ids``) or the tracks of a list (``rule``), inserted after the entry
+         *     ``after``, at the start, or (default) at the end.
+         */
+        EntriesIn: {
+            /** After */
+            after?: string | null;
+            /**
+             * At Start
+             * @default false
+             */
+            at_start: boolean;
+            /** Ids */
+            ids?: string[] | null;
+            rule?: components["schemas"]["EditRule"] | null;
+        };
+        /** EntryIdsIn */
+        EntryIdsIn: {
+            /** Ids */
+            ids: string[];
+        };
+        /**
+         * FavoriteTarget
+         * @enum {string}
+         */
+        FavoriteTarget: "recording" | "release" | "artist";
         /**
          * FetchIn
          * @description One release, or every release (None).
@@ -1587,6 +1815,11 @@ export interface components {
             /** Value */
             value?: unknown;
         };
+        /** FolderIn */
+        FolderIn: {
+            /** Name */
+            name: string;
+        };
         /**
          * FolderListing
          * @description One level of folders below the import roots, with the modes the folder allows.
@@ -1601,6 +1834,11 @@ export interface components {
             parent: string | null;
             /** Path */
             path: string | null;
+        };
+        /** FolderOut */
+        FolderOut: {
+            /** Id */
+            id: string;
         };
         /** GalleryImage */
         GalleryImage: {
@@ -1684,6 +1922,15 @@ export interface components {
          * @enum {string}
          */
         ImportMode: "reference" | "move" | "reflink" | "hardlink" | "copy";
+        /** ImportOut */
+        ImportOut: {
+            /** Entries */
+            entries: number;
+            /** Id */
+            id: string;
+            /** Unmatched */
+            unmatched: string[];
+        };
         /** ImportStart */
         ImportStart: {
             /**
@@ -1884,14 +2131,6 @@ export interface components {
             /** Url */
             url: string | null;
         };
-        /**
-         * MoveIn
-         * @description The entry to move behind; None moves to the front.
-         */
-        MoveIn: {
-            /** After */
-            after?: string | null;
-        };
         /** Offered */
         Offered: {
             /** Bit Depth */
@@ -1952,6 +2191,44 @@ export interface components {
         PasswordReset: {
             /** New Password */
             new_password: string;
+        };
+        /** PlaylistIn */
+        PlaylistIn: {
+            /** Folder Id */
+            folder_id?: string | null;
+            /** Name */
+            name: string;
+            /** @default private */
+            visibility: components["schemas"]["Visibility"];
+        };
+        /** PlaylistOut */
+        PlaylistOut: {
+            /** Id */
+            id: string;
+        };
+        /**
+         * PlaylistPatch
+         * @description The owner's changes; omitted fields stay (``folder_id`` null: no folder).
+         */
+        PlaylistPatch: {
+            /** Folder Id */
+            folder_id?: string | null;
+            /** Name */
+            name?: string | null;
+            visibility?: components["schemas"]["Visibility"] | null;
+        };
+        /**
+         * PlaylistRule
+         * @description The tracks of a playlist in its order (spec: personal-data).
+         */
+        PlaylistRule: {
+            /**
+             * List
+             * @constant
+             */
+            list: "playlist";
+            /** Playlist Id */
+            playlist_id: string;
         };
         /**
          * PriorityClass
@@ -2218,6 +2495,8 @@ export interface components {
              * @default true
              */
             playing: boolean;
+            /** Position Ms */
+            position_ms?: number | null;
         };
         /** SkipOut */
         SkipOut: {
@@ -2245,7 +2524,8 @@ export interface components {
              * @enum {string}
              */
             mode: "replace" | "next" | "append";
-            rule?: components["schemas"]["EditRule"] | null;
+            /** Rule */
+            rule?: components["schemas"]["EditRule"] | components["schemas"]["PlaylistRule"] | null;
             /** Start */
             start?: string | null;
         };
@@ -2403,6 +2683,11 @@ export interface components {
             /** Items */
             items: number;
         };
+        /**
+         * Visibility
+         * @enum {string}
+         */
+        Visibility: "private" | "shared";
         /** VolumeIn */
         VolumeIn: {
             /** Muted */
@@ -2414,6 +2699,29 @@ export interface components {
         anthology__covers__api__OrderIn: {
             /** Ids */
             ids: string[];
+        };
+        /** EditOut */
+        anthology__personal_data__schemas__EditOut: {
+            /** Edit Id */
+            edit_id: string;
+        };
+        /**
+         * MoveIn
+         * @description Entries (in this order) to move behind ``after``; null moves them to the start.
+         */
+        anthology__personal_data__schemas__MoveIn: {
+            /** After */
+            after?: string | null;
+            /** Ids */
+            ids: string[];
+        };
+        /**
+         * MoveIn
+         * @description The entry to move behind; None moves to the front.
+         */
+        anthology__playback__schemas__MoveIn: {
+            /** After */
+            after?: string | null;
         };
         /**
          * OrderIn
@@ -2431,6 +2739,20 @@ export interface components {
             service: string;
             /** Tracks */
             tracks: string[];
+        };
+        /**
+         * EditOut
+         * @description The count (preview), the change set of a direct edit, or the job of a bulk edit.
+         */
+        anthology__tagging__edits__EditOut: {
+            /** Change Set Id */
+            change_set_id?: string | null;
+            /** Changed */
+            changed?: number | null;
+            /** Items */
+            items: number;
+            /** Job Id */
+            job_id?: string | null;
         };
     };
     responses: never;
@@ -2599,6 +2921,66 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["JobOut"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_favorite_api_v1_favorites__target_type___target_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                target_type: components["schemas"]["FavoriteTarget"];
+                target_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_favorite_api_v1_favorites__target_type___target_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                target_type: components["schemas"]["FavoriteTarget"];
+                target_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -3654,7 +4036,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["MoveIn"];
+                "application/json": components["schemas"]["anthology__playback__schemas__MoveIn"];
             };
         };
         responses: {
@@ -3951,6 +4333,392 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_folder_api_v1_playlist_folders_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FolderIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FolderOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_folder_api_v1_playlist_folders__folder_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                folder_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rename_folder_api_v1_playlist_folders__folder_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                folder_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FolderIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_playlist_api_v1_playlists_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlaylistIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaylistOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    undo_edit_api_v1_playlists_edits__edit_id__undo_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                edit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_playlist_api_v1_playlists_import_post: {
+        parameters: {
+            query: {
+                name: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_playlist_api_v1_playlists__playlist_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                playlist_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_playlist_api_v1_playlists__playlist_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                playlist_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlaylistPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_entries_api_v1_playlists__playlist_id__entries_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                playlist_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EntriesIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AddedOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    move_entries_api_v1_playlists__playlist_id__entries_move_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                playlist_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["anthology__personal_data__schemas__MoveIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["anthology__personal_data__schemas__EditOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_entries_api_v1_playlists__playlist_id__entries_remove_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                playlist_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EntryIdsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["anthology__personal_data__schemas__EditOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_playlist_api_v1_playlists__playlist_id__export_m3u8_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                playlist_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
             };
             /** @description Validation Error */
             422: {
@@ -4698,7 +5466,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["EditOut"];
+                    "application/json": components["schemas"]["anthology__tagging__edits__EditOut"];
                 };
             };
             /** @description Validation Error */
