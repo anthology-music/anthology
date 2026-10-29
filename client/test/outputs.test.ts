@@ -37,6 +37,10 @@ class FakeAudio extends EventTarget implements AudioLike {
   canPlayType(): string {
     return 'probably';
   }
+
+  emit(type: string): void {
+    this.dispatchEvent(new Event(type));
+  }
 }
 
 const track = {
@@ -260,6 +264,10 @@ describe('outputs', () => {
 
     expect(audio.src).toBe('');
     expect(sent(calls, 'POST', '/api/v1/playback/urls')).toEqual([]);
+    // A late event of the silenced local audio does not change the zone's state.
+    audio.emit('pause');
+    audio.emit('timeupdate');
+    await flushPromises();
     expect(wrapper.find('[data-testid="player-remote"]').text()).toContain('Spielt auf Wohnzimmer');
     expect(wrapper.find('[data-testid="player-position"]').text()).toBe('1:20');
     expect(wrapper.find('[data-testid="player-toggle"]').attributes('aria-label')).toBe('Pause');
