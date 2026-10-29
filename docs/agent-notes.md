@@ -82,6 +82,11 @@ _Last updated: 2026-10-28_
   a backfill job at start, two pull requests; embedded covers rank lowest among the automatic
   sources, only people's choices are protected; without the tagger the job skips embedded
   images and the uncovered releases are fetched again when it is back.
+- **In progress:** `personal-data` (branch `feat/personal-data`): pull request 1 (server:
+  playlists with folders, fractional keys, undo, streams, files; favorites; plays counted from
+  queue positions, also on zones); pull request 2 (client, task 4.1) follows. Decided with the
+  maintainer: iTunes ratings (3.3) and favorite works (3.4) wait for the iTunes import and
+  `works`; undo of playlist edits; two pull requests. Archive only once 3.3 and 3.4 are done.
 - **Next:** see `docs/roadmap.md` (milestone 3).
   `effective-quality-duplicate-checks` covers CD import and sources only; it waits for them.
 

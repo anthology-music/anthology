@@ -19,6 +19,7 @@ from anthology.db import get_session
 from anthology.db.types import utcnow
 from anthology.library import service as library
 from anthology.library.models import AudioFile, AudioFormat, OriginalStatus, Track
+from anthology.personal_data import playlists
 from anthology.playback import service
 from anthology.playback.media import MEDIA_TYPES
 from anthology.playback.models import PlayQueueEntry
@@ -78,9 +79,15 @@ async def start(session: Session, current: CurrentSession, body: StartIn) -> Sta
     rule = body.rule.model_dump() if body.rule is not None else None
     start_track = _uuid(body.start) if body.start else None
     if rule is not None:
-        for name in ("release_id", "artist_id"):
+        for name in ("release_id", "artist_id", "playlist_id"):
             if rule.get(name):
                 _uuid(rule[name])
+        if rule["list"] == "playlist":
+            # Only a playlist the user may see (spec: personal-data, Private playlist).
+            try:
+                await playlists.get(session, _uuid(rule["playlist_id"]), current.user_id)
+            except playlists.NotFound as error:
+                raise HTTPException(status.HTTP_404_NOT_FOUND, detail="unknown_playlist") from error
     queue = await _queue(session, current)
     started = await service.start(
         session, queue, mode=body.mode, ids=ids, rule=rule, start_track=start_track
@@ -112,7 +119,7 @@ async def skip(session: Session, current: CurrentSession, body: SkipIn) -> SkipO
     """Next (``by`` = 1) or previous (-1) entry of the queue, from its start."""
     queue = await _queue(session, current)
     queue.playing = body.playing
-    entry_id = await service.skip(session, queue, body.by)
+    entry_id = await service.skip(session, queue, body.by, position_ms=body.position_ms)
     await session.commit()
     return SkipOut(current_entry_id=str(entry_id) if entry_id is not None else None)
 

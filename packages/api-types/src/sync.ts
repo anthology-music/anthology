@@ -35,6 +35,8 @@ export type ReviewOrigin = 'fuzzy_match' | 'musicbrainz' | 'import' | 'quality_a
 export type Confidence = 'high' | 'medium' | 'low';
 export type ReviewStatus = 'open' | 'accepted' | 'rejected' | 'deferred' | 'obsolete';
 export type ChangeSetKind = 'edit' | 'undo';
+export type Visibility = 'private' | 'shared';
+export type FavoriteTarget = 'recording' | 'release' | 'artist';
 /**
  * Why a configured service is unavailable (spec: Source status).
  */
@@ -74,6 +76,11 @@ export interface SyncProtocol {
     'playback.queue'?: PlayQueueEntryRow;
     'playback.state'?: PlayQueueStateRow;
     'playback.outputs'?: PlaybackOutputRow;
+    'personal.playlists'?: PlaylistRow;
+    'personal.playlist_folders'?: PlaylistFolderRow;
+    'personal.playlist.entries'?: PlaylistEntryRow;
+    'personal.favorites'?: FavoriteRow;
+    'personal.history'?: PlayRow;
     'sources.services'?: SourceServiceRow;
     'sources.orders'?: OrderRow;
     'sources.order.items'?: OrderItemRow;
@@ -472,6 +479,49 @@ export interface PlaybackOutputRow {
   volume?: number | null;
   muted?: boolean | null;
   formats?: string[] | null;
+}
+export interface PlaylistRow {
+  id: string;
+  key: unknown[];
+  name: string;
+  owner_id: string;
+  owner_name: string;
+  visibility: Visibility;
+  folder_id: string | null;
+  mine: boolean;
+  generation: string;
+  entry_count: number;
+  duration_ms: number;
+  updated_at: string;
+}
+export interface PlaylistFolderRow {
+  id: string;
+  key: unknown[];
+  name: string;
+}
+export interface PlaylistEntryRow {
+  id: string;
+  key: unknown[];
+  position_key: string;
+  track: LibraryTrackRow;
+  added_by: string | null;
+  added_by_name: string | null;
+  added_at: string;
+}
+export interface FavoriteRow {
+  id: string;
+  key: unknown[];
+  target_type: FavoriteTarget;
+  target_id: string;
+  label: string;
+  created_at: string;
+}
+export interface PlayRow {
+  id: string;
+  key: unknown[];
+  played_at: string;
+  track: LibraryTrackRow;
+  zone: string | null;
 }
 /**
  * A configured source service; ``problem`` explains why it is unavailable (spec: Source

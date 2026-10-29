@@ -31,6 +31,17 @@ Concurrent edits of the same playlist SHALL NOT lose entries, and all clients SH
 - **WHEN** two users insert a track at the same position at the same time
 - **THEN** both tracks are in the playlist in the same order on all clients
 
+### Requirement: Undo playlist edits
+The user who made an edit of a playlist (adding, removing or moving entries), and the playlist's owner, SHALL be able to undo it; removed entries SHALL return to their place. An edit whose entries changed since SHALL NOT be undone.
+
+#### Scenario: Accidental removal
+- **WHEN** a user removes ten entries of a shared playlist by mistake and undoes the removal
+- **THEN** the ten entries are back at their places for all users
+
+#### Scenario: Someone else's edit
+- **WHEN** a user who is neither the author of an edit nor the playlist's owner tries to undo it
+- **THEN** the undo is rejected
+
 ### Requirement: Playlist entries reference contexts
 A playlist entry SHALL reference a track context, so that the track is shown and delivered with the metadata of the album it was added from.
 
@@ -80,6 +91,10 @@ The system SHALL record a play for the user and device when at least 50 % of a t
 #### Scenario: Long track
 - **WHEN** a user listens to the first 4 minutes of a 20-minute track
 - **THEN** a play is recorded
+
+#### Scenario: Played on a zone
+- **WHEN** a user's queue plays a track to its end on a Raumfeld zone with no client connected
+- **THEN** a play is recorded for that user with the zone
 
 ### Requirement: Imported play counts
 Play counts imported from other applications SHALL be added to the user's play counts and SHALL NOT create history entries with invented dates.

@@ -24,6 +24,7 @@ from anthology.covers import service as covers
 from anthology.db.types import utcnow
 from anthology.library import service as library
 from anthology.library.models import AudioFormat
+from anthology.personal_data.models import PlayHistory
 from anthology.playback import service
 from anthology.playback.models import (
     OutputRoom,
@@ -475,6 +476,16 @@ async def test_the_zone_plays_the_queue_to_the_end_without_a_client(
     await rig.tick()
     queue = await _queue(app, zone.id)
 
+    async with app.state.sessionmaker() as session:
+        plays = list(await session.scalars(select(PlayHistory).order_by(PlayHistory.id)))
+
+    # Both tracks count for the user controlling the zone (spec: personal-data, Played on a
+    # zone).
+    assert [(play.track_id, play.output_zone_id, play.device_id) for play in plays] == [
+        (tracks[0].id, zone.id, None),
+        (tracks[1].id, zone.id, None),
+    ]
+    assert {play.user_id for play in plays} == {_user(admin)}
     assert position >= 6_000
     assert second["uri"] != first and second["state"] == "playing"
     assert "<dc:title>Treibeis</dc:title>" in second["metadata"]

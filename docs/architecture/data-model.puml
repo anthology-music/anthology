@@ -823,6 +823,9 @@ package "Users & Devices" {
     +id : UUID
     +name : String
     +visibility : PlaylistVisibility
+    +generation : UUID
+    +entryCount : Integer
+    +durationMs : Long
   }
 
   class PlaylistFolder {
@@ -832,7 +835,7 @@ package "Users & Devices" {
 
   enum PlaylistVisibility {
     PRIVATE
-    SHARED_ALL
+    SHARED
   }
 
   class PlaylistEntry {
@@ -844,6 +847,22 @@ package "Users & Devices" {
     Fractional position key;
     ties broken by id.
   end note
+
+  class PlaylistEdit {
+    Kept 30 days for undo
+    (author or owner)
+    ==
+    +kind : PlaylistEditKind
+    +entriesJson : String
+    +createdAt : DateTime
+    +undoneAt : DateTime [0..1]
+  }
+
+  enum PlaylistEditKind {
+    ADD
+    REMOVE
+    MOVE
+  }
 
   class Favorite {
     +targetType : FavoriteTarget
@@ -860,10 +879,11 @@ package "Users & Devices" {
 
   class PlayHistory {
     +playedAt : DateTime
-    +durationPlayedMs : Integer
   }
   note right of PlayHistory
-    Recorded after 50 % or 4 minutes.
+    Counted by the server from queue
+    positions after 50 % or 4 minutes;
+    on a device or on an output zone.
   end note
 
   class PlayStats {
@@ -1048,6 +1068,7 @@ package "Playback" {
     +positionMs : Integer
     +playing : Boolean
     +shortened : Boolean
+    +countedEntryId : Long [0..1]
     +updatedAt : DateTime
   }
 
@@ -1410,12 +1431,15 @@ User "1" *-- "0..*" Playlist
 Playlist "1" *-- "0..*" PlaylistEntry
 PlaylistEntry "0..*" -- "1" Track : context >
 PlaylistEntry "0..*" -- "1" User : added by >
+Playlist "1" *-- "0..*" PlaylistEdit
+PlaylistEdit "0..*" -- "0..1" User : by >
 User "1" *-- "0..*" PlaylistFolder
 PlaylistFolder "0..1" o-- "0..*" Playlist
 User "1" -- "0..*" Favorite
 User "1" -- "0..*" PlayHistory
 PlayHistory "0..*" -- "1" Track
-PlayHistory "0..*" -- "1" Device
+PlayHistory "0..*" -- "0..1" Device
+PlayHistory "0..*" -- "0..1" OutputZone : on >
 User "1" -- "0..*" PlayStats
 PlayStats "0..*" -- "1" Recording
 AuditLog "0..*" -- "1" User : by >
