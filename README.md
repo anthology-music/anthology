@@ -59,7 +59,7 @@ openssl rand -base64 32 | podman secret create anthology-db-password -
 systemctl --user daemon-reload && systemctl --user start anthology-pod
 
 # Docker (or Podman) with Compose
-cd deploy && mkdir -p secrets && openssl rand -base64 32 > secrets/db_password
+cd deploy && mkdir -p secrets && chmod 700 secrets && openssl rand -base64 32 > secrets/db_password
 docker compose up -d
 ```
 

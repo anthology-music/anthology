@@ -42,11 +42,11 @@ Check the installation (also used by CI): `deploy/smoke-test.sh http://localhost
 
 ```
 cd deploy
-mkdir -p secrets && openssl rand -base64 32 > secrets/db_password
+mkdir -p secrets && chmod 700 secrets && openssl rand -base64 32 > secrets/db_password
 docker compose up -d
 ```
 
-`deploy/secrets/` is git-ignored; keep the file private (`chmod 600`). With Podman: `podman compose up -d`.
+`deploy/secrets/` is git-ignored. The folder is private (`chmod 700`); the file itself must stay readable (`0644`), because the server and PostgreSQL read it as non-root users – do not `chmod 600` it. It is mounted with `:z`, so SELinux hosts relabel it. With Podman: `podman compose up -d`.
 
 ## Data
 
