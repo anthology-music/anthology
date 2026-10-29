@@ -1,0 +1,184 @@
+name: manual
+
+# The user manual (ADR 0023). Pull requests check and build it without screenshots; a push to main
+# publishes it under /next/, a tag vX.Y.Z under /vX.Y/, both with the walkthrough's screenshots.
+# GitHub Pages serves the branch gh-pages.
+
+on:
+  # No path filter: a tag push must always publish, and main keeps its screenshots current.
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    paths:
+      - "manual/**"
+      - "docs/architecture/source-service-api.md"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/pages.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Format and tests of the scripts
+        run: |
+          pnpm --filter @anthology/manual lint
+          pnpm --filter @anthology/manual test
+      # Every page in both languages, no dead links; screenshots show placeholders.
+      - name: Build
+        run: pnpm --filter @anthology/manual build
+
+  build:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    outputs:
+      target: ${{ steps.target.outputs.target }}
+      tag: ${{ steps.target.outputs.tag }}
+    services:
+      postgres:
+        image: docker.io/library/postgres:18
+        env:
+          POSTGRES_USER: anthology
+          POSTGRES_PASSWORD: anthology
+          POSTGRES_DB: anthology-e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U anthology -d anthology-e2e"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Target
+        id: target
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          if [ "$REF_TYPE" = tag ]; then
+            minor=$(echo "$REF_NAME" | sed -E 's/^(v[0-9]+\.[0-9]+)\..*/\1/')
+            echo "target=$minor" >> "$GITHUB_OUTPUT"
+            echo "tag=$REF_NAME" >> "$GITHUB_OUTPUT"
+          else
+            echo "target=next" >> "$GITHUB_OUTPUT"
+            echo "tag=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.13.0"
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pnpm install --frozen-lockfile
+          uv sync --project server --frozen
+          pnpm --filter @anthology/manual exec playwright install --with-deps chromium
+
+      # The own LGPL build of the server image (ADR 0020), compiled once and then cached.
+      - name: FFmpeg (the folder import reads and hashes the generated audio)
+        timeout-minutes: 40
+        uses: ./.github/actions/ffmpeg
+
+      - name: Screenshots (walkthrough in English and German)
+        env:
+          ANTHOLOGY_E2E_DATABASE_URL: postgresql+asyncpg://anthology:anthology@localhost:5432/anthology-e2e
+        run: pnpm --filter @anthology/manual walkthrough
+
+      - name: Build
+        env:
+          MANUAL_BASE: /${{ github.event.repository.name }}/${{ steps.target.outputs.target }}/
+          VITE_MANUAL_SITE_ROOT: /${{ github.event.repository.name }}/
+          VITE_MANUAL_VERSION: ${{ steps.target.outputs.tag }}
+        run: |
+          pnpm --filter @anthology/manual check:screenshots
+          pnpm --filter @anthology/manual build
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: manual
+          path: manual/.vitepress/dist
+          retention-days: 7
+
+      - name: Keep traces of a failed walkthrough
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: walkthrough-traces
+          path: manual/test-results
+          retention-days: 7
+
+  publish:
+    # The only job that writes: it places the build into the branch gh-pages.
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: manual-publish
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: manual/scripts
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: manual
+          path: build
+
+      - name: Check out gh-pages
+        env:
+          REPOSITORY: ${{ github.repository }}
+          TOKEN: ${{ github.token }}
+        run: |
+          url="https://x-access-token:${TOKEN}@github.com/${REPOSITORY}.git"
+          if git ls-remote --exit-code --heads "$url" gh-pages >/dev/null; then
+            git clone --depth 1 --branch gh-pages "$url" site
+          else
+            git init site
+            git -C site checkout --orphan gh-pages
+            git -C site remote add origin "$url"
+          fi
+
+      - name: Publish
+        env:
+          MANUAL_SITE_ROOT: /${{ github.event.repository.name }}/
+          TARGET: ${{ needs.build.outputs.target }}
+          TAG: ${{ needs.build.outputs.tag }}
+          SHA: ${{ github.sha }}
+        run: |
+          if [ "$TARGET" = next ]; then
+            node manual/scripts/publish-site.mjs site build next
+          else
+            node manual/scripts/publish-site.mjs site build "$TARGET" --tag "$TAG"
+          fi
+          cd site
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "nothing to publish"
+            exit 0
+          fi
+          git commit -q -m "docs(manual): publish ${TAG:-main} (${SHA::7})"
+          git push origin gh-pages

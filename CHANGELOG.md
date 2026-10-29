@@ -49,6 +49,8 @@ Anthology out; the review of the license separation (ADR 0004) is pending.
   - a play history with play counts.
 - **Source services:** the source service interface v1 for separate services that offer music from other sources, with orders and an import that confirms itself (`docs/architecture/source-service-api.md`).
 - **About:** Settings › About Anthology shows the versions and the licenses of all components.
+- **Interface language:** Settings › Language switches the interface between German and English per device.
+- **User manual:** in English and German, with screenshots of the app, published per release on GitHub Pages.
 
 [Unreleased]: https://github.com/anthology-music/anthology/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/anthology-music/anthology/releases/tag/v0.1.0

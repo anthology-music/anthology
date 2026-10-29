@@ -763,6 +763,10 @@ export default {
       failed: 'Das hat nicht geklappt.',
     },
   },
+  language: {
+    title: 'Sprache',
+    hint: 'Sprache der Oberfläche auf diesem Gerät',
+  },
   about: {
     title: 'Über Anthology',
     prerelease:

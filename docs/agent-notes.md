@@ -91,8 +91,10 @@ _Last updated: 2026-10-28_
 - **In progress:** `first-release` (branch `feat/first-release`): pull request 1 (third-party
   licenses generated and checked in CI, license texts in the image, Settings › About Anthology,
   version check, release job with Compose and Quadlet packages, changelog and releasing docs);
-  pull request 2 (VitePress user manual on GitHub Pages, English and German, walkthrough
-  screenshots, published per release) follows. Decided with the maintainer: 0.1.0 is a
+  pull request 2 (branch `feat/user-manual`: VitePress user manual in `manual/`, English and
+  German, walkthrough screenshots, `pages.yml` publishing to `gh-pages`, the per-device interface
+  language, ADR 0023). Open: task 4.5 is verified by the first run on `main`; then the maintainer
+  enables Pages from `gh-pages`, makes the ghcr.io packages public and tags `v0.1.0`. Decided with the maintainer: 0.1.0 is a
   pre-release until the license review; the license check blocks; the manual has four parts
   (General, Installation and administration, User guide, Source service API).
 - **Next:** see `docs/roadmap.md` (milestone 3).
@@ -156,3 +158,6 @@ _Last updated: 2026-10-28_
   them in a container, e.g. `python:3.12-slim` with Debian's `ffmpeg`, from a copy of
   `services/tagger` in the scratch directory (SELinux labels of the repository fail with `:Z`).
 - `tests/test_health.py` downgrades the schema to base; it needs empty tables (`clean_db`).
+- The manual's walkthrough (`pnpm --filter @anthology/manual walkthrough`) uses the end-to-end
+  server and database like `pnpm --filter client e2e`; do not run both at the same time. The
+  manual's code is formatted with its own `prettier` (`pnpm --filter @anthology/manual lint`).

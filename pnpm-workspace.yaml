@@ -1,8 +1,11 @@
 packages:
   - client
+  - manual
   - packages/*
 
 # Install scripts of dependencies run only when allowed here (supply-chain policy).
 # @parcel/watcher ships prebuilt binaries; its install script is not needed.
 allowBuilds:
   '@parcel/watcher': false
+  # esbuild (VitePress's Vite) ships its binary as an optional platform package.
+  esbuild: false
