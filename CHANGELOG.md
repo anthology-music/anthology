@@ -6,7 +6,7 @@ All notable changes to Anthology are listed here. The format follows
 
 ## [Unreleased]
 
-## [0.1.1] - 2026-10-29
+## [0.1.1] - 2026-10-30
 
 ### Fixed
 
