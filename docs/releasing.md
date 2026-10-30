@@ -34,7 +34,8 @@ The workflow `images` (`.github/workflows/images.yml`):
 ## After the release
 
 - Check the release page, the images (`docker pull ghcr.io/anthology-music/anthology-server:X.Y.Z`)
-  and an installation from the Compose package (`deploy/smoke-test.sh http://localhost:8400`).
+  and an installation from the Compose package (`deploy/smoke-test.sh http://localhost:8400`),
+  also on an SELinux host (Fedora): the CI smoke tests run on Ubuntu without SELinux.
 - Settings › About Anthology of the installation shows `X.Y.Z` and the commit.
 
 ## Once per repository
