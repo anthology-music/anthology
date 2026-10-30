@@ -88,15 +88,12 @@ _Last updated: 2026-10-28_
   marks and history. Decided with the maintainer: iTunes ratings (3.3) and favorite works (3.4)
   wait for the iTunes import and `works`; undo of playlist edits; two pull requests. Archive only
   once 3.3 and 3.4 are done (or moved to those changes).
-- **In progress:** `first-release` (branch `feat/first-release`): pull request 1 (third-party
-  licenses generated and checked in CI, license texts in the image, Settings › About Anthology,
-  version check, release job with Compose and Quadlet packages, changelog and releasing docs);
-  pull request 2 (branch `feat/user-manual`: VitePress user manual in `manual/`, English and
-  German, walkthrough screenshots, `pages.yml` publishing to `gh-pages`, the per-device interface
-  language, ADR 0023). Open: task 4.5 is verified by the first run on `main`; then the maintainer
-  enables Pages from `gh-pages`, makes the ghcr.io packages public and tags `v0.1.0`. Decided with the maintainer: 0.1.0 is a
-  pre-release until the license review; the license check blocks; the manual has four parts
-  (General, Installation and administration, User guide, Source service API).
+- **Released:** `first-release` (archived 2026-10-30): 0.1.0 and 0.1.1 are published as
+  pre-releases (images on ghcr.io, public; Compose and Quadlet packages on the release page;
+  manual at https://anthology-music.github.io/anthology/, `/v0.1/` and `/next/`). 0.1.1 fixes the
+  Compose installation on SELinux hosts. Pre-releases continue until the license review
+  (ADR 0004). A release follows `docs/releasing.md`; after a tag, install the Compose package on
+  an SELinux host as well (the CI smoke tests run on Ubuntu without SELinux).
 - **Next:** see `docs/roadmap.md` (milestone 3).
   `effective-quality-duplicate-checks` covers CD import and sources only; it waits for them.
 
