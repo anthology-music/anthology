@@ -43,6 +43,7 @@ from anthology.sync.streams import (
 )
 from anthology.users.models import User
 from anthology.users.service import SessionInfo
+from anthology.works.models import Work
 
 
 def _data(model) -> dict[str, Any]:
@@ -325,6 +326,7 @@ LABELS = {
     FavoriteTarget.RECORDING: (Recording, Recording.title),
     FavoriteTarget.RELEASE: (Release, Release.title),
     FavoriteTarget.ARTIST: (Artist, Artist.name),
+    FavoriteTarget.WORK: (Work, Work.title),
 }
 
 

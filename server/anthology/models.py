@@ -20,6 +20,7 @@ from anthology.tagging import models as tagging
 from anthology.transcoding import invalidation as transcoding_invalidation  # installs it
 from anthology.transcoding import models as transcoding
 from anthology.users import models as users
+from anthology.works import models as works
 
 __all__ = [
     "changes",
@@ -40,4 +41,5 @@ __all__ = [
     "transcoding",
     "transcoding_invalidation",
     "users",
+    "works",
 ]

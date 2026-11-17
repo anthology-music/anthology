@@ -21,10 +21,11 @@ def selection(
     item_type: str = TRACK,
     release_id: uuid.UUID | None = None,
     artist_id: uuid.UUID | None = None,
+    work_id: uuid.UUID | None = None,
 ) -> Select:
     """The IDs of all matching items of one type (one column, uncapped)."""
     conditions = Matcher(postgresql).conditions(
-        parse(q), Scope.of(release_id, artist_id), item_type
+        parse(q), Scope.of(release_id, artist_id, work_id), item_type
     )
     return select(SearchDocument.item_id).where(*conditions)
 
@@ -36,11 +37,12 @@ def ordered(
     item_type: str = TRACK,
     release_id: uuid.UUID | None = None,
     artist_id: uuid.UUID | None = None,
+    work_id: uuid.UUID | None = None,
 ) -> tuple[Select, list[ColumnElement]]:
     """All matching items (one column, uncapped) and the result order (e.g. to play them)."""
     matcher = Matcher(postgresql)
     query = parse(q)
-    conditions = matcher.conditions(query, Scope.of(release_id, artist_id), item_type)
+    conditions = matcher.conditions(query, Scope.of(release_id, artist_id, work_id), item_type)
     order = [matcher.bucket(query), SearchDocument.sort_key, SearchDocument.item_id]
     return select(SearchDocument.item_id).where(*conditions), order
 
@@ -52,12 +54,13 @@ async def find(
     *,
     release_id: uuid.UUID | None = None,
     artist_id: uuid.UUID | None = None,
+    work_id: uuid.UUID | None = None,
     limit: int = 100,
 ) -> list[uuid.UUID]:
     """The first matching items of one type in result order."""
     matcher = Matcher(postgresql(session))
     query = parse(q)
-    conditions = matcher.conditions(query, Scope.of(release_id, artist_id), item_type)
+    conditions = matcher.conditions(query, Scope.of(release_id, artist_id, work_id), item_type)
     ordered = (
         select(SearchDocument.item_id)
         .where(*conditions)

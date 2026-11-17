@@ -2,11 +2,11 @@
 
 Text syntax of the search (`openspec/specs/search/spec.md`). The server parses the text (`GET /api/v1/search/parse`) and the client shows the parsed filters as chips: removing a chip removes its token from the text, adding a chip appends a token, so syntax and chips are one query. The same text is a selection rule for bulk edits (`{ "list": "search", "q": … }`).
 
-Searchable items: artists, albums (releases) and tracks. Works, videos, playlists and the fields that need them join the search with the changes that build those domains.
+Searchable items: artists, albums (releases), tracks and works. Videos, playlists and the fields that need them join the search with the changes that build those domains.
 
 ## Text
 
-Free words are searched across all fields of artists, albums and tracks (title, artist, album, album artist, composers, genres, year):
+Free words are searched across all fields of artists, albums, tracks (title, artist, album, album artist, composers, genres, year) and works (title, composers, lyricists, arrangers, instrumentation, grade):
 
 - **Prefixes of words:** `Pola` finds "Polarnacht"; `eis` does not find "Treibeis".
 - **Case, accents and umlauts are ignored:** `Mueller`, `Müller` and `MÜLLER` are the same word, `Dvorak` finds "Dvořák" (German umlauts are spelled out, other accents dropped).
@@ -21,11 +21,14 @@ Ranking: whole-word matches first, then prefix matches, then matches through typ
 
 | Field | Applies to | Example |
 |---|---|---|
-| `type` | all (`artist`, `album` or `release`, `track` or `recording`) | `type:album` |
+| `type` | all (`artist`, `album` or `release`, `track` or `recording`, `work`) | `type:work` |
 | `artist` | artists, albums, tracks (artist or album artist) | `artist:Mozart` |
 | `album` | albums, tracks | `album:"Greatest Hits"` |
-| `composer` | tracks | `composer:Dvořák` |
+| `composer` | tracks (their tag), works (composers and lyricists) | `composer:Dvořák` |
 | `genre` | tracks | `genre:Blasmusik` |
+| `arranger` | works | `arranger:"de Haan"` |
+| `work` | works (title), tracks (titles of their recordings' works) | `work:"Nordlicht-Medley"` |
+| `grade` | works | `grade:3` |
 | `year` | albums, tracks (`=`, `>`, `<`) | `year:>1990`, `year:<2000`, `year:1985` |
 | `format` | tracks (`flac`, `wav`, `aiff`, `alac`, `mp3`, `aac`, `opus`, `vorbis`) | `format:flac` |
 | `quality` | tracks (effective quality: `lossless`, `hires`, `cd`, `lossy` or a tier) | `quality:lossless` |
@@ -34,11 +37,11 @@ Text filters match prefixes of the words of their field (`artist:wien phil`). A 
 
 Filters are combined with AND; free words and filters can be mixed: `artist:Mozart year:>1990 quality:lossless requiem`.
 
-Fields of later domains are recognised and reported as not available yet: `arranger`, `publisher`, `work`, `grade` (works), `source` (sources), `favorite` (personal data).
+Fields of later domains are recognised and reported as not available yet: `publisher` (publishers), `source` (sources), `favorite` (personal data).
 
 ## Context
 
-Searching inside an album returns its tracks; searching at an artist returns the artist's albums and tracks (as artist or album artist). The context is shown as a chip and can be removed. Playlist, folder and work contexts follow with their domains.
+Searching inside an album returns its tracks; searching at an artist returns the artist's albums and tracks (as artist or album artist); searching in a work returns the tracks of its recordings. The context is shown as a chip and can be removed. Playlist and folder contexts follow with their domain.
 
 ## Errors
 
@@ -47,7 +50,7 @@ Invalid tokens are reported per token and left out; the rest of the query still 
 | Error | Example |
 |---|---|
 | `unknown_field` | `colour:red` |
-| `unavailable_field` | `work:"Abba Medley"` |
+| `unavailable_field` | `publisher:Molenaar` |
 | `missing_value` | `genre:` |
 | `invalid_value` | `year:neunzehn`, `quality:best`, `type:song` |
 | `invalid_operator` | `artist:>Mozart` (`>` and `<` only for `year`) |

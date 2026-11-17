@@ -44,6 +44,7 @@ package "Library" {
     +acoustId : UUID [0..1]
     +identificationStatus : IdentificationStatus
     +identificationCheckedAt : DateTime [0..1]
+    +worksCheckedAt : DateTime [0..1]
     +identificationNote : String [0..1]
     +title : String
     +artistDisplay : String
@@ -1096,27 +1097,70 @@ package "Works & Publishers" {
   class Work {
     +id : UUID
     +title : String
+    +sortTitle : String
     +type : WorkType
-    +composers : String
-    +arrangers : String [0..1]
     +instrumentation : String [0..1]
     +grade : String [0..1]
     +durationSec : Integer [0..1]
     +mbWorkId : UUID [0..1]
     +iswc : String [0..1]
   }
+  note right of Work
+    Field provenance (entity type "work")
+    marks fields a person set; the
+    MusicBrainz refresh keeps them.
+  end note
 
-  class WorkRelation {
-    +type : WorkRelationType
-    +position : Integer [0..1]
-    +sectionStart : String [0..1]
-    +sectionEnd : String [0..1]
-    +origin : String
-    +confidence : Confidence
+  class Person {
+    +id : UUID
+    +name : String
+    +sortName : String
+    +mbArtistId : UUID [0..1]
+    +workCount : Integer
+  }
+  note right of Person
+    Composers, lyricists and arrangers;
+    separate from library artists.
+  end note
+
+  class WorkCredit {
+    +id : UUID
+    +role : CreditRole
+    +position : Integer
+    +origin : WorkOrigin
   }
 
+  class WorkRelation {
+    +id : UUID
+    +type : WorkRelationType
+    +position : Integer
+    +origin : WorkOrigin
+  }
+  note right of WorkRelation
+    Publisher candidates (later) add
+    sectionStart, sectionEnd, confidence.
+  end note
+
   class RecordingWork {
-    +confirmed : Boolean
+    +id : UUID
+    +origin : WorkOrigin
+    +createdAt : DateTime
+  }
+
+  class WorkTombstone {
+    +kind : TombstoneKind
+    +mbWorkId : UUID
+    +mbArtistId : UUID [0..1]
+    +recordingId : UUID [0..1]
+  }
+  note right of WorkTombstone
+    MusicBrainz works, credits and links
+    a person removed; never added again.
+  end note
+
+  class WorkCounter {
+    +name : String
+    +value : Integer
   }
 
   class Publisher {
@@ -1155,6 +1199,23 @@ package "Works & Publishers" {
     ARRANGEMENT_OF
     MEDLEY_CONTAINS
     PART_OF
+  }
+
+  enum CreditRole {
+    COMPOSER
+    LYRICIST
+    ARRANGER
+  }
+
+  enum WorkOrigin {
+    MUSICBRAINZ
+    USER
+  }
+
+  enum TombstoneKind {
+    WORK
+    CREDIT
+    LINK
   }
 
   enum PublisherAdapterType {
@@ -1466,6 +1527,8 @@ Work "1" -- "0..*" WorkRelation : source >
 WorkRelation "0..*" -- "1" Work : target >
 Recording "1" -- "0..*" RecordingWork
 RecordingWork "0..*" -- "1" Work
+Work "1" *-- "0..*" WorkCredit
+WorkCredit "0..*" -- "1" Person
 Publisher "1" *-- "0..*" Publication
 Publication "0..*" -- "1" Work : edition of >
 ReviewItem "0..*" -- "0..1" User : decided by >

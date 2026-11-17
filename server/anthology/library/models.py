@@ -227,6 +227,8 @@ class Recording(Base):
         default=IdentificationStatus.UNCHECKED,
     )
     identification_checked_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
+    # When the recording's MusicBrainz works were last fetched (works.jobs); None: not yet.
+    works_checked_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
     # Why identification was not possible (e.g. "file_missing", "no_acoustid_key").
     identification_note: Mapped[str | None] = mapped_column(String(64))
     # The recording that already has the identified MusicBrainz ID (outcome "duplicate").

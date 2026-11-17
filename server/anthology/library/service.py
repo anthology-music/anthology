@@ -9,7 +9,7 @@ alters what other list rows show or sort by writes a change entry for each of th
 import enum
 import unicodedata
 import uuid
-from collections.abc import Iterable
+from collections.abc import Awaitable, Callable, Iterable
 from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Any
@@ -59,6 +59,22 @@ QUALITY_SUMMARY_ID = uuid.UUID("4c1e9b72-0d3a-4f86-b5e2-7a9c3d1f6e08")
 # Change entries of the storage summary (stream library.storage: referenced originals).
 STORAGE = "library_storage"
 STORAGE_SUMMARY_ID = uuid.UUID("8f3c2a91-5d4e-4b7a-9c61-0e2f7d8a4b13")
+
+
+# Called with the session and a recording whose MusicBrainz recording ID was set, in the
+# writing transaction (e.g. works fetch the recording's works).
+IdentifiedHook = Callable[[AsyncSession, uuid.UUID], Awaitable[None]]
+_identified_hooks: list[IdentifiedHook] = []
+
+
+def on_identified(hook: IdentifiedHook) -> None:
+    if hook not in _identified_hooks:
+        _identified_hooks.append(hook)
+
+
+async def _identified(session: AsyncSession, recording_id: uuid.UUID) -> None:
+    for hook in _identified_hooks:
+        await hook(session, recording_id)
 
 
 def sort_key(text: str) -> str:
@@ -318,6 +334,8 @@ async def add_recording(
     await adjust_counter(session, Counter.IDENTIFICATION_UNCHECKED, +1)
     await _changed(session, "recording", recording.id, ChangeOperation.INSERT)
     await _audit(session, "recording", recording.id, "create", user_id, {"title": [None, title]})
+    if mb_recording_id is not None:
+        await _identified(session, recording.id)
 
     track = await add_track(
         session,
@@ -594,6 +612,8 @@ async def update_recording(
     await session.flush()
     await _changed(session, "recording", recording.id)
     await _audit(session, "recording", recording.id, "update", user_id, _public(diff))
+    if "mb_recording_id" in diff and recording.mb_recording_id is not None:
+        await _identified(session, recording.id)
 
     of_recording = Track.recording_id == recording.id
     if "artist_id" in diff:
@@ -1162,6 +1182,8 @@ async def record_identification(
     await _changed(session, IDENTIFICATION, IDENTIFICATION_SUMMARY_ID)
     if diff:
         await _audit(session, "recording", recording.id, "identify", user_id, _public(diff))
+    if "mb_recording_id" in diff:
+        await _identified(session, recording.id)
 
 
 async def clear_identification(

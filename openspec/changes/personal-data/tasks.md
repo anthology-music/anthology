@@ -19,7 +19,7 @@
 - [x] 3.1 Implement favorites for recordings, releases and artists (works wait for change `works`); verify with tests that favorites are private
 - [x] 3.2 Implement play recording from queue positions with the 50 %/4-minute threshold, for devices and zones, and maintained `PlayStats` including imported counts; verify with tests for skip, threshold, a zone play and imported counts
 - [ ] 3.3 (waits for the iTunes import) Map imported ratings ≥ 4 stars to favorites in library-import; verify with a test on a generated iTunes export
-- [ ] 3.4 (waits for `works`) Favorites for works; verify with a test that a favorite work is private
+- [x] 3.4 (done with `works-core`) Favorites for works; verify with a test that a favorite work is private
 
 ## 4. Client (pull request 2)
 

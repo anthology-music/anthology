@@ -31,6 +31,9 @@ class SearchDocument(Base):
     artist: Mapped[str] = mapped_column(Text, default="")
     album: Mapped[str] = mapped_column(Text, default="")
     composer: Mapped[str] = mapped_column(Text, default="")
+    arranger: Mapped[str] = mapped_column(Text, default="", server_default="")
+    work: Mapped[str] = mapped_column(Text, default="", server_default="")
+    grade: Mapped[str] = mapped_column(Text, default="", server_default="")
     genre: Mapped[str] = mapped_column(Text, default="")
     year: Mapped[int | None] = mapped_column(Integer)
     format: Mapped[str | None] = mapped_column(String(16))
@@ -62,6 +65,7 @@ ENGINE_SPECIFIC = frozenset(
         "ix_search_documents_tsv_artist",
         "ix_search_documents_tsv_release",
         "ix_search_documents_tsv_track",
+        "ix_search_documents_tsv_work",
         "ix_search_terms_trigram",
     }
 )

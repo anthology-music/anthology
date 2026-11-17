@@ -76,6 +76,9 @@ from anthology.transcoding.service import Transcoder
 from anthology.users import api as users_api
 from anthology.users.service import SessionCache, TokenSettings
 from anthology.users.streams import MyDevicesStream, UsersStream
+from anthology.works import api as works_api
+from anthology.works import jobs as works_jobs
+from anthology.works import streams as works_streams
 
 API_PREFIX = "/api/v1"
 
@@ -175,6 +178,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.covers_fetcher = covers_fetcher
         app.state.job_handlers.get(covers_jobs.JOB_TYPE).bind(covers_fetcher)
         tagger_monitor.on_available.append(lambda: covers_jobs.fetch_uncovered(sessionmaker))
+        app.state.job_handlers.get(works_jobs.JOB_TYPE).bind(
+            works_jobs.Fetcher(sessionmaker, lookups)
+        )
+        lookups.register_backlog(works_jobs.JOB_TYPE, lambda: works_jobs.backlog(sessionmaker))
         importer = library_import_jobs.Importer(sessionmaker, settings)
         for handler in library_import_jobs.HANDLERS:
             app.state.job_handlers.get(handler.type).bind(importer)
@@ -202,6 +209,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 await review_jobs.ensure_backfill(session, app.state.review_handlers)
                 await search_jobs.ensure_index(session)
                 await covers_jobs.ensure_backfill(session)
+                await works_jobs.ensure_backfill(session)
             await background.start()
             await runner.start()
             await scheduler.start()
@@ -255,6 +263,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(covers_api.router, prefix=API_PREFIX)
     app.include_router(personal_data_api.router, prefix=API_PREFIX)
     app.include_router(sources_api.router, prefix=API_PREFIX)
+    app.include_router(works_api.router, prefix=API_PREFIX)
     if settings.web_dir is not None:
         mount_web(app, settings.web_dir)  # last: its fallback must not shadow API routes
     return app
@@ -316,6 +325,7 @@ def _job_handlers(settings: Settings) -> HandlerRegistry:
     registry.register(search_jobs.SearchReindexHandler())
     registry.register(source_orders.SourceDownloadHandler())
     registry.register(covers_jobs.CoversFetchHandler())
+    registry.register(works_jobs.WorksFetchHandler())
     for handler in library_import_jobs.HANDLERS:
         registry.register(handler())
     if settings.dev_demo:
@@ -329,6 +339,7 @@ def _schedules() -> ScheduleRegistry:
     registry = ScheduleRegistry()
     registry.register(maintenance.SCHEDULE)
     registry.register(metadata_refresh.SCHEDULE)
+    registry.register(works_jobs.SCHEDULE)
     return registry
 
 
@@ -360,6 +371,7 @@ def _streams(settings: Settings, review_handlers: review.HandlerRegistry) -> Str
         *outputs_streams.STREAMS,
         *personal_data_streams.STREAMS,
         *sources_streams.STREAMS,
+        *works_streams.STREAMS,
     ):
         registry.register(stream())
     for handler_stream in (

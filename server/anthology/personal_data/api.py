@@ -278,7 +278,7 @@ async def _favorite(session, current, target_type: FavoriteTarget, target_id: st
 async def add_favorite(
     session: Session, current: CurrentSession, target_type: FavoriteTarget, target_id: str
 ) -> None:
-    """Mark a recording, album or artist as a favorite of this user (private)."""
+    """Mark a recording, album, artist or work as a favorite of this user (private)."""
     await _favorite(session, current, target_type, target_id, True)
 
 

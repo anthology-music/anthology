@@ -29,5 +29,5 @@ class SearchToken(BaseModel):
 
 class ParseOut(BaseModel):
     tokens: list[SearchToken]
-    # The item types the filters allow (artist, release, track).
-    types: list[Literal["artist", "release", "track"]]
+    # The item types the filters allow (artist, release, track, work).
+    types: list[Literal["artist", "release", "track", "work"]]

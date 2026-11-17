@@ -160,7 +160,7 @@ export interface paths {
         get?: never;
         /**
          * Add Favorite
-         * @description Mark a recording, album or artist as a favorite of this user (private).
+         * @description Mark a recording, album, artist or work as a favorite of this user (private).
          */
         put: operations["add_favorite_api_v1_favorites__target_type___target_id__put"];
         post?: never;
@@ -705,6 +705,44 @@ export interface paths {
         get: operations["lookup_status_api_v1_metadata_lookup_status_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/persons/{person_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Rename Person */
+        patch: operations["rename_person_api_v1_persons__person_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/persons/{person_id}/merge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Merge Person
+         * @description Merge this person into ``target_id``; persons with different MusicBrainz artists are
+         *     refused (``different_musicbrainz_artists``).
+         */
+        post: operations["merge_person_api_v1_persons__person_id__merge_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1563,6 +1601,143 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/works": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Work
+         * @description Create a work with its credits (persons by ID, or new persons by name).
+         */
+        post: operations["create_work_api_v1_works_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/works/relations/{relation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Relation */
+        delete: operations["remove_relation_api_v1_works_relations__relation_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/works/{work_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Work
+         * @description Delete a work with its credits, relations and recording links (not the recordings).
+         */
+        delete: operations["delete_work_api_v1_works__work_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Work */
+        patch: operations["update_work_api_v1_works__work_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/works/{work_id}/credits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Credits
+         * @description Replace the credits (the order within each role is the list's order).
+         */
+        put: operations["set_credits_api_v1_works__work_id__credits_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/works/{work_id}/recordings/{recording_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Link Recording */
+        put: operations["link_recording_api_v1_works__work_id__recordings__recording_id__put"];
+        post?: never;
+        /** Unlink Recording */
+        delete: operations["unlink_recording_api_v1_works__work_id__recordings__recording_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/works/{work_id}/relations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Relation
+         * @description The work arranges, contains (at the end) or is part of ``target_id``; cycles are
+         *     refused (``cycle``).
+         */
+        post: operations["add_relation_api_v1_works__work_id__relations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/works/{work_id}/relations/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Order Relations
+         * @description The order of the work's relations (e.g. a medley's originals); all of them, once.
+         */
+        put: operations["order_relations_api_v1_works__work_id__relations_order_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1659,6 +1834,27 @@ export interface components {
             image_id: string;
             /** Sha256 */
             sha256: string;
+        };
+        /**
+         * CreditIn
+         * @description A credit: an existing person (``person_id``) or a new one (``name``).
+         */
+        CreditIn: {
+            /** Name */
+            name?: string | null;
+            /** Person Id */
+            person_id?: string | null;
+            role: components["schemas"]["CreditRole"];
+        };
+        /**
+         * CreditRole
+         * @enum {string}
+         */
+        CreditRole: "composer" | "lyricist" | "arranger";
+        /** CreditsIn */
+        CreditsIn: {
+            /** Credits */
+            credits: components["schemas"]["CreditIn"][];
         };
         /** DeletionStarted */
         DeletionStarted: {
@@ -1840,7 +2036,7 @@ export interface components {
          * FavoriteTarget
          * @enum {string}
          */
-        FavoriteTarget: "recording" | "release" | "artist";
+        FavoriteTarget: "recording" | "release" | "artist" | "work";
         /**
          * FetchIn
          * @description One release, or every release (None).
@@ -2183,6 +2379,14 @@ export interface components {
             /** Url */
             url: string | null;
         };
+        /**
+         * MergeIn
+         * @description Merge the person of the path into ``target_id``.
+         */
+        MergeIn: {
+            /** Target Id */
+            target_id: string;
+        };
         /** Offered */
         Offered: {
             /** Bit Depth */
@@ -2237,12 +2441,24 @@ export interface components {
             /** Tokens */
             tokens: components["schemas"]["SearchToken"][];
             /** Types */
-            types: ("artist" | "release" | "track")[];
+            types: ("artist" | "release" | "track" | "work")[];
         };
         /** PasswordReset */
         PasswordReset: {
             /** New Password */
             new_password: string;
+        };
+        /** PersonOut */
+        PersonOut: {
+            /** Id */
+            id: string;
+        };
+        /** PersonPatch */
+        PersonPatch: {
+            /** Name */
+            name: string;
+            /** Sort Name */
+            sort_name?: string | null;
         };
         /** PlaylistIn */
         PlaylistIn: {
@@ -2313,6 +2529,25 @@ export interface components {
             /** Refresh Token */
             refresh_token: string;
         };
+        /**
+         * RelationIn
+         * @description ``work_id`` arranges, contains or is part of ``target_id``.
+         */
+        RelationIn: {
+            /** Target Id */
+            target_id: string;
+            type: components["schemas"]["RelationType"];
+        };
+        /** RelationOut */
+        RelationOut: {
+            /** Id */
+            id: string;
+        };
+        /**
+         * RelationType
+         * @enum {string}
+         */
+        RelationType: "arrangement_of" | "medley_contains" | "part_of";
         /** ResolveIn */
         ResolveIn: {
             /** Ref */
@@ -2747,6 +2982,50 @@ export interface components {
             /** Volume */
             volume?: number | null;
         };
+        /** WorkIn */
+        WorkIn: {
+            /** Credits */
+            credits?: components["schemas"]["CreditIn"][];
+            /** Duration Sec */
+            duration_sec?: number | null;
+            /** Grade */
+            grade?: string | null;
+            /** Instrumentation */
+            instrumentation?: string | null;
+            /** Iswc */
+            iswc?: string | null;
+            /** Title */
+            title: string;
+            /** @default original */
+            type: components["schemas"]["WorkType"];
+        };
+        /** WorkOut */
+        WorkOut: {
+            /** Id */
+            id: string;
+        };
+        /**
+         * WorkPatch
+         * @description Changed fields; omitted fields stay, ``null`` clears an optional field.
+         */
+        WorkPatch: {
+            /** Duration Sec */
+            duration_sec?: number | null;
+            /** Grade */
+            grade?: string | null;
+            /** Instrumentation */
+            instrumentation?: string | null;
+            /** Iswc */
+            iswc?: string | null;
+            /** Title */
+            title?: string | null;
+            type?: components["schemas"]["WorkType"] | null;
+        };
+        /**
+         * WorkType
+         * @enum {string}
+         */
+        WorkType: "original" | "arrangement" | "medley" | "adaptation";
         /** OrderIn */
         anthology__covers__api__OrderIn: {
             /** Ids */
@@ -2805,6 +3084,11 @@ export interface components {
             items: number;
             /** Job Id */
             job_id?: string | null;
+        };
+        /** OrderIn */
+        anthology__works__schemas__OrderIn: {
+            /** Relation Ids */
+            relation_ids: string[];
         };
     };
     responses: never;
@@ -4002,6 +4286,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LookupStatusOut"];
+                };
+            };
+        };
+    };
+    rename_person_api_v1_persons__person_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                person_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PersonPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    merge_person_api_v1_persons__person_id__merge_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                person_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MergeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -5717,6 +6069,291 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["PasswordReset"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_work_api_v1_works_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_relation_api_v1_works_relations__relation_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                relation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_work_api_v1_works__work_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                work_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_work_api_v1_works__work_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                work_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_credits_api_v1_works__work_id__credits_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                work_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreditsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    link_recording_api_v1_works__work_id__recordings__recording_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                work_id: string;
+                recording_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unlink_recording_api_v1_works__work_id__recordings__recording_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                work_id: string;
+                recording_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_relation_api_v1_works__work_id__relations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                work_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RelationIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    order_relations_api_v1_works__work_id__relations_order_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                work_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["anthology__works__schemas__OrderIn"];
             };
         };
         responses: {

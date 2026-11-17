@@ -16,20 +16,24 @@ from anthology.search.normalize import fold, words
 
 MAX_LENGTH = 500
 
-ARTIST, RELEASE, TRACK = "artist", "release", "track"
-ALL_TYPES = frozenset({ARTIST, RELEASE, TRACK})
+ARTIST, RELEASE, TRACK, WORK = "artist", "release", "track", "work"
+ALL_TYPES = frozenset({ARTIST, RELEASE, TRACK, WORK})
 TYPE_NAMES = {
     "artist": ARTIST,
     "release": RELEASE,
     "album": RELEASE,
     "track": TRACK,
     "recording": TRACK,
+    "work": WORK,
 }
 TEXT_FIELDS = {
     "artist": frozenset({ARTIST, RELEASE, TRACK}),
     "album": frozenset({RELEASE, TRACK}),
-    "composer": frozenset({TRACK}),
+    "composer": frozenset({TRACK, WORK}),
     "genre": frozenset({TRACK}),
+    "arranger": frozenset({WORK}),
+    "work": frozenset({TRACK, WORK}),
+    "grade": frozenset({WORK}),
 }
 FIELD_TYPES = {
     **TEXT_FIELDS,
@@ -38,8 +42,8 @@ FIELD_TYPES = {
     "quality": frozenset({TRACK}),
     "type": ALL_TYPES,
 }
-# Fields of domains that are not built yet (works, sources, personal data).
-LATER_FIELDS = frozenset({"arranger", "publisher", "work", "grade", "source", "favorite"})
+# Fields of domains that are not built yet (publishers, sources, personal data).
+LATER_FIELDS = frozenset({"publisher", "source", "favorite"})
 QUALITIES = {
     "lossless": (QualityTier.HIRES_LOSSLESS, QualityTier.CD_LOSSLESS),
     "hires": (QualityTier.HIRES_LOSSLESS,),
@@ -180,16 +184,24 @@ def parse(text: str) -> Query:
 
 @dataclass(frozen=True)
 class Scope:
-    """A search restricted to one release or one artist (spec: Search in context)."""
+    """A search restricted to one release, artist or work (spec: Search in context)."""
 
     release_id: uuid.UUID | None = None
     artist_id: uuid.UUID | None = None
+    work_id: uuid.UUID | None = None
     types: frozenset[str] = field(default=ALL_TYPES)
 
     @classmethod
-    def of(cls, release_id: uuid.UUID | None, artist_id: uuid.UUID | None) -> "Scope":
+    def of(
+        cls,
+        release_id: uuid.UUID | None,
+        artist_id: uuid.UUID | None,
+        work_id: uuid.UUID | None = None,
+    ) -> "Scope":
         if release_id is not None:
             return cls(release_id=release_id, types=frozenset({TRACK}))
         if artist_id is not None:
             return cls(artist_id=artist_id, types=frozenset({RELEASE, TRACK}))
+        if work_id is not None:
+            return cls(work_id=work_id, types=frozenset({TRACK}))
         return cls()
