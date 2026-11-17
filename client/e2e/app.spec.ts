@@ -568,3 +568,52 @@ test('two users editing a shared playlist, with undo', async ({ page, browser })
   await expect(page.locator('[data-testid^="entry-"][draggable="true"]')).toHaveCount(2);
   await other.close();
 });
+
+async function createWork(page: Page, title: string, type: string) {
+  await page.goto('/works');
+  await page.getByTestId('work-create').click();
+  const editor = page.getByTestId('work-editor');
+  await editor.getByTestId('work-title').fill(title);
+  if (type !== 'Original') {
+    await editor.getByTestId('work-type').click();
+    await page.getByRole('option', { name: type, exact: true }).click();
+  }
+  await editor.getByTestId('work-save').click();
+  await expect(page.getByTestId('work-title-heading')).toHaveText(title);
+}
+
+test('a medley with an original from the library and a missing one', async ({ page }) => {
+  await signIn(page);
+  // "Frühling" is in the library (imported above), "Winter" is not.
+  await createWork(page, 'Frühling', 'Original');
+  await page.getByTestId('recording-link').click();
+  await page.getByTestId('pick-track-query').fill('Frühling');
+  await page.locator('[data-testid="pick-track-Frühling"]').first().click();
+  await expect(page.getByTestId('work-recordings')).toContainText('Frühling');
+
+  await createWork(page, 'Winter', 'Original');
+  await createWork(page, 'Jahreszeiten-Medley', 'Medley');
+  for (const title of ['Frühling', 'Winter']) {
+    await page.getByTestId('original-add').click();
+    await page.getByTestId('pick-work-query').fill(title);
+    await page.getByTestId(`pick-work-${title}`).click();
+    await expect(page.getByTestId('work-contents')).toContainText(title);
+  }
+  await expect(page.getByTestId('work-contents')).toContainText('2 Titel · 1 in der Bibliothek');
+
+  // Playing the original from the medley.
+  await page.getByTestId('original-play-Frühling').click();
+  await expect(page.getByTestId('player-title')).toHaveText('Frühling');
+  await page.getByTestId('player-toggle').click();
+
+  // Acquiring the missing one opens the source search, without ordering anything.
+  await page.getByTestId('original-acquire-Winter').click();
+  await expect(page).toHaveURL(/\/streaming\?source_q=Winter$/);
+  await expect(page.getByTestId('source-query')).toHaveValue('Winter');
+
+  // The medley is found in the works list and the search.
+  await page.goto('/works?type=medley');
+  await expect(page.getByTestId('work-Jahreszeiten-Medley')).toBeVisible();
+  await page.goto(`/local/search?q=${encodeURIComponent('work:Frühling')}`);
+  await expect(page.getByTestId('search-group-work')).toContainText('Frühling');
+});

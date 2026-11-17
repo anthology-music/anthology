@@ -136,8 +136,9 @@
 
 <script setup lang="ts">
 import type { Schemas } from '@anthology/api-types';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useRoute } from 'vue-router';
 
 import { getServices } from '@/services';
 
@@ -154,7 +155,9 @@ const KIND_ICONS: Record<string, string> = {
 
 const { t } = useI18n();
 const { all, available } = useSourceServices();
-const text = ref('');
+// "Acquire" from a work page opens Streaming with ?source_q=… (spec: works, Navigation).
+const route = useRoute();
+const text = ref(typeof route.query.source_q === 'string' ? route.query.source_q : '');
 const service = ref<string | null>(null);
 const quality = ref('best');
 const busy = ref(false);
@@ -200,6 +203,18 @@ async function submit(): Promise<void> {
   }
   results.value = data;
 }
+
+// A prefilled search runs once a source is available.
+let prefilled = Boolean(text.value);
+watch(
+  () => available.value.length,
+  (count) => {
+    if (!prefilled || !count) return;
+    prefilled = false;
+    void submit();
+  },
+  { immediate: true },
+);
 
 async function open(serviceId: string, ref_: string): Promise<void> {
   await resolve({ service: serviceId, ref: ref_ });

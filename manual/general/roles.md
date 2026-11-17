@@ -4,8 +4,8 @@ Every account has one role. The library is shared by everyone; settings, playlis
 
 | Role | Can |
 |---|---|
-| **Listener** | browse and search the library, listen in the browser and on speakers, manage zones and volumes, download tracks and albums, keep playlists, favorites and history |
-| **Editor** | everything a listener can, plus edit tags, upload covers, decide entries of the review list and conflicts, start identification and quality checks, search source services and order albums |
+| **Listener** | browse and search the library, listen in the browser and on speakers, manage zones and volumes, download tracks and albums, keep playlists, favorites and history, see works |
+| **Editor** | everything a listener can, plus edit tags, upload covers, decide entries of the review list and conflicts, start identification and quality checks, search source services and order albums, edit works and persons |
 | **Admin** | everything an editor can, plus manage users, import server folders, configure source services, schedules and maintenance, and enter speaker addresses |
 
 The first account, created in the setup, is an admin. Admins create further accounts in **Settings**.

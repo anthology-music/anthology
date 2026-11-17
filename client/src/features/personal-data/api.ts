@@ -3,7 +3,7 @@ import type { Schemas } from '@anthology/api-types';
 import { getServices } from '@/services';
 
 export type Visibility = Schemas['PlaylistIn']['visibility'];
-export type FavoriteTarget = 'recording' | 'release' | 'artist';
+export type FavoriteTarget = 'recording' | 'release' | 'artist' | 'work';
 export type PlaylistProblem =
   | 'forbidden'
   | 'changed_since'

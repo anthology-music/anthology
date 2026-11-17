@@ -207,6 +207,7 @@ def selection(
             postgresql=postgresql,
             release_id=uuid.UUID(release_id) if release_id else None,
             artist_id=uuid.UUID(artist_id) if artist_id else None,
+            work_id=uuid.UUID(rule["work_id"]) if rule.get("work_id") else None,
         )
         return tracks.where(Track.id.in_(found))
     if rule["list"] == "release_tracks":

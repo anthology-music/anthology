@@ -676,6 +676,45 @@ class PersonsStream:
         return _remove(event.entity_id) if person is None else [_upsert(_person_row(person))]
 
 
+class PersonStream:
+    """One person by ID (0 or 1 rows), for the person page."""
+
+    name = "works.person"
+    entity_types = frozenset({service.PERSON})
+
+    def allowed(self, session: SessionInfo) -> bool:
+        return True
+
+    def validate(self, params: dict[str, Any]) -> dict[str, Any]:
+        return _id_param(params, "person_id")
+
+    def key_query(self, ctx: StreamContext) -> KeyQuery:
+        return KeyQuery(
+            query=select(Person).where(Person.id == ctx.params["person_id"]),
+            columns=(Person.sort_name, Person.id),
+        )
+
+    async def meta(self, db: AsyncSession, ctx: StreamContext) -> Meta:
+        person = await db.get(Person, ctx.params["person_id"], populate_existing=True)
+        return Meta(total=0 if person is None else 1)
+
+    async def rows(
+        self, db: AsyncSession, ctx: StreamContext, after: SortKey | None, limit: int
+    ) -> list[Row]:
+        if after is not None:
+            return []
+        person = await db.get(Person, ctx.params["person_id"], populate_existing=True)
+        return [] if person is None else [_person_row(person)]
+
+    async def changes(
+        self, db: AsyncSession, ctx: StreamContext, event: ChangeEvent
+    ) -> list[RowChange]:
+        if event.entity_id != ctx.params["person_id"]:
+            return []
+        person = await db.get(Person, event.entity_id, populate_existing=True)
+        return _remove(event.entity_id) if person is None else [_upsert(_person_row(person))]
+
+
 class PersonWorksStream:
     """A person's credits by role, then title."""
 
@@ -761,5 +800,6 @@ STREAMS = (
     WorkRecordingsStream,
     RecordingWorksStream,
     PersonsStream,
+    PersonStream,
     PersonWorksStream,
 )

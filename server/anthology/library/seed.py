@@ -186,6 +186,7 @@ class _Loader:
                 identification_checked_at=None,
                 identification_note=None,
                 identification_duplicate_of_id=None,
+                works_checked_at=None,
             )
             audio_rows[recording.id] = recording.audio
         self.totals[Counter.RECORDINGS] += len(batch.recordings)

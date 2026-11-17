@@ -95,6 +95,7 @@ Seven streams for all signed-in users serve the library, plus a report and a sto
 | `works.work.recordings` | `work_id` | artist sort name, id | linked recordings | – |
 | `works.recording` | `recording_id` | sort title, id | the recording's works | – |
 | `works.persons` | – | sort name, id | persons | – |
+| `works.person` | `person_id` | id (one entry) | 1, or 0 if unknown | – |
 | `works.person.works` | `person_id` | role, sort title, id | the person's credits | `composer`, `lyricist`, `arranger` |
 
 The four library counters are `artists`, `releases`, `tracks` and `recordings`; all are maintained in the writing transaction. Track rows show the recording's active original with its effective quality and quality status (both null until analysed; the effective quality only after a high-confidence result); superseded files (kept after a better file replaced them; rows carry their `storage_mode`, and only managed ones can be deleted, ADR 0021) appear only in `library.superseded`. A change that alters what other rows show or sort by (e.g. an artist rename) writes one change entry per affected row, so each of them receives a delta. The filtered lists ignore changes of rows outside their filter; when a row leaves a filtered list, the library writes an extra entry of type `release.moved` or `track.moved`, which the list of the former parent answers with `remove`.

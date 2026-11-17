@@ -13,11 +13,12 @@ MAX_IDS = 500
 
 class EditRule(BaseModel):
     """The tracks of a library list: one release, one artist's releases, all tracks, or the
-    tracks of a search (``q``, optionally within ``release_id`` or ``artist_id``)."""
+    tracks of a search (``q``, optionally within ``release_id``, ``artist_id`` or ``work_id``)."""
 
     list: Literal["release_tracks", "artist_tracks", "tracks", "search"]
     release_id: str | None = None
     artist_id: str | None = None
+    work_id: str | None = None
     q: str | None = Field(default=None, max_length=500)
 
     @model_validator(mode="after")

@@ -16,14 +16,14 @@
 
 ## 3. Client
 
-- [ ] 3.1 `client/src/features/works/`: works list with type tabs and counters, work page (originals with play and Acquire, recordings, Contained in, favorite), person page; verify with component tests
-- [ ] 3.2 Editor dialogs for works, credits, relations with ordered originals and recording links, and person rename and merge; verify with component tests including the cycle message
-- [ ] 3.3 Works in track menus and the player, works in the search results and the work context; verify with component tests
-- [ ] 3.4 End-to-end test: create a medley with two originals from the library and one missing, play an original, open Acquire, link a recording; verify it passes in CI
+- [x] 3.1 `client/src/features/works/`: works list with type tabs and counters, work page (originals with play and Acquire, recordings, Contained in, favorite), person page; verify with component tests
+- [x] 3.2 Editor dialogs for works, credits, relations with ordered originals and recording links, and person rename and merge; verify with component tests including the cycle message
+- [x] 3.3 Works in track menus and the player, works in the search results and the work context; verify with component tests
+- [x] 3.4 End-to-end test: create a medley with two originals from the library and one missing, play an original, open Acquire, link a recording; verify it passes in CI
 
 ## 4. User manual
 
-- [ ] 4.1 Page "Works" in the user guide in English and German (list, work page, editing, MusicBrainz works, persons, search filters), the walkthrough with the screenshots `works`, `work` and `work-editor`, and the roles table; verify the manual check, the build and the walkthrough
+- [x] 4.1 Page "Works" in the user guide in English and German (list, work page, editing, MusicBrainz works, persons, search filters), the walkthrough with the screenshots `works`, `work` and `work-editor`, and the roles table; verify the manual check, the build and the walkthrough
 
 ## Workflow follow-up
 

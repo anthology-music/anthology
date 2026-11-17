@@ -49,6 +49,7 @@ const playRule = {
   q: (props.params.q as string | undefined) ?? '',
   release_id: (props.params.release_id as string | undefined) ?? null,
   artist_id: (props.params.artist_id as string | undefined) ?? null,
+  work_id: (props.params.work_id as string | undefined) ?? null,
 };
 const rows = computed(() =>
   [...Array(Math.min(PREVIEW, subscription.value.total ?? 0)).keys()]

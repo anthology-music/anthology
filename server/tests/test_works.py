@@ -230,6 +230,10 @@ async def test_persons_are_merged_renamed_and_removed_without_credits(
     )
     assert meta["counters"] == {"arranger": 2}
     assert [row["work"]["title"] for row in credits] == ["Eisfeld", "Polarnacht"]
+    _meta, person = await _rows(app, listener, "works.person", person_id=by_name["Jacob de Haan"])
+    assert person[0]["name"] == "Jacob de Haan"
+    meta, _ = await _rows(app, listener, "works.person", person_id=by_name["J. de Haan"])
+    assert meta["total"] == 0
 
     renamed = await client.patch(
         f"{API}/persons/{by_name['Jacob de Haan']}",

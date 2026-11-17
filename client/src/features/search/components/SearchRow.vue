@@ -5,6 +5,7 @@
     :release="row as unknown as LibraryReleaseRow"
     show-artist
   />
+  <WorkRow v-else-if="type === 'work'" :work="row as unknown as WorkRowData" />
   <PlayableTrackRow
     v-else
     :track="row as unknown as LibraryTrackRow"
@@ -14,12 +15,18 @@
 </template>
 
 <script setup lang="ts">
-import type { LibraryArtistRow, LibraryReleaseRow, LibraryTrackRow } from '@anthology/api-types';
+import type {
+  LibraryArtistRow,
+  LibraryReleaseRow,
+  LibraryTrackRow,
+  WorkRow as WorkRowData,
+} from '@anthology/api-types';
 
 import ArtistRow from '@/features/library/components/ArtistRow.vue';
 import ReleaseRow from '@/features/library/components/ReleaseRow.vue';
 import PlayableTrackRow from '@/features/playback/components/PlayableTrackRow.vue';
 import type { PlayRule } from '@/features/playback/store';
+import WorkRow from '@/features/works/components/WorkRow.vue';
 
 import type { ItemType } from '../query';
 

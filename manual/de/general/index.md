@@ -15,7 +15,7 @@ Anthology hat zwei Hauptansichten, die in der Navigation links stehen:
 - **Streaming** – hier kommt Musik herein: Quelldienste durchsuchen, Alben bestellen, Ordner importieren.
 - **Lokal** – deine Bibliothek: Alben, Künstler, Titel, deine Playlists, Favoriten und dein Verlauf.
 
-Werke (Kompositionen, Arrangements und Medleys) und Noten folgen in späteren Versionen.
+**Werke** listet Kompositionen, Arrangements und Medleys mit ihren Originalen; Noten folgen in einer späteren Version.
 
 ## Wie es läuft
 

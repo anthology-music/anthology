@@ -56,7 +56,7 @@ function parsed(q: string) {
   }
   return {
     tokens: result,
-    types: q.includes('genre:') ? ['track'] : ['artist', 'release', 'track'],
+    types: q.includes('genre:') ? ['track'] : ['artist', 'release', 'track', 'work'],
   };
 }
 
@@ -116,13 +116,27 @@ describe('search', () => {
 
     await wrapper.find('[data-testid="search-input"]').setValue('polka');
     await vi.waitFor(() => expect(wrapper.router.currentRoute.value.name).toBe('search'));
-    await vi.waitFor(() => expect(searches(socket)).toHaveLength(3));
+    await vi.waitFor(() => expect(searches(socket)).toHaveLength(4));
     expect(searches(socket).map((message) => message.data.params)).toEqual([
+      { q: 'polka' },
       { q: 'polka' },
       { q: 'polka' },
       { q: 'polka' },
     ]);
     await serve(socket, 'search.artists', []);
+    await serve(socket, 'search.works', [
+      {
+        id: 'w1',
+        key: ['polka-medley', 'w1'],
+        title: 'Polka-Medley',
+        type: 'medley',
+        composers: [],
+        arrangers: ['Jacob de Haan'],
+        instrumentation: null,
+        grade: '3',
+        duration_sec: null,
+      },
+    ]);
     await serve(socket, 'search.releases', [], 2503);
     await serve(socket, 'search.tracks', [track('a'), track('b')], 10_000, 1);
 
@@ -131,6 +145,10 @@ describe('search', () => {
     expect(wrapper.find('[data-testid="search-group-track"]').text()).toContain('Polka a');
     expect(wrapper.find('[data-testid="search-group-artist"]').text()).toContain('Keine Treffer');
     expect(wrapper.find('[data-testid="search-all-track"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="search-group-work"]').text()).toContain('Polka-Medley');
+    expect(wrapper.find('[data-testid="search-group-work"]').text()).toContain(
+      'arr. Jacob de Haan',
+    );
   });
 
   it('shows filter chips and hints from the parsed text', async () => {
@@ -199,7 +217,13 @@ describe('search', () => {
     await vi.waitFor(() => expect(values).toHaveLength(1));
 
     expect(values[0]).toEqual({
-      rule: { list: 'search', q: 'polka', release_id: 'polarnacht', artist_id: null },
+      rule: {
+        list: 'search',
+        q: 'polka',
+        release_id: 'polarnacht',
+        artist_id: null,
+        work_id: null,
+      },
     });
   });
 

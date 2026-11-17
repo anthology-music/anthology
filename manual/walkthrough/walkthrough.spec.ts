@@ -13,12 +13,14 @@ import { type Browser, expect, type Page, test } from '@playwright/test';
 const ADMIN = { name: 'Lukas', username: 'lukas', password: 'correct horse battery' };
 const OUT = fileURLToPath(new URL('../public/screenshots/', import.meta.url));
 const FAKE_RAUMFELD = `http://127.0.0.1:${process.env.ANTHOLOGY_E2E_FAKE_RAUMFELD_PORT ?? 8431}`;
+const SERVER = `http://localhost:${process.env.ANTHOLOGY_E2E_SERVER_PORT ?? 8490}`;
 const LANGUAGES = ['en', 'de'] as const;
 type Language = (typeof LANGUAGES)[number];
 
 test.describe.configure({ mode: 'serial' });
 
 let release = '';
+let medley = '';
 
 async function shoot(page: Page, language: Language, name: string): Promise<void> {
   mkdirSync(`${OUT}${language}`, { recursive: true });
@@ -126,6 +128,41 @@ test('prepare: setup, imports, an order, a cover, a playlist and plays', async (
   await page.getByTestId('player-next').click();
   await page.waitForTimeout(5_000);
   await page.getByTestId('player-toggle').click();
+
+  // Works: two originals by a composer and a medley of them, arranged for wind band.
+  const login = await page.request.post(`${SERVER}/api/v1/auth/login`, {
+    data: {
+      username: ADMIN.username,
+      password: ADMIN.password,
+      device: { name: 'Walkthrough', type: 'web' },
+    },
+  });
+  const headers = { Authorization: `Bearer ${(await login.json()).access_token}` };
+  const createWork = async (data: Record<string, unknown>) =>
+    (await (await page.request.post(`${SERVER}/api/v1/works`, { headers, data })).json())
+      .id as string;
+  const composer = [{ role: 'composer', name: 'Ola Nord' }];
+  const spring = await createWork({ title: 'Frühling', credits: composer });
+  const winter = await createWork({ title: 'Winter', credits: composer });
+  medley = await createWork({
+    title: 'Jahreszeiten-Medley',
+    type: 'medley',
+    grade: '3',
+    instrumentation: 'Harmoniemusik',
+    duration_sec: 510,
+    credits: [{ role: 'arranger', name: 'Jacob de Haan' }],
+  });
+  for (const target of [spring, winter]) {
+    await page.request.post(`${SERVER}/api/v1/works/${medley}/relations`, {
+      headers,
+      data: { target_id: target, type: 'medley_contains' },
+    });
+  }
+  await page.goto(`/works/${spring}`);
+  await page.getByTestId('recording-link').click();
+  await page.getByTestId('pick-track-query').fill('Frühling');
+  await page.locator('[data-testid="pick-track-Frühling"]').first().click();
+  await expect(page.getByTestId('work-recordings')).toContainText('Frühling');
 });
 
 for (const language of LANGUAGES) {
@@ -199,6 +236,18 @@ for (const language of LANGUAGES) {
     await page.goto('/conflicts');
     await page.waitForTimeout(1_000);
     await shoot(page, language, 'conflicts');
+
+    // Works
+    await page.goto('/works');
+    await expect(page.getByTestId('work-Jahreszeiten-Medley')).toBeVisible();
+    await shoot(page, language, 'works');
+    await page.goto(`/works/${medley}`);
+    await expect(page.getByTestId('original-play-Frühling')).toBeVisible();
+    await shoot(page, language, 'work');
+    await page.getByTestId('work-edit').click();
+    await expect(page.getByTestId('work-editor')).toBeVisible();
+    await shoot(page, language, 'work-editor');
+    await page.keyboard.press('Escape');
 
     // Acquiring
     await page.goto('/streaming');

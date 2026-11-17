@@ -79,6 +79,7 @@ ROW_SCHEMAS: dict[str, type[BaseModel]] = {
     "works.work.recordings": WorkRecordingRow,
     "works.recording": RecordingWorkRow,
     "works.persons": PersonRow,
+    "works.person": PersonRow,
     "works.person.works": PersonWorkRow,
     "search.works": WorkRow,
 }
