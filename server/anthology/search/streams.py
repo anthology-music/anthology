@@ -1,9 +1,9 @@
 """Search results as subscriptions (spec: search; design: Search as a subscription).
 
 One stream per item type, so rows keep the library's row schemas: ``search.artists``,
-``search.releases`` and ``search.tracks``, each with the parameters ``q`` and an optional
-context (``release_id`` or ``artist_id``). Counts are capped; rows are keyset-paged on
-(rank bucket, list order, ID) and follow library changes.
+``search.releases``, ``search.tracks`` and ``search.works``, each with the parameters ``q``
+and an optional context (``release_id``, ``artist_id`` or ``work_id``). Counts are capped;
+rows are keyset-paged on (rank bucket, list order, ID) and follow library changes.
 """
 
 import uuid
@@ -16,7 +16,7 @@ from anthology.library import streams as library
 from anthology.library.models import Artist, AudioFile, Release, Track
 from anthology.search.matching import Matcher
 from anthology.search.models import SearchDocument
-from anthology.search.query import ARTIST, MAX_LENGTH, RELEASE, TRACK, Query, Scope, parse
+from anthology.search.query import ARTIST, MAX_LENGTH, RELEASE, TRACK, WORK, Query, Scope, parse
 from anthology.sync.feed import ChangeEvent
 from anthology.sync.streams import (
     KeyQuery,
@@ -29,6 +29,8 @@ from anthology.sync.streams import (
     scan_keys,
 )
 from anthology.users.service import SessionInfo
+from anthology.works import streams as works
+from anthology.works.models import Work
 
 # Lists end here; larger counts are shown as "10,000+" (spec: Search performance).
 CAP = 10_000
@@ -56,19 +58,21 @@ class SearchStream:
         return True
 
     def validate(self, params: dict[str, Any]) -> dict[str, Any]:
-        unknown = set(params) - {"q", "release_id", "artist_id"}
+        unknown = set(params) - {"q", "release_id", "artist_id", "work_id"}
         q = params.get("q")
         if unknown or not isinstance(q, str) or len(q) > MAX_LENGTH:
             raise StreamError("invalid_params", "q (text) and an optional context are required")
-        release_id, artist_id = _uuid(params, "release_id"), _uuid(params, "artist_id")
-        if release_id is not None and artist_id is not None:
-            raise StreamError("invalid_params", "give either release_id or artist_id")
-        return {"q": q, "release_id": release_id, "artist_id": artist_id}
+        contexts = {name: _uuid(params, name) for name in ("release_id", "artist_id", "work_id")}
+        if sum(value is not None for value in contexts.values()) > 1:
+            raise StreamError("invalid_params", "give at most one context")
+        return {"q": q, **contexts}
 
     @staticmethod
     def _query(ctx: StreamContext) -> tuple[Query, Scope]:
         params = ctx.params
-        return parse(params["q"]), Scope.of(params["release_id"], params["artist_id"])
+        return parse(params["q"]), Scope.of(
+            params["release_id"], params["artist_id"], params.get("work_id")
+        )
 
     def conditions(self, ctx: StreamContext) -> list[ColumnElement[bool]]:
         query, scope = self._query(ctx)
@@ -193,5 +197,35 @@ class TrackResults(SearchStream):
         return list(await db.scalars(query))
 
 
+class WorkResults(SearchStream):
+    item_type = WORK
+    name = "search.works"
+    entity_types = frozenset({"work"})
+
+    def _select(self, ids: list[uuid.UUID]) -> Select:
+        return select(Work).where(Work.id.in_(ids))
+
+    async def _rows(self, db: AsyncSession, keys: list[SortKey]) -> list[Row]:
+        if not keys:
+            return []
+        found = list(
+            await db.scalars(
+                self._select([key[-1] for key in keys]).execution_options(populate_existing=True)
+            )
+        )
+        models = {model.id: model for model in await works.work_models(db, found)}
+        rows = []
+        for key in keys:
+            model = models.get(str(key[-1]))
+            if model is not None:
+                rows.append(Row(id=model.id, key=key, data=works._data(model)))
+        return rows
+
+
 def streams(postgresql: bool) -> tuple[SearchStream, ...]:
-    return ArtistResults(postgresql), ReleaseResults(postgresql), TrackResults(postgresql)
+    return (
+        ArtistResults(postgresql),
+        ReleaseResults(postgresql),
+        TrackResults(postgresql),
+        WorkResults(postgresql),
+    )

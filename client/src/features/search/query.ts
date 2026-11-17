@@ -1,13 +1,14 @@
 import type { Schemas } from '@anthology/api-types';
 
 export type SearchToken = Schemas['SearchToken'];
-export type ItemType = 'artist' | 'release' | 'track';
+export type ItemType = 'artist' | 'release' | 'track' | 'work';
 
 /** Result streams per item type (spec: search, one list per type with the library's rows). */
 export const STREAMS: Record<ItemType, string> = {
   artist: 'search.artists',
   release: 'search.releases',
   track: 'search.tracks',
+  work: 'search.works',
 };
 
 /** Fields offered when adding a filter chip (docs/architecture/search-syntax.md). */
@@ -16,6 +17,9 @@ export const FILTER_FIELDS = [
   'album',
   'composer',
   'genre',
+  'work',
+  'arranger',
+  'grade',
   'year',
   'format',
   'quality',
@@ -25,10 +29,11 @@ export const FILTER_FIELDS = [
 /** Lists end at this many results; larger counts are shown as "10,000+". */
 export const CAP = 10_000;
 
-/** The search context: one album or one artist, with its name for the chip. */
+/** The search context: one album, artist or work, with its name for the chip. */
 export interface SearchContext {
   release_id?: string | undefined;
   artist_id?: string | undefined;
+  work_id?: string | undefined;
   label?: string | undefined;
 }
 
@@ -51,6 +56,7 @@ export function searchParams(q: string, context: SearchContext): Record<string, 
     q,
     ...(context.release_id ? { release_id: context.release_id } : {}),
     ...(context.artist_id ? { artist_id: context.artist_id } : {}),
+    ...(context.work_id ? { work_id: context.work_id } : {}),
   };
 }
 
@@ -61,5 +67,6 @@ export function searchRule(q: string, context: SearchContext): Schemas['EditRule
     q,
     release_id: context.release_id ?? null,
     artist_id: context.artist_id ?? null,
+    work_id: context.work_id ?? null,
   };
 }

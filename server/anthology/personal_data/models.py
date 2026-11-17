@@ -33,6 +33,7 @@ class FavoriteTarget(enum.StrEnum):
     RECORDING = "recording"
     RELEASE = "release"
     ARTIST = "artist"
+    WORK = "work"
 
 
 class PlaylistFolder(Base):

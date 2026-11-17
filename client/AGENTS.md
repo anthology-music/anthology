@@ -52,6 +52,10 @@ Show covers only with `features/covers/components/CoverImage.vue` (lazy `<img>` 
 
 Playlists, favorites and history live in `features/personal-data/` (spec: personal-data). REST helpers are in `api.ts`; `usePlaylists()` holds own and shared playlists and own folders as one window each; `useFavoritesStore()` holds the user's favorites as one set (toggled optimistically) for the marks on rows. Every playlist edit answers with an `edit_id`; offer its undo. Entries are moved by drag and drop and by buttons (keyboard, touch) with `moveEntries(ids, after)`.
 
+## Works
+
+Works live in `features/works/` (spec: works): the list (`works.list` with its counters per type), the work page (`works.work`, `.contents`, `.recordings`, `.containers`), persons (`works.persons`, `works.person`, `works.person.works`) and `RecordingWorks`/`PlayerWorks` for track menus and the player (`works.recording`, subscribed only while shown). REST helpers are in `api.ts`. `SearchPicker` finds works or tracks through the search streams. The routes under `/works` share a view keyed by the address, so a link from one work to another mounts the page afresh. "Acquire" links to Streaming with `?source_q=`, which fills the source search.
+
 ## Data loading
 
 - Every list is a subscription (`useSubscription`) shown with `VirtualList`: counts immediately, skeleton rows for unloaded ranges, only the visible window (+ buffer) requested, rows far outside the window dropped.

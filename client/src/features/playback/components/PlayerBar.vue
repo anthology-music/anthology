@@ -19,6 +19,11 @@
           :effective="player.current.effective_quality"
           :status="player.current.quality_status"
         />
+        <PlayerWorks
+          v-if="player.current.recording_id"
+          :key="player.current.recording_id"
+          :recording-id="player.current.recording_id"
+        />
         <span v-if="zone" class="player-bar__remote" role="status" data-testid="player-remote">
           <q-icon name="speaker_group" aria-hidden="true" />
           {{ t('playback.outputs.remote', { name: zone.name }) }}
@@ -130,6 +135,7 @@ import { useI18n } from 'vue-i18n';
 import CoverImage from '@/features/covers/components/CoverImage.vue';
 import QualityBadge from '@/features/library/components/QualityBadge.vue';
 import { formatDuration } from '@/features/library/format';
+import PlayerWorks from '@/features/works/components/PlayerWorks.vue';
 
 import { setZoneVolume, useOutputs } from '../outputs';
 import { usePlayerStore } from '../store';

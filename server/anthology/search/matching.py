@@ -29,8 +29,10 @@ from sqlalchemy import (
     true,
 )
 
+from anthology.library.models import Track
 from anthology.search.models import SearchDocument, SearchTerm
 from anthology.search.query import RELEASE, TRACK, Filter, Query, Scope
+from anthology.works.models import RecordingWork
 
 TYPO_MIN_LENGTH = 3
 TYPO_CANDIDATES = 5
@@ -136,7 +138,7 @@ class Matcher:
     @staticmethod
     def _filter(item: Filter) -> ColumnElement[bool]:
         target = getattr(SearchDocument, item.field)
-        if item.field in ("artist", "album", "composer", "genre"):
+        if item.field in ("artist", "album", "composer", "genre", "arranger", "work", "grade"):
             padded = literal(" ") + target
             return and_(*(padded.like(f"% {word}%") for word in str(item.value).split()))
         if item.field == "year":
@@ -170,6 +172,14 @@ class Matcher:
                 )
             elif item_type == RELEASE:
                 conditions.append(SearchDocument.album_artist_id == scope.artist_id)
+        if scope.work_id is not None:
+            # Tracks of the work's recordings.
+            linked = (
+                select(Track.id)
+                .join(RecordingWork, RecordingWork.recording_id == Track.recording_id)
+                .where(RecordingWork.work_id == scope.work_id)
+            )
+            conditions.append(SearchDocument.item_id.in_(linked))
         conditions += [self._filter(item) for item in query.filters]
         conditions += self.text(query)
         return conditions

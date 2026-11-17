@@ -60,6 +60,7 @@ export const parts: Part[] = [
         title: { en: 'Playlists, favorites and history', de: 'Playlists, Favoriten und Verlauf' },
       },
       { path: 'covers', title: { en: 'Covers and images', de: 'Cover und Bilder' } },
+      { path: 'works', title: { en: 'Works', de: 'Werke' } },
       { path: 'editing', title: { en: 'Editing tags', de: 'Tags bearbeiten' } },
       { path: 'review', title: { en: 'Review and conflicts', de: 'Prüfliste und Konflikte' } },
       { path: 'downloads', title: { en: 'Downloads', de: 'Downloads' } },

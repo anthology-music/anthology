@@ -1,13 +1,11 @@
 <template>
-  <q-page class="page">
-    <PageHeader :title="t('pages.works.title')" :description="t('pages.works.description')" />
-  </q-page>
+  <!-- One page per address: a work linking to another work mounts it afresh. -->
+  <router-view :key="route.fullPath" />
 </template>
 
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n';
+import { useRoute } from 'vue-router';
 
-import PageHeader from '@/components/PageHeader.vue';
-
-const { t } = useI18n();
+/** The Works view (spec: works): the list, a work, the persons and a person. */
+const route = useRoute();
 </script>

@@ -29,6 +29,16 @@ from anthology.review import schemas as review
 from anthology.review.schemas import ReviewItemRow
 from anthology.sources.schemas import OrderItemRow, OrderRow, SourceServiceRow
 from anthology.tagging.edits import ChangeSetRow
+from anthology.works.schemas import (
+    PersonRow,
+    PersonWorkRow,
+    RecordingWorkRow,
+    WorkContainerRow,
+    WorkContentRow,
+    WorkDetailRow,
+    WorkRecordingRow,
+    WorkRow,
+)
 
 ROW_SCHEMAS: dict[str, type[BaseModel]] = {
     "library.artists": LibraryArtistRow,
@@ -62,6 +72,16 @@ ROW_SCHEMAS: dict[str, type[BaseModel]] = {
     "sources.services": SourceServiceRow,
     "sources.orders": OrderRow,
     "sources.order.items": OrderItemRow,
+    "works.list": WorkRow,
+    "works.work": WorkDetailRow,
+    "works.work.contents": WorkContentRow,
+    "works.work.containers": WorkContainerRow,
+    "works.work.recordings": WorkRecordingRow,
+    "works.recording": RecordingWorkRow,
+    "works.persons": PersonRow,
+    "works.person": PersonRow,
+    "works.person.works": PersonWorkRow,
+    "search.works": WorkRow,
 }
 
 # Typed content of row fields that differ per row kind (the evidence and proposal of each

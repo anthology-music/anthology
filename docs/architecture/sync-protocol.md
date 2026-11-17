@@ -87,9 +87,22 @@ Seven streams for all signed-in users serve the library, plus a report and a sto
 | `sources.services` | – | configuration order, id | configured source services | `available` |
 | `sources.orders` (editors, admins) | – | created, id (newest first) | download orders | – |
 | `sources.order.items` (editors, admins) | `order_id` | position, id | the order's tracks | – |
-| `search.artists`, `search.releases`, `search.tracks` | `q`, optional `release_id` or `artist_id` | rank bucket, list order, id | matches, capped at 10,000 | `capped` (1 above the cap) |
+| `search.artists`, `search.releases`, `search.tracks`, `search.works` | `q`, optional `release_id`, `artist_id` or `work_id` | rank bucket, list order, id | matches, capped at 10,000 | `capped` (1 above the cap) |
+| `works.list` | `type`? | sort title, id | works of the type | `all`, `original`, `arrangement`, `medley`, `adaptation` |
+| `works.work` | `work_id` | id (one entry) | 1, or 0 if unknown | – |
+| `works.work.contents` | `work_id` | position, id | the work's originals (relations it is the source of) | – |
+| `works.work.containers` | `work_id` | source sort title, id | works that contain, arrange or include it | – |
+| `works.work.recordings` | `work_id` | artist sort name, id | linked recordings | – |
+| `works.recording` | `recording_id` | sort title, id | the recording's works | – |
+| `works.persons` | – | sort name, id | persons | – |
+| `works.person` | `person_id` | id (one entry) | 1, or 0 if unknown | – |
+| `works.person.works` | `person_id` | role, sort title, id | the person's credits | `composer`, `lyricist`, `arranger` |
 
 The four library counters are `artists`, `releases`, `tracks` and `recordings`; all are maintained in the writing transaction. Track rows show the recording's active original with its effective quality and quality status (both null until analysed; the effective quality only after a high-confidence result); superseded files (kept after a better file replaced them; rows carry their `storage_mode`, and only managed ones can be deleted, ADR 0021) appear only in `library.superseded`. A change that alters what other rows show or sort by (e.g. an artist rename) writes one change entry per affected row, so each of them receives a delta. The filtered lists ignore changes of rows outside their filter; when a row leaves a filtered list, the library writes an extra entry of type `release.moved` or `track.moved`, which the list of the former parent answers with `remove`.
+
+## Works
+
+Works, persons and their links are shared (spec: works). Change entries: `work` (the work's fields, its credits, links and relations as they show in its rows), `person`, `work_credit`, `work_relation` and `recording_work`; credits and links are named by their own ID, so a removal reaches the lists as `remove`. A rename or merge of a person writes a `work` entry for every credited work. Rows: `WorkRow` (title, type, composers and lyricists, arrangers, instrumentation, grade, duration), `WorkDetailRow` (plus credits with person IDs and roles, ISWC, MusicBrainz ID and counts), `WorkContentRow` (relation type, position, the original's `WorkRow`, a playable `track` of one of its recordings or null, and the `acquire_query` for the source search), `WorkContainerRow`, `WorkRecordingRow` (the recording with one of its tracks), `RecordingWorkRow`, `PersonRow` and `PersonWorkRow`. Editing goes over REST (editors, admins): `POST /api/v1/works`, `PATCH`/`DELETE /api/v1/works/{id}`, `PUT /api/v1/works/{id}/credits`, `POST /api/v1/works/{id}/relations` (`cycle` refused), `DELETE /api/v1/works/relations/{id}`, `PUT /api/v1/works/{id}/relations/order`, `PUT`/`DELETE /api/v1/works/{id}/recordings/{recording_id}`, `PATCH /api/v1/persons/{id}` and `POST /api/v1/persons/{id}/merge`.
 
 ## Library maintenance
 

@@ -365,6 +365,9 @@ class MusicBrainz:
     ) -> LookupResult:
         return await self.get(f"/ws/2/recording/{mbid}", {"inc": inc}, **options)
 
+    async def work(self, mbid: str, inc: str = "artist-rels", **options) -> LookupResult:
+        return await self.get(f"/ws/2/work/{mbid}", {"inc": inc}, **options)
+
     async def isrc(self, isrc: str, **options) -> LookupResult:
         return await self.get(f"/ws/2/isrc/{isrc}", {"inc": "artist-credits"}, **options)
 

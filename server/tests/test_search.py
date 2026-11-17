@@ -182,13 +182,13 @@ async def test_search_in_context(app: FastAPI) -> None:
 
 
 def test_parser_reports_invalid_tokens_and_keeps_the_rest() -> None:
-    query = parse('colour:red Mozart artist:"Wiener Phil" year:>1990 quality:best work:x')
+    query = parse('colour:red Mozart artist:"Wiener Phil" year:>1990 quality:best publisher:x')
 
     errors = {token.text: token.error for token in query.tokens if token.error}
     assert errors == {
         "colour:red": "unknown_field",
         "quality:best": "invalid_value",
-        "work:x": "unavailable_field",
+        "publisher:x": "unavailable_field",
     }
     assert query.words == ("mozart",)
     assert [(item.field, item.op, item.value) for item in query.filters] == [

@@ -44,13 +44,19 @@ import FavoriteButton from '../components/FavoriteButton.vue';
 
 /** The user's favorites (private, spec: personal-data, Favorites). */
 const { t } = useI18n();
-const ICONS = { recording: 'music_note', release: 'album', artist: 'person' } as const;
+const ICONS = {
+  recording: 'music_note',
+  release: 'album',
+  artist: 'person',
+  work: 'library_music',
+} as const;
 
 function target(row: FavoriteRow): RouteLocationRaw {
   if (row.target_type === 'release')
     return { name: 'library-release', params: { releaseId: row.target_id } };
   if (row.target_type === 'artist')
     return { name: 'library-artist', params: { artistId: row.target_id } };
+  if (row.target_type === 'work') return { name: 'work', params: { workId: row.target_id } };
   return { name: 'search', query: { q: row.label } };
 }
 </script>

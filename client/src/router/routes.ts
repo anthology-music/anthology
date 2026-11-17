@@ -75,7 +75,35 @@ const routes: RouteRecordRaw[] = [
           },
         ],
       },
-      { path: 'works', name: 'works', component: () => import('@/pages/WorksPage.vue') },
+      {
+        // Works (spec: works): list, persons, a person and a work.
+        path: 'works',
+        component: () => import('@/pages/WorksPage.vue'),
+        children: [
+          {
+            path: '',
+            name: 'works',
+            component: () => import('@/features/works/pages/WorksListPage.vue'),
+          },
+          {
+            path: 'persons',
+            name: 'persons',
+            component: () => import('@/features/works/pages/PersonsPage.vue'),
+          },
+          {
+            path: 'persons/:personId',
+            name: 'person',
+            props: true,
+            component: () => import('@/features/works/pages/PersonPage.vue'),
+          },
+          {
+            path: ':workId',
+            name: 'work',
+            props: true,
+            component: () => import('@/features/works/pages/WorkPage.vue'),
+          },
+        ],
+      },
       {
         // Review list (spec: review): editors and admins.
         path: 'review',

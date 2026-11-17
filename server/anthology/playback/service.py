@@ -188,6 +188,7 @@ def _ordered(rule: dict[str, Any], postgresql: bool) -> tuple[Select, list[Colum
                 postgresql=postgresql,
                 release_id=uuid.UUID(release_id) if release_id else None,
                 artist_id=uuid.UUID(artist_id) if artist_id else None,
+                work_id=uuid.UUID(rule["work_id"]) if rule.get("work_id") else None,
             )
     return select(Track.id.label("track_id")), [
         Track.sort_artist,

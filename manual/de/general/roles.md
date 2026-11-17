@@ -4,8 +4,8 @@ Jedes Konto hat eine Rolle. Die Bibliothek teilen sich alle; Einstellungen, Play
 
 | Rolle | Darf |
 |---|---|
-| **Hören** | die Bibliothek durchsehen und durchsuchen, im Browser und auf Lautsprechern hören, Zonen und Lautstärken verwalten, Titel und Alben herunterladen, Playlists, Favoriten und Verlauf führen |
-| **Redaktion** | alles, was die Rolle Hören darf, und dazu Tags bearbeiten, Cover hochladen, Einträge der Prüfliste und Konflikte entscheiden, Erkennung und Qualitätsanalyse starten, Quelldienste durchsuchen und Alben bestellen |
+| **Hören** | die Bibliothek durchsehen und durchsuchen, im Browser und auf Lautsprechern hören, Zonen und Lautstärken verwalten, Titel und Alben herunterladen, Playlists, Favoriten und Verlauf führen, Werke ansehen |
+| **Redaktion** | alles, was die Rolle Hören darf, und dazu Tags bearbeiten, Cover hochladen, Einträge der Prüfliste und Konflikte entscheiden, Erkennung und Qualitätsanalyse starten, Quelldienste durchsuchen und Alben bestellen, Werke und Personen bearbeiten |
 | **Administrator** | alles, was die Redaktion darf, und dazu Benutzer verwalten, Server-Ordner importieren, Quelldienste, Zeitpläne und die Systempflege einrichten und Lautsprecher-Adressen eintragen |
 
 Das erste Konto, angelegt bei der Einrichtung, ist Administrator. Administratoren legen weitere Konten unter **Einstellungen** an.

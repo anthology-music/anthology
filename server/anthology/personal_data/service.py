@@ -20,6 +20,7 @@ from anthology.library.models import Artist, Recording, Release, Track
 from anthology.personal_data.models import Favorite, FavoriteTarget, PlayHistory, PlayStats
 from anthology.playback import service as playback
 from anthology.playback.models import PlayQueue, PlayQueueEntry
+from anthology.works.models import Work
 
 FAVORITE = "favorite"
 PLAY = "play"
@@ -29,6 +30,7 @@ TARGETS = {
     FavoriteTarget.RECORDING: Recording,
     FavoriteTarget.RELEASE: Release,
     FavoriteTarget.ARTIST: Artist,
+    FavoriteTarget.WORK: Work,
 }
 
 

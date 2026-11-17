@@ -28,17 +28,21 @@ from anthology.library.models import (
 )
 from anthology.search.models import SearchDocument, SearchIndexState, SearchTerm
 from anthology.search.normalize import fold
+from anthology.works.models import CreditRole, Person, RecordingWork, Work, WorkCredit
 
 # Raise when the documents' contents or the folding change: the server rebuilds the index.
-VERSION = 1
-ARTIST, RELEASE, TRACK = "artist", "release", "track"
-ITEM_TYPES = (ARTIST, RELEASE, TRACK)
+VERSION = 2
+ARTIST, RELEASE, TRACK, WORK = "artist", "release", "track", "work"
+ITEM_TYPES = (ARTIST, RELEASE, TRACK, WORK)
 SEPARATOR = "\x01"
 BATCH = 500
 
 _PENDING = "search.pending"
-# Change entries that affect documents (``track.moved``: see library.service.TRACK_MOVED).
-_WATCHED = frozenset({"artist", "release", "track", "track.moved", "recording", "audio_file"})
+# Change entries that affect documents (``track.moved``: see library.service.TRACK_MOVED;
+# ``work``: a work, its credits or its links changed).
+_WATCHED = frozenset(
+    {"artist", "release", "track", "track.moved", "recording", "audio_file", "work"}
+)
 
 Executor = Session | Connection
 
@@ -131,6 +135,7 @@ _TRACKS = (
         Release.release_date,
         AudioFile.format,
         AudioFile.effective_quality,
+        Track.recording_id,
     )
     .join(Recording, Recording.id == Track.recording_id)
     .join(Release, Release.id == Track.release_id)
@@ -142,12 +147,28 @@ _TRACKS = (
 )
 
 
+def _work_titles(conn: Executor, recording_ids: set[uuid.UUID]) -> dict[uuid.UUID, str]:
+    """The folded titles of the works of each recording."""
+    titles: dict[uuid.UUID, list[str]] = {}
+    for chunk in _chunks(recording_ids):
+        query = (
+            select(RecordingWork.recording_id, Work.title)
+            .join(Work, Work.id == RecordingWork.work_id)
+            .where(RecordingWork.recording_id.in_(chunk))
+        )
+        for recording_id, title in conn.execute(query):
+            titles.setdefault(recording_id, []).append(title)
+    return {recording_id: _join(*names) for recording_id, names in titles.items()}
+
+
 def _track_docs(conn: Executor, ids: list[uuid.UUID]) -> list[dict[str, Any]]:
     docs = []
-    for row in conn.execute(_TRACKS.where(Track.id.in_(ids))):
+    rows = list(conn.execute(_TRACKS.where(Track.id.in_(ids))))
+    works = _work_titles(conn, {row[-1] for row in rows})
+    for row in rows:
         (track_id, release_id, context_title, context_artist, sort_artist, sort_title,
          sort_album, title, artist, artist_id, composers, genres, album, album_artist,
-         album_artist_id, release_date, audio_format, quality) = row  # fmt: skip
+         album_artist_id, release_date, audio_format, quality, recording_id) = row  # fmt: skip
         title = context_title or title
         artist = context_artist or artist
         year = release_date.year if release_date else None
@@ -171,6 +192,7 @@ def _track_docs(conn: Executor, ids: list[uuid.UUID]) -> list[dict[str, Any]]:
                 album=fold(album),
                 composer=composer,
                 genre=genre,
+                work=works.get(recording_id, ""),
                 year=year,
                 format=audio_format.value if audio_format else None,
                 quality=quality.value if quality else None,
@@ -183,6 +205,48 @@ def _track_docs(conn: Executor, ids: list[uuid.UUID]) -> list[dict[str, Any]]:
     return docs
 
 
+def _work_docs(conn: Executor, ids: list[uuid.UUID]) -> list[dict[str, Any]]:
+    docs = []
+    credits: dict[uuid.UUID, dict[CreditRole, list[str]]] = {}
+    query = (
+        select(WorkCredit.work_id, WorkCredit.role, Person.name)
+        .join(Person, Person.id == WorkCredit.person_id)
+        .where(WorkCredit.work_id.in_(ids))
+        .order_by(WorkCredit.work_id, WorkCredit.role, WorkCredit.position)
+    )
+    for work_id, role, name in conn.execute(query):
+        credits.setdefault(work_id, {}).setdefault(role, []).append(name)
+    query = select(Work.id, Work.title, Work.sort_title, Work.instrumentation, Work.grade).where(
+        Work.id.in_(ids)
+    )
+    for work in conn.execute(query):
+        names = credits.get(work.id, {})
+        composer = _join(*names.get(CreditRole.COMPOSER, []), *names.get(CreditRole.LYRICIST, []))
+        arranger = _join(*names.get(CreditRole.ARRANGER, []))
+        docs.append(
+            _doc(
+                WORK,
+                work.id,
+                text=" ".join(
+                    part
+                    for part in (
+                        _join(work.title),
+                        composer,
+                        arranger,
+                        _join(work.instrumentation, work.grade),
+                    )
+                    if part
+                ),
+                composer=composer,
+                arranger=arranger,
+                work=fold(work.title),
+                grade=fold(work.grade or ""),
+                sort_key=work.sort_title,
+            )
+        )
+    return docs
+
+
 def _doc(item_type: str, item_id: uuid.UUID, **values: Any) -> dict[str, Any]:
     return {
         "item_type": item_type,
@@ -190,6 +254,9 @@ def _doc(item_type: str, item_id: uuid.UUID, **values: Any) -> dict[str, Any]:
         "artist": "",
         "album": "",
         "composer": "",
+        "arranger": "",
+        "work": "",
+        "grade": "",
         "genre": "",
         "year": None,
         "format": None,
@@ -201,7 +268,7 @@ def _doc(item_type: str, item_id: uuid.UUID, **values: Any) -> dict[str, Any]:
     }
 
 
-_BUILDERS = {ARTIST: _artist_docs, RELEASE: _release_docs, TRACK: _track_docs}
+_BUILDERS = {ARTIST: _artist_docs, RELEASE: _release_docs, TRACK: _track_docs, WORK: _work_docs}
 
 
 def _insert_ignoring(conn: Executor):
@@ -242,7 +309,17 @@ def _process(session: Session) -> None:
     if not pending:
         return
     tracks = pending.get("track", set()) | pending.get("track.moved", set())
-    recordings = set(pending.get("recording", set()))
+    recordings = set(pending.get("recording", set())) | pending.get("recording.works", set())
+    works = pending.get("work", set())
+    # Tracks carry the titles of their recordings' works.
+    for chunk in _chunks(works):
+        recordings.update(
+            session.execute(
+                select(RecordingWork.recording_id).where(RecordingWork.work_id.in_(chunk))
+            )
+            .scalars()
+            .all()
+        )
     for chunk in _chunks(pending.get("audio_file", set())):
         recordings.update(
             session.execute(select(AudioFile.recording_id).where(AudioFile.id.in_(chunk)))
@@ -262,6 +339,7 @@ def _process(session: Session) -> None:
     rewrite(session, ARTIST, pending.get("artist", set()))
     rewrite(session, RELEASE, releases)
     rewrite(session, TRACK, tracks)
+    rewrite(session, WORK, works)
 
 
 @event.listens_for(Session, "before_commit")
@@ -282,9 +360,20 @@ async def flush(session: AsyncSession) -> None:
 add_change_listener(_collect)
 
 
+async def recordings_changed(session: AsyncSession, recording_ids: Iterable[uuid.UUID]) -> None:
+    """The works of these recordings changed: rewrite their tracks before the commit (a removed
+    link leaves no row to find them by)."""
+    session.info.setdefault(_PENDING, {}).setdefault("recording.works", set()).update(recording_ids)
+
+
+async def works_changed(session: AsyncSession, work_ids: Iterable[uuid.UUID]) -> None:
+    """Rewrite these works and their recordings' tracks before the commit."""
+    session.info.setdefault(_PENDING, {}).setdefault("work", set()).update(work_ids)
+
+
 # --- full rebuild ---------------------------------------------------------------------------
 
-_SOURCES = {ARTIST: Artist.id, RELEASE: Release.id, TRACK: Track.id}
+_SOURCES = {ARTIST: Artist.id, RELEASE: Release.id, TRACK: Track.id, WORK: Work.id}
 
 
 def rebuild_batch(

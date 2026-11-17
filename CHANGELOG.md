@@ -6,6 +6,16 @@ All notable changes to Anthology are listed here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Works:**
+  - originals, arrangements, medleys and adaptations with composers, lyricists and arrangers as persons, instrumentation, grade, duration and ISWC;
+  - the originals of a medley in order, with play actions, and "Acquire" for originals missing from the library; recordings of a work; "Contained in";
+  - works of identified recordings fetched from MusicBrainz in the background, without review; people's changes win;
+  - persons with their works, renamed and merged by editors;
+  - works in the search with the filters `work:`, `arranger:` and `grade:`, and the search within a work;
+  - favorite works.
+
 ## [0.1.1] - 2026-10-30
 
 ### Fixed

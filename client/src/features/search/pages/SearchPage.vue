@@ -162,9 +162,12 @@ const type = computed(() => {
 const context = computed<SearchContext>(() => ({
   release_id: route.query.release_id ? String(route.query.release_id) : undefined,
   artist_id: route.query.artist_id ? String(route.query.artist_id) : undefined,
+  work_id: route.query.work_id ? String(route.query.work_id) : undefined,
   label: route.query.in ? String(route.query.in) : undefined,
 }));
-const hasContext = computed(() => Boolean(context.value.release_id || context.value.artist_id));
+const hasContext = computed(() =>
+  Boolean(context.value.release_id || context.value.artist_id || context.value.work_id),
+);
 const params = computed(() => searchParams(q.value, context.value));
 const paramsKey = computed(() => JSON.stringify(params.value));
 const playRule = computed(() => searchRule(q.value, context.value));
@@ -172,17 +175,18 @@ const playRule = computed(() => searchRule(q.value, context.value));
 // --- tokens and chips ---------------------------------------------------------------------
 
 const tokens = ref<SearchToken[]>([]);
-const allowed = ref<ItemType[]>(['artist', 'release', 'track']);
+const ALL_TYPES: ItemType[] = ['artist', 'release', 'track', 'work'];
+const allowed = ref<ItemType[]>(ALL_TYPES);
 const filters = computed(() =>
   tokens.value.filter((token) => token.kind === 'filter' && !token.error),
 );
 const errors = computed(() => tokens.value.filter((token) => token.error));
 const visibleTypes = computed(() =>
-  (['artist', 'release', 'track'] as const).filter(
+  ALL_TYPES.filter(
     (itemType) =>
       allowed.value.includes(itemType) &&
-      (!context.value.release_id || itemType === 'track') &&
-      (!context.value.artist_id || itemType !== 'artist'),
+      (!(context.value.release_id || context.value.work_id) || itemType === 'track') &&
+      (!context.value.artist_id || (itemType !== 'artist' && itemType !== 'work')),
   ),
 );
 
@@ -191,7 +195,7 @@ watch(
   async (text) => {
     if (!text) {
       tokens.value = [];
-      allowed.value = ['artist', 'release', 'track'];
+      allowed.value = ALL_TYPES;
       return;
     }
     const { data } = await getServices().api.GET('/api/v1/search/parse', {
@@ -223,7 +227,7 @@ function addFilter(): void {
 
 function removeContext(): void {
   const query = { ...route.query };
-  for (const name of ['release_id', 'artist_id', 'in']) delete query[name];
+  for (const name of ['release_id', 'artist_id', 'work_id', 'in']) delete query[name];
   void router.replace({ name: 'search', query });
 }
 

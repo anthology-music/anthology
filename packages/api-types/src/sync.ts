@@ -36,7 +36,7 @@ export type Confidence = 'high' | 'medium' | 'low';
 export type ReviewStatus = 'open' | 'accepted' | 'rejected' | 'deferred' | 'obsolete';
 export type ChangeSetKind = 'edit' | 'undo';
 export type Visibility = 'private' | 'shared';
-export type FavoriteTarget = 'recording' | 'release' | 'artist';
+export type FavoriteTarget = 'recording' | 'release' | 'artist' | 'work';
 /**
  * Why a configured service is unavailable (spec: Source status).
  */
@@ -45,6 +45,10 @@ export type OrderStatus = 'downloading' | 'importing' | 'done' | 'failed';
 export type OrderItemState = 'queued' | 'running' | 'waiting' | 'downloaded' | 'done' | 'skipped' | 'failed';
 export type ItemOutcome =
   'new' | 'replaced' | 'already_present' | 'not_better_than_existing' | 'needs_review' | 'failed';
+export type WorkType = 'original' | 'arrangement' | 'medley' | 'adaptation';
+export type CreditRole = 'composer' | 'lyricist' | 'arranger';
+export type RelationType = 'arrangement_of' | 'medley_contains' | 'part_of';
+export type Origin = 'musicbrainz' | 'user';
 
 export interface SyncProtocol {
   client?: ClientMessage;
@@ -84,6 +88,16 @@ export interface SyncProtocol {
     'sources.services'?: SourceServiceRow;
     'sources.orders'?: OrderRow;
     'sources.order.items'?: OrderItemRow;
+    'works.list'?: WorkRow;
+    'works.work'?: WorkDetailRow;
+    'works.work.contents'?: WorkContentRow;
+    'works.work.containers'?: WorkContainerRow;
+    'works.work.recordings'?: WorkRecordingRow;
+    'works.recording'?: RecordingWorkRow;
+    'works.persons'?: PersonRow;
+    'works.person'?: PersonRow;
+    'works.person.works'?: PersonWorkRow;
+    'search.works'?: WorkRow;
   };
   /**
    * Typed content of untyped row fields (e.g. review evidence).
@@ -586,6 +600,104 @@ export interface Offered {
   bitrate_kbps?: number | null;
   sample_rate_hz?: number | null;
   bit_depth?: number | null;
+}
+/**
+ * A work as lists show it (works list, contents, containers, search).
+ */
+export interface WorkRow {
+  id: string;
+  key: unknown[];
+  title: string;
+  type: WorkType;
+  composers: string[];
+  arrangers: string[];
+  instrumentation: string | null;
+  grade: string | null;
+  duration_sec: number | null;
+}
+/**
+ * One work with everything its page header shows (stream ``works.work``).
+ */
+export interface WorkDetailRow {
+  id: string;
+  key: unknown[];
+  title: string;
+  type: WorkType;
+  composers: string[];
+  arrangers: string[];
+  instrumentation: string | null;
+  grade: string | null;
+  duration_sec: number | null;
+  credits: CreditOut[];
+  iswc: string | null;
+  mb_work_id: string | null;
+  recording_count: number;
+  content_count: number;
+  container_count: number;
+}
+export interface CreditOut {
+  person_id: string;
+  name: string;
+  role: CreditRole;
+}
+/**
+ * An original of a medley or arrangement, with what the library has of it.
+ */
+export interface WorkContentRow {
+  id: string;
+  key: unknown[];
+  relation_type: RelationType;
+  position: number;
+  work: WorkRow;
+  track: LibraryTrackRow | null;
+  acquire_query: string;
+}
+/**
+ * A work that contains, arranges or includes this one.
+ */
+export interface WorkContainerRow {
+  id: string;
+  key: unknown[];
+  relation_type: RelationType;
+  work: WorkRow;
+}
+/**
+ * A recording of a work, shown by one of its tracks.
+ */
+export interface WorkRecordingRow {
+  id: string;
+  key: unknown[];
+  recording_id: string;
+  origin: Origin;
+  track: LibraryTrackRow | null;
+  title: string;
+  artist: string;
+}
+/**
+ * A work of one recording (stream ``works.recording``).
+ */
+export interface RecordingWorkRow {
+  id: string;
+  key: unknown[];
+  origin: Origin;
+  work: WorkRow;
+}
+export interface PersonRow {
+  id: string;
+  key: unknown[];
+  name: string;
+  sort_name: string;
+  mb_artist_id: string | null;
+  work_count: number;
+}
+/**
+ * One credit of a person (stream ``works.person.works``).
+ */
+export interface PersonWorkRow {
+  id: string;
+  key: unknown[];
+  role: CreditRole;
+  work: WorkRow;
 }
 export interface RecordingMatchEvidence {
   subject: RecordingSide;

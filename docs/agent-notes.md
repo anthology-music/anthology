@@ -17,7 +17,7 @@ across sessions goes here, so every agent and every maintainer sees the same sta
 
 ## Current state
 
-_Last updated: 2026-10-28_
+_Last updated: 2026-11-17_
 
 - **Milestone 1 (Foundation)** is implemented: server skeleton, sync protocol with progressive
   loading, users and devices, jobs (core and view), client foundation with sign-in, sync layer and
@@ -94,7 +94,14 @@ _Last updated: 2026-10-28_
   Compose installation on SELinux hosts. Pre-releases continue until the license review
   (ADR 0004). A release follows `docs/releasing.md`; after a tag, install the Compose package on
   an SELinux host as well (the CI smoke tests run on Ubuntu without SELinux).
-- **Next:** see `docs/roadmap.md` (milestone 3).
+- **In progress:** `works-core` (branch `feat/works-core`, one pull request): works, persons,
+  relations, recording links, works from MusicBrainz (job `works_fetch`), the works streams,
+  works in the search, favorite works (`personal-data` 3.4 done), the client's works pages and the
+  manual page. Decided with the maintainer: MusicBrainz works automatically without review,
+  persons as entities (separate from library artists), works in the search, favorites and
+  "Acquire" included, one pull request. Milestone 4 continues with publishers
+  (`publisher-adapters-core-split`).
+- **Next:** see `docs/roadmap.md` (milestone 3: apps and offline storage; milestone 4).
   `effective-quality-duplicate-checks` covers CD import and sources only; it waits for them.
 
 ## Working conventions

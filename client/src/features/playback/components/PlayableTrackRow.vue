@@ -72,6 +72,7 @@
           >
             <q-item-section>{{ t('library.download.track') }}</q-item-section>
           </q-item>
+          <RecordingWorks :recording-id="track.recording_id" />
         </q-list>
       </q-menu>
     </q-btn>
@@ -90,6 +91,7 @@ import TrackRow from '@/features/library/components/TrackRow.vue';
 import { useDownloadStore } from '@/features/library/downloads';
 import AddToPlaylist from '@/features/personal-data/components/AddToPlaylist.vue';
 import { useFavoritesStore } from '@/features/personal-data/favorites';
+import RecordingWorks from '@/features/works/components/RecordingWorks.vue';
 
 import { type PlayRule, usePlayerStore } from '../store';
 

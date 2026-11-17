@@ -15,7 +15,7 @@ Anthology has two main views, shown in the navigation on the left:
 - **Streaming** – where music comes in: searching source services, ordering albums, importing folders.
 - **Local** – your library: albums, artists, tracks, your playlists, favorites and history.
 
-Works (compositions, arrangements and medleys) and sheet music follow in later versions.
+**Works** lists compositions, arrangements and medleys with their originals; sheet music follows in a later version.
 
 ## How it runs
 
